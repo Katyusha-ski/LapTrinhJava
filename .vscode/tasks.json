@@ -1,0 +1,137 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Create New Java Project",
+            "type": "shell",
+            "command": "powershell",
+            "args": [
+                "-ExecutionPolicy", "Bypass", 
+                "-File", "${workspaceFolder}/create-java-project.ps1",
+                "-ProjectName", "${input:projectName}",
+                "-PackageName", "${input:packageName}",
+                "-JavaVersion", "${input:javaVersion}"
+            ],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Create Java Project with Gradle",
+            "type": "shell",
+            "command": "powershell",
+            "args": [
+                "-ExecutionPolicy", "Bypass", 
+                "-File", "${workspaceFolder}/create-java-project.ps1",
+                "-ProjectName", "${input:projectName}",
+                "-PackageName", "${input:packageName}",
+                "-JavaVersion", "${input:javaVersion}",
+                "-UseGradle"
+            ],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Maven: Compile",
+            "type": "shell",
+            "command": "mvn",
+            "args": ["compile"],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Maven: Test",
+            "type": "shell",
+            "command": "mvn",
+            "args": ["test"],
+            "group": "test",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Maven: Package",
+            "type": "shell",
+            "command": "mvn",
+            "args": ["package"],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Gradle: Build",
+            "type": "shell",
+            "command": "gradle",
+            "args": ["build"],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Gradle: Test",
+            "type": "shell",
+            "command": "gradle",
+            "args": ["test"],
+            "group": "test",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        }
+    ],
+    "inputs": [
+        {
+            "id": "projectName",
+            "description": "Tên dự án",
+            "default": "MyJavaProject",
+            "type": "promptString"
+        },
+        {
+            "id": "packageName",
+            "description": "Package name (com.example.app)",
+            "default": "com.example.app",
+            "type": "promptString"
+        },
+        {
+            "id": "javaVersion",
+            "description": "Java version",
+            "default": "17",
+            "type": "pickString",
+            "options": ["8", "11", "17", "21"]
+        }
+    ]
+}

@@ -1,0 +1,25 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Launch Main",
+            "request": "launch",
+            "mainClass": "com.example.app.Main",
+            "projectName": "java-app",
+            "args": "",
+            "vmArgs": "",
+            "console": "integratedTerminal"
+        },
+        {
+            "type": "java",
+            "name": "Launch Main with Args",
+            "request": "launch",
+            "mainClass": "com.example.app.Main",
+            "projectName": "java-app",
+            "args": "arg1 arg2",
+            "vmArgs": "",
+            "console": "integratedTerminal"
+        }
+    ]
+}
