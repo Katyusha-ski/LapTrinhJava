@@ -3,13 +3,13 @@
     "java.compile.nullAnalysis.mode": "automatic",
     "java.debug.settings.onBuildFailureProceed": true,
     "java.test.config": {
-        "workingDirectory": "${workspaceFolder}"
+        "workingDirectory": "${workspaceFolder}/backend"
     },
     "java.project.sourcePaths": [
-        "src/main/java"
+        "backend/src/main/java"
     ],
-    "java.project.outputPath": "bin",
-    "java.project.referencedLibraries": [
-        "lib/**/*.jar"
-    ]
+    "java.project.outputPath": "backend/target/classes",
+    "maven.pomfile.autoUpdateEffectivePOM": true,
+    "maven.executable.path": "mvn",
+    "java.import.maven.enabled": true
 }
