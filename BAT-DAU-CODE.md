@@ -18,7 +18,7 @@ backend/
 - Spring Data JPA
 - Spring Security
 - JWT dependencies
-- SQL Server Driver
+- MySQL Driver
 - Lombok
 
 ### ✅ Frontend (React + Vite)
@@ -94,10 +94,11 @@ File này có:
 
 ## 📝 CODE THEO THỨ TỰ NÀY
 
-### Phase 1: DATABASE (2-3 giờ)
+### Phase 1: DATABASE - MySQL (2-3 giờ)
 📖 Xem: `docs/huong-dan/01-DATABASE.md`
 
-- [ ] Tạo database `AESP_DB`
+- [ ] Cài đặt MySQL 8.0 + MySQL Workbench
+- [ ] Tạo database `aesp_db`
 - [ ] Tạo 8 tables cơ bản:
   - users, roles, user_roles
   - mentors, learners
@@ -105,7 +106,7 @@ File này có:
   - learning_progress
 - [ ] Insert seed data
 
-**Kết quả:** Database chạy OK
+**Kết quả:** MySQL database chạy OK
 
 ---
 

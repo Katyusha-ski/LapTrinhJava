@@ -22,7 +22,7 @@
 - **Framework**: Spring Boot 3.2.0
 - **Java Version**: 17 (LTS)
 - **Build Tool**: Maven
-- **Database**: SQL Server (JDBC Driver)
+- **Database**: MySQL 8.0 (JDBC Driver)
 - **Security**: Spring Security + JWT
 - **ORM**: Spring Data JPA (Hibernate)
 
@@ -34,7 +34,7 @@ Service (Business Logic)
     ↓
 Repository (Data Access)
     ↓
-Database (SQL Server)
+Database (MySQL)
 ```
 
 ---
@@ -59,7 +59,7 @@ Database (SQL Server)
    - Spring Web
    - Spring Data JPA
    - Spring Security
-   - MS SQL Server Driver
+   - MySQL Driver
    - Lombok
    - Validation
 
@@ -206,10 +206,10 @@ backend/
             <artifactId>spring-boot-starter-validation</artifactId>
         </dependency>
         
-        <!-- SQL Server Driver -->
+        <!-- MySQL Driver -->
         <dependency>
-            <groupId>com.microsoft.sqlserver</groupId>
-            <artifactId>mssql-jdbc</artifactId>
+            <groupId>com.mysql</groupId>
+            <artifactId>mysql-connector-j</artifactId>
             <scope>runtime</scope>
         </dependency>
         
@@ -284,7 +284,7 @@ backend/
 - `spring-boot-starter-web`: REST API, JSON, Tomcat
 - `spring-boot-starter-data-jpa`: Hibernate, JPA
 - `spring-boot-starter-security`: Authentication, Authorization
-- `mssql-jdbc`: SQL Server driver
+- `mysql-connector-j`: MySQL driver
 - `jjwt`: JWT token generation/validation
 - `lombok`: @Getter, @Setter, @NoArgsConstructor tự động
 - `modelmapper`: Convert Entity ↔ DTO
@@ -305,12 +305,12 @@ spring.application.name=AESP Backend
 server.port=8080
 
 # ===========================
-# DATABASE CONNECTION
+# DATABASE CONNECTION - MySQL
 # ===========================
-spring.datasource.url=jdbc:sqlserver://localhost:1433;databaseName=AESP_DB;encrypt=true;trustServerCertificate=true
-spring.datasource.username=sa
+spring.datasource.url=jdbc:mysql://localhost:3306/aesp_db?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true&useUnicode=true&characterEncoding=UTF-8
+spring.datasource.username=root
 spring.datasource.password=YourPassword123
-spring.datasource.driver-class-name=com.microsoft.sqlserver.jdbc.SQLServerDriver
+spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
 
 # ===========================
 # JPA / HIBERNATE
@@ -324,7 +324,7 @@ spring.jpa.hibernate.ddl-auto=update
 
 spring.jpa.show-sql=true
 spring.jpa.properties.hibernate.format_sql=true
-spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.SQLServerDialect
+spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MySQLDialect
 
 # ===========================
 # JWT CONFIGURATION
@@ -349,7 +349,7 @@ spring.profiles.active=dev
 ```
 
 **LƯU Ý:**
-- Thay `YourPassword123` bằng password SQL Server thật
+- Thay `YourPassword123` bằng password MySQL root thật
 - JWT secret phải giữ bí mật, không commit lên Git
 - `ddl-auto=update` chỉ dùng khi development
 
@@ -359,7 +359,7 @@ spring.profiles.active=dev
 
 ```properties
 # Development environment
-spring.datasource.url=jdbc:sqlserver://localhost:1433;databaseName=AESP_DB;encrypt=true;trustServerCertificate=true
+spring.datasource.url=jdbc:mysql://localhost:3306/aesp_db?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true&useUnicode=true&characterEncoding=UTF-8
 spring.jpa.hibernate.ddl-auto=update
 spring.jpa.show-sql=true
 
@@ -373,7 +373,7 @@ cors.allowed-origins=http://localhost:5173,http://127.0.0.1:5173
 
 ```properties
 # Production environment
-spring.datasource.url=jdbc:sqlserver://production-server:1433;databaseName=AESP_DB_PROD;encrypt=true
+spring.datasource.url=jdbc:mysql://production-server:3306/aesp_db_prod?useSSL=true&serverTimezone=UTC
 spring.jpa.hibernate.ddl-auto=validate
 spring.jpa.show-sql=false
 

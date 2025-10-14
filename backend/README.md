@@ -34,7 +34,7 @@ mvn clean install
 
 ### Bước 2: Cấu Hình Database
 Mở `src/main/resources/application.properties` và thay đổi:
-- `spring.datasource.password`: Password SQL Server của bạn
+- `spring.datasource.password`: Password MySQL root của bạn
 
 ### Bước 3: Chạy Application
 ```bash
