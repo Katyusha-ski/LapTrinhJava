@@ -243,7 +243,7 @@ CREATE TABLE learners (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     user_id BIGINT NOT NULL UNIQUE,
     mentor_id BIGINT,
-    english_level VARCHAR(20) DEFAULT 'BEGINNER',
+    english_level ENUM('BEGINNER', 'INTERMEDIATE', 'ADVANCED') DEFAULT 'BEGINNER',
     learning_goals TEXT,
     current_streak INT DEFAULT 0,
     total_practice_hours DECIMAL(5,2) DEFAULT 0.00,
