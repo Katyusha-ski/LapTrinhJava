@@ -113,6 +113,22 @@ CREATE TABLE learning_progress (
     FOREIGN KEY (learner_id) REFERENCES learners(id) ON DELETE CASCADE
 );
 
+CREATE TABLE practice_sessions (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    learner_id BIGINT NOT NULL,
+    mentor_id BIGINT,
+    session_type ENUM('MENTOR_LED', 'AI_ASSISTED') NOT NULL,
+    start_time TIMESTAMP NOT NULL,
+    end_time TIMESTAMP,
+    duration_minutes INT,
+    topic VARCHAR(255),
+    cost DECIMAL(10,2) DEFAULT 0.00,
+    session_status ENUM('SCHEDULED', 'COMPLETED', 'CANCELLED') DEFAULT 'SCHEDULED',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (learner_id) REFERENCES learners(id) ON DELETE CASCADE,
+    FOREIGN KEY (mentor_id) REFERENCES mentors(id) ON DELETE SET NULL
+);
 
 -- Indexes and OPTIMIZation
 
@@ -142,6 +158,10 @@ CREATE INDEX IDX_SUBSCRIPTIONS_DATES ON SUBSCRIPTIONS(START_DATE, END_DATE);
 CREATE INDEX idx_progress_learner ON learning_progress(learner_id);
 CREATE INDEX idx_progress_type ON learning_progress(lesson_type);
 CREATE INDEX idx_progress_completed ON learning_progress(completed_at DESC);
+
+CREATE INDEX idx_sessions_learner ON practice_sessions(learner_id);
+CREATE INDEX idx_sessions_mentor ON practice_sessions(mentor_id);
+CREATE INDEX idx_sessions_status ON practice_sessions(session_status);
 
 -- INSERT ROLES
 INSERT INTO roles (name, description) VALUES
@@ -223,3 +243,9 @@ INSERT INTO learning_progress (learner_id, lesson_type, lesson_title, score, tim
 -- Learner 3 progress
 (3, 'PRONUNCIATION', 'Advanced Accent Training', 96.5, 60, 1),
 (3, 'GRAMMAR', 'Complex Sentence Structures', 89.0, 40, 2);
+
+
+INSERT INTO practice_sessions (learner_id, mentor_id, session_type, start_time, end_time, duration_minutes, topic, cost, session_status) VALUES
+(1, 1, 'MENTOR_LED', NOW(), DATE_ADD(NOW(), INTERVAL 30 MINUTE), 30, 'Conversation Practice 1', 25.00, 'COMPLETED'),
+(2, 1, 'MENTOR_LED', DATE_SUB(NOW(), INTERVAL 1 DAY), DATE_SUB(NOW(), INTERVAL 1 DAY - INTERVAL 60 MINUTE), 60, 'Business Role-play', 50.00, 'COMPLETED'),
+(3, NULL, 'AI_ASSISTED', NOW(), DATE_ADD(NOW(), INTERVAL 15 MINUTE), 15, 'Accent Reduction Drill', 0.00, 'COMPLETED');
