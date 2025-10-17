@@ -135,7 +135,7 @@ CREATE INDEX idx_packages_active ON packages(is_active);
 CREATE INDEX idx_packages_price ON packages(price);
 
 CREATE INDEX idx_subscriptions_learner ON subscriptions(learner_id);
-CREATE INDEX idx_subsriptions_package ON subscriptions(package_id);
+CREATE INDEX idx_subscriptions_package ON subscriptions(package_id);
 CREATE INDEX idx_subscriptions_status ON subscriptions(status);
 CREATE INDEX IDX_SUBSCRIPTIONS_DATES ON SUBSCRIPTIONS(START_DATE, END_DATE);
 
@@ -179,7 +179,7 @@ INSERT INTO user_roles (user_id, role_id) VALUES
 (6, 3);
 
 -- INSERT MENTORS
-INSERT INTO mentors (user_id, bio, experience_year, certification, hourly_rate, rating) VALUES
+INSERT INTO mentors (user_id, bio, experience_years, certification, hourly_rate, rating) VALUES
 (2, 'Experienced English teacher with TESOL certification. Specializing in pronunciation and conversation.', 
  5, 'TESOL Certified', 25.00, 4.8),
  
