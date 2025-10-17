@@ -1,3 +1,4 @@
+-- Active: 1730199308212@@127.0.0.1@1433
 CREATE DATABASE IF NOT EXISTS aesp_db 
 CHARACTER SET utf8mb4 
 COLLATE utf8mb4_unicode_ci;
@@ -91,7 +92,7 @@ CREATE TABLE subscriptions (
     end_date DATE NOT NULL,
     status ENUM('ACTIVE', 'EXPIRED', 'CANCELLED') DEFAULT 'ACTIVE',
     payment_amount DECIMAL(10,2) NOT NULL,
-    payment_method VARCHAR(50),
+    payment_method ENUM('CREDIT_CARD', 'PAYPAL', 'BANK_TRANSFER', 'CASH', 'VISA', 'MOMO') NOT NULL,
     payment_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -142,4 +143,83 @@ CREATE INDEX idx_progress_learner ON learning_progress(learner_id);
 CREATE INDEX idx_progress_type ON learning_progress(lesson_type);
 CREATE INDEX idx_progress_completed ON learning_progress(completed_at DESC);
 
+-- INSERT ROLES
+INSERT INTO roles (name, description) VALUES
+('ADMIN', 'System administrator with full access'),
+('MENTOR', 'English mentor who teaches learners'),
+('LEARNER', 'Student learning English');
 
+
+-- INSERT USERS
+INSERT INTO users (username, email, password_hash, full_name, phone, is_active) VALUES
+-- admin user
+('admin', 'admin@aesp.com', '$2a$10$N9qo8uLOickgx2ZMRZoMye7I6ZqF7DWDaJhYcgikibHv1HYf6kT5.', 'System Admin', '0123456789', TRUE),
+
+-- Mentor users  
+('mentor1', 'mentor1@aesp.com', '$2a$10$N9qo8uLOickgx2ZMRZoMye7I6ZqF7DWDaJhYcgikibHv1HYf6kT5.', 'Sarah Johnson', '0123456790', TRUE),
+('mentor2', 'mentor2@aesp.com', '$2a$10$N9qo8uLOickgx2ZMRZoMye7I6ZqF7DWDaJhYcgikibHv1HYf6kT5.', 'David Wilson', '0123456791', TRUE),
+
+-- Learner users
+('learner1', 'learner1@aesp.com', '$2a$10$N9qo8uLOickgx2ZMRZoMye7I6ZqF7DWDaJhYcgikibHv1HYf6kT5.', 'Nguyễn Văn An', '0123456792', TRUE),
+('learner2', 'learner2@aesp.com', '$2a$10$N9qo8uLOickgx2ZMRZoMye7I6ZqF7DWDaJhYcgikibHv1HYf6kT5.', 'Trần Thị Bình', '0123456793', TRUE),
+('learner3', 'learner3@aesp.com', '$2a$10$N9qo8uLOickgx2ZMRZoMye7I6ZqF7DWDaJhYcgikibHv1HYf6kT5.', 'Lê Minh Cường', '0123456794', TRUE);
+
+
+
+-- INSERT ROLES
+INSERT INTO user_roles (user_id, role_id) VALUES
+-- ADMIN
+(1, 1),
+-- MENTORS
+(2, 2),
+(3, 2),
+-- LEARNERS
+(4, 3),
+(5, 3),
+(6, 3);
+
+-- INSERT MENTORS
+INSERT INTO mentors (user_id, bio, experience_year, certification, hourly_rate, rating) VALUES
+(2, 'Experienced English teacher with TESOL certification. Specializing in pronunciation and conversation.', 
+ 5, 'TESOL Certified', 25.00, 4.8),
+ 
+(3, 'Native English speaker with business English expertise. Former corporate trainer.', 
+ 3, 'TEFL Certified', 30.00, 4.6);
+
+ -- INSERT LEARNERS
+INSERT INTO learners (user_id, mentor_id, english_level, learning_goals) VALUES
+(4, 1, 'BEGINNER', 'Improve basic conversation skills and pronunciation'),
+(5, 1, 'INTERMEDIATE', 'Business English communication and presentation skills'),
+(6, 2, 'ADVANCED', 'Native-level fluency and accent reduction');
+
+-- INSERT PACKAGES
+INSERT INTO packages (name, description, price, duration_days, features) VALUES
+('Basic Plan', 'Essential English practice with AI feedback', 99000.00, 30, 
+ JSON_OBJECT('ai_sessions', 100, 'mentor_sessions', 2, 'progress_tracking', true, 'mobile_access', true)),
+ 
+('Premium Plan', 'Advanced learning with mentor support', 199000.00, 30,
+ JSON_OBJECT('ai_sessions', 500, 'mentor_sessions', 8, 'progress_tracking', true, 'mobile_access', true, 'priority_support', true)),
+ 
+('Enterprise Plan', 'Complete learning solution for organizations', 499000.00, 90,
+ JSON_OBJECT('ai_sessions', 2000, 'mentor_sessions', 20, 'progress_tracking', true, 'mobile_access', true, 'priority_support', true, 'custom_curriculum', true));
+
+ -- INSERT SUBSCRIPTIONS
+ INSERT INTO subscriptions (learner_id, package_id, start_date, end_date, payment_amount, payment_method) VALUES
+(1, 1, CURDATE(), DATE_ADD(CURDATE(), INTERVAL 30 DAY), 99000.00, 'CREDIT_CARD'),
+(2, 2, CURDATE(), DATE_ADD(CURDATE(), INTERVAL 30 DAY), 199000.00, 'PAYPAL'),
+(3, 2, DATE_SUB(CURDATE(), INTERVAL 15 DAY), DATE_ADD(CURDATE(), INTERVAL 15 DAY), 199000.00, 'BANK_TRANSFER');
+
+-- INSERT LEARNING PROGRESS
+INSERT INTO learning_progress (learner_id, lesson_type, lesson_title, score, time_spent_minutes, attempts) VALUES
+-- Learner 1 progress
+(1, 'PRONUNCIATION', 'Basic Vowel Sounds', 75.5, 25, 2),
+(1, 'VOCABULARY', 'Common Greetings', 88.0, 15, 1),
+(1, 'GRAMMAR', 'Present Simple Tense', 82.5, 30, 1),
+
+-- Learner 2 progress  
+(2, 'PRONUNCIATION', 'Business Presentation Skills', 91.0, 45, 1),
+(2, 'VOCABULARY', 'Business Terminology', 94.5, 20, 1),
+
+-- Learner 3 progress
+(3, 'PRONUNCIATION', 'Advanced Accent Training', 96.5, 60, 1),
+(3, 'GRAMMAR', 'Complex Sentence Structures', 89.0, 40, 2);
