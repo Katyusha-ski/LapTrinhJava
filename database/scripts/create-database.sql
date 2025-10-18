@@ -245,7 +245,10 @@ INSERT INTO learning_progress (learner_id, lesson_type, lesson_title, score, tim
 (3, 'GRAMMAR', 'Complex Sentence Structures', 89.0, 40, 2);
 
 
-INSERT INTO practice_sessions (learner_id, mentor_id, session_type, start_time, end_time, duration_minutes, topic, cost, session_status) VALUES
+INSERT INTO practice_sessions 
+(learner_id, mentor_id, session_type, start_time, end_time, duration_minutes, topic, cost, session_status) 
+VALUES
 (1, 1, 'MENTOR_LED', NOW(), DATE_ADD(NOW(), INTERVAL 30 MINUTE), 30, 'Conversation Practice 1', 25.00, 'COMPLETED'),
-(2, 1, 'MENTOR_LED', DATE_SUB(NOW(), INTERVAL 1 DAY), DATE_SUB(NOW(), INTERVAL 1 DAY - INTERVAL 60 MINUTE), 60, 'Business Role-play', 50.00, 'COMPLETED'),
+(2, 1, 'MENTOR_LED', DATE_SUB(NOW(), INTERVAL 1 DAY), DATE_ADD(DATE_SUB(NOW(), INTERVAL 1 DAY), INTERVAL 60 MINUTE), 60, 'Business Role-play', 50.00, 'COMPLETED'),
 (3, NULL, 'AI_ASSISTED', NOW(), DATE_ADD(NOW(), INTERVAL 15 MINUTE), 15, 'Accent Reduction Drill', 0.00, 'COMPLETED');
+
