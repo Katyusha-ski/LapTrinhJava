@@ -91,20 +91,28 @@ Download: MySQL Workbench 8.0
                     │                 │
             ┌───────▼──────┐  ┌───────▼───────┐
             │   mentors    │  │   learners    │
-            └──────────────┘  └───────────────┘
+            └───────┬──────┘  └───────┬───────┘
                     │                 │
-                    │         ┌───────┴────────┐
-                    │         │                │
-                    │   ┌─────▼─────┐  ┌───────▼────────────┐
-                    │   │ packages  │  │  subscriptions     │
-                    │   └───────────┘  └────────────────────┘
-                    │                          │
-                    │                  ┌───────▼────────────┐
-                    └──────────────────┤ learning_progress  │
-                                       └────────────────────┘
+        ┌───────────┼─────────────────┼──────────────────┐
+        │           │                 │                  │
+        │           │         ┌───────┴────────┐         │
+        │           │         │                │         │
+        │     ┌─────▼─────┐   │        ┌───────▼─────────────┐
+        │     │ packages  │   │        │  subscriptions      │
+        │     └───────────┘   │        └─────────────────────┘
+        │                     │                  │
+        │             ┌───────▼────────────┐     │
+        │             │ learning_progress  │     │
+        │             └────────────────────┘     │
+        │                                        │
+        └────────────────┬───────────────────────┘
+                         │
+                ┌────────▼─────────┐
+                │ practice_sessions│
+                └──────────────────┘
 ```
 
-### 8 Tables Chính
+### 9 Tables Chính
 
 | Bảng | Mô Tả | Quan Hệ |
 |------|-------|---------|
@@ -116,6 +124,7 @@ Download: MySQL Workbench 8.0
 | **packages** | Gói học phí | 1-N với subscriptions |
 | **subscriptions** | Đăng ký gói học | N-1 với learners, packages |
 | **learning_progress** | Tiến độ học tập | N-1 với learners |
+| **practice_sessions** | Phiên luyện tập | N-1 với learners, mentors |
 
 ---
 
@@ -135,7 +144,7 @@ USE aesp_db;
 
 **Copy đoạn SQL trên vào MySQL Workbench và chạy (Ctrl+Enter)**
 
-### Tạo 8 Tables
+### Tạo 9 Tables
 
 #### 1. Bảng `roles` - Vai Trò Hệ Thống
 
@@ -311,6 +320,34 @@ CREATE TABLE learning_progress (
 - `attempts`: Số lần thử làm bài
 - `notes`: Ghi chú từ mentor hoặc AI
 
+#### 9. Bảng `practice_sessions` - Phiên Luyện Tập
+
+```sql
+CREATE TABLE practice_sessions (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    learner_id BIGINT NOT NULL,
+    mentor_id BIGINT,
+    session_type ENUM('MENTOR_LED', 'AI_ASSISTED') NOT NULL,
+    start_time TIMESTAMP NOT NULL,
+    end_time TIMESTAMP,
+    duration_minutes INT,
+    topic VARCHAR(255),
+    cost DECIMAL(10,2) DEFAULT 0.00,
+    session_status ENUM('SCHEDULED', 'COMPLETED', 'CANCELLED') DEFAULT 'SCHEDULED',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (learner_id) REFERENCES learners(id) ON DELETE CASCADE,
+    FOREIGN KEY (mentor_id) REFERENCES mentors(id) ON DELETE SET NULL
+);
+```
+
+**Giải thích:**
+- `session_type`: MENTOR_LED (có mentor), AI_ASSISTED (chỉ AI)
+- `mentor_id`: NULL cho AI sessions
+- `cost`: 0.00 cho AI sessions, có phí cho mentor sessions
+- `session_status`: SCHEDULED, COMPLETED, CANCELLED
+- `duration_minutes`: Tính từ start_time và end_time
+
 ---
 
 ## Relationships và Foreign Keys
@@ -344,6 +381,14 @@ CREATE TABLE learning_progress (
 7. **Learners → Learning_Progress** (One-to-Many)
    - 1 learner có nhiều bài học
    - 1 progress record thuộc về 1 learner
+
+8. **Learners → Practice_Sessions** (One-to-Many)
+   - 1 learner có nhiều sessions
+   - 1 session thuộc về 1 learner
+
+9. **Mentors → Practice_Sessions** (One-to-Many)
+   - 1 mentor có nhiều sessions với learners
+   - 1 session có thể có hoặc không có mentor (AI sessions)
 
 ### Foreign Key Actions
 
@@ -391,6 +436,12 @@ CREATE INDEX idx_subscriptions_dates ON subscriptions(start_date, end_date);
 CREATE INDEX idx_progress_learner ON learning_progress(learner_id);
 CREATE INDEX idx_progress_type ON learning_progress(lesson_type);
 CREATE INDEX idx_progress_completed ON learning_progress(completed_at DESC);
+
+-- Practice_sessions table indexes
+CREATE INDEX idx_sessions_learner ON practice_sessions(learner_id);
+CREATE INDEX idx_sessions_mentor ON practice_sessions(mentor_id);
+CREATE INDEX idx_sessions_status ON practice_sessions(session_status);
+CREATE INDEX idx_sessions_start_time ON practice_sessions(start_time DESC);
 ```
 
 **Copy và chạy tất cả indexes trên trong MySQL Workbench**
@@ -505,6 +556,17 @@ INSERT INTO learning_progress (learner_id, lesson_type, lesson_title, score, tim
 (3, 'GRAMMAR', 'Complex Sentence Structures', 89.0, 40, 2);
 ```
 
+### Bước 9: Insert Practice Sessions
+
+```sql
+INSERT INTO practice_sessions 
+(learner_id, mentor_id, session_type, start_time, end_time, duration_minutes, topic, cost, session_status) 
+VALUES
+(1, 1, 'MENTOR_LED', NOW(), DATE_ADD(NOW(), INTERVAL 30 MINUTE), 30, 'Conversation Practice 1', 25.00, 'COMPLETED'),
+(2, 1, 'MENTOR_LED', DATE_SUB(NOW(), INTERVAL 1 DAY), DATE_ADD(DATE_SUB(NOW(), INTERVAL 1 DAY), INTERVAL 60 MINUTE), 60, 'Business Role-play', 50.00, 'COMPLETED'),
+(3, NULL, 'AI_ASSISTED', NOW(), DATE_ADD(NOW(), INTERVAL 15 MINUTE), 15, 'Accent Reduction Drill', 0.00, 'COMPLETED');
+```
+
 ---
 
 ## Kiểm Tra và Test
@@ -525,6 +587,7 @@ DESCRIBE learners;
 DESCRIBE packages;
 DESCRIBE subscriptions;
 DESCRIBE learning_progress;
+DESCRIBE practice_sessions;
 ```
 
 #### 2. Kiểm Tra User và Roles
@@ -596,15 +659,18 @@ ORDER BY average_score DESC;
 #### 6. Test Complex Query - Report Tổng Hợp
 
 ```sql
--- Report tổng hợp: Active learners với tiến độ học tập
+-- Report tổng hợp: Active learners với tiến độ học tập và sessions
 SELECT 
     u.full_name as learner_name,
     u.email,
     l.english_level,
     p.name as current_package,
     s.end_date as package_expiry,
-    COUNT(lp.id) as completed_lessons,
-    AVG(lp.score) as avg_score,
+    COUNT(DISTINCT lp.id) as completed_lessons,
+    AVG(lp.score) as avg_lesson_score,
+    COUNT(DISTINCT ps.id) as total_sessions,
+    COUNT(DISTINCT CASE WHEN ps.session_type = 'AI_ASSISTED' THEN ps.id END) as ai_sessions,
+    COUNT(DISTINCT CASE WHEN ps.session_type = 'MENTOR_LED' THEN ps.id END) as mentor_sessions,
     l.current_streak,
     MENTOR.full_name as mentor_name
 FROM learners l
@@ -612,14 +678,53 @@ JOIN users u ON l.user_id = u.id
 LEFT JOIN subscriptions s ON l.id = s.learner_id AND s.status = 'ACTIVE'
 LEFT JOIN packages p ON s.package_id = p.id
 LEFT JOIN learning_progress lp ON l.id = lp.learner_id
+LEFT JOIN practice_sessions ps ON l.id = ps.learner_id AND ps.session_status = 'COMPLETED'
 LEFT JOIN mentors m ON l.mentor_id = m.id
 LEFT JOIN users MENTOR ON m.user_id = MENTOR.id
 WHERE u.is_active = TRUE
 GROUP BY l.id, u.full_name, u.email, l.english_level, p.name, s.end_date, l.current_streak, MENTOR.full_name
-ORDER BY avg_score DESC;
+ORDER BY avg_lesson_score DESC;
 ```
 
-**Kết quả mong đợi:** Thấy được 3 learners với thông tin đầy đủ
+#### 7. Test Practice Sessions Query
+
+```sql
+-- Xem practice sessions của tất cả learners
+SELECT 
+    u.full_name as learner_name,
+    ps.session_type,
+    MENTOR.full_name as mentor_name,
+    ps.topic,
+    ps.start_time,
+    ps.duration_minutes,
+    ps.cost,
+    ps.session_status
+FROM practice_sessions ps
+JOIN learners l ON ps.learner_id = l.id
+JOIN users u ON l.user_id = u.id
+LEFT JOIN mentors m ON ps.mentor_id = m.id
+LEFT JOIN users MENTOR ON m.user_id = MENTOR.id
+ORDER BY ps.start_time DESC;
+```
+
+#### 8. Test Session Statistics Query
+
+```sql
+-- Thống kê sessions theo type
+SELECT 
+    session_type,
+    COUNT(*) as total_sessions,
+    AVG(duration_minutes) as avg_duration,
+    SUM(cost) as total_revenue
+FROM practice_sessions
+WHERE session_status = 'COMPLETED'
+GROUP BY session_type;
+```
+
+#### 9. Test Complex Query - Report Tổng Hợp (Updated)
+```
+
+**Kết quả mong đợi:** Thấy được 3 learners với thông tin đầy đủ bao gồm sessions
 
 ---
 
@@ -630,16 +735,17 @@ ORDER BY avg_score DESC;
 - [ ] **Cài đặt MySQL Workbench**
 - [ ] **Kết nối thành công (root password)**
 - [ ] **Tạo database `aesp_db`**
-- [ ] **Tạo 8 tables chính**
+- [ ] **Tạo 9 tables chính**
 - [ ] **Tạo indexes cần thiết**
 - [ ] **Insert seed data thành công**
 - [ ] **Chạy test queries OK**
 
 ### Verification
-- [ ] **All tables created** - `SHOW TABLES;` return 8 tables
+- [ ] **All tables created** - `SHOW TABLES;` return 9 tables
 - [ ] **Foreign key constraints working** - Không thể insert invalid data
-- [ ] **Sample data inserted correctly** - 6 users, 3 roles, 2 mentors, 3 learners
+- [ ] **Sample data inserted correctly** - 6 users, 3 roles, 2 mentors, 3 learners, 3 sessions
 - [ ] **Complex queries return expected results** - Report query hiển thị đúng
+- [ ] **Practice sessions data correct** - AI sessions cost=0, mentor sessions có cost
 - [ ] **Database size < 50MB** (for development)
 
 ### Connection Test

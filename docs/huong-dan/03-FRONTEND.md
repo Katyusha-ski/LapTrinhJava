@@ -116,10 +116,12 @@ frontend/
 │   │   ├── learner/
 │   │   │   ├── PackageCard.jsx
 │   │   │   ├── ProgressChart.jsx
-│   │   │   └── SessionHistory.jsx
+│   │   │   ├── SessionHistory.jsx
+│   │   │   └── PracticeSessionCard.jsx
 │   │   └── mentor/
 │   │       ├── LearnerList.jsx
-│   │       └── SessionForm.jsx
+│   │       ├── SessionForm.jsx
+│   │       └── SessionManagement.jsx
 │   ├── context/                    # React Context
 │   │   └── AuthContext.jsx
 │   ├── pages/                      # Page components
@@ -130,11 +132,13 @@ frontend/
 │   │   │   ├── LearnerDashboard.jsx
 │   │   │   ├── PackagesPage.jsx
 │   │   │   ├── MyProgressPage.jsx
-│   │   │   └── PracticePage.jsx
+│   │   │   ├── PracticePage.jsx
+│   │   │   └── MySessionsPage.jsx
 │   │   ├── mentor/
 │   │   │   ├── MentorDashboard.jsx
 │   │   │   ├── MyLearnersPage.jsx
-│   │   │   └── SessionsPage.jsx
+│   │   │   ├── SessionsPage.jsx
+│   │   │   └── SessionSchedulePage.jsx
 │   │   ├── admin/
 │   │   │   ├── AdminDashboard.jsx
 │   │   │   ├── UsersPage.jsx
@@ -147,6 +151,7 @@ frontend/
 │   │   ├── authService.js
 │   │   ├── userService.js
 │   │   ├── packageService.js
+│   │   ├── practiceSessionService.js
 │   │   └── learningProgressService.js
 │   ├── utils/                      # Utility functions
 │   │   ├── constants.js
@@ -569,7 +574,54 @@ export default userService
 
 ---
 
-### 4. Các Service Khác
+### 4. `practiceSessionService.js` - Practice Session API Calls
+
+```javascript
+import api from './api'
+
+const practiceSessionService = {
+  // Tạo session mới
+  createSession: (sessionData) => {
+    return api.post('/practice-sessions', sessionData)
+  },
+  
+  // Lấy sessions của learner
+  getLearnerSessions: (learnerId) => {
+    return api.get(`/practice-sessions/learner/${learnerId}`)
+  },
+  
+  // Lấy sessions của mentor
+  getMentorSessions: (mentorId) => {
+    return api.get(`/practice-sessions/mentor/${mentorId}`)
+  },
+  
+  // Lấy session theo ID
+  getSessionById: (id) => {
+    return api.get(`/practice-sessions/${id}`)
+  },
+  
+  // Cập nhật session status
+  updateSessionStatus: (id, status) => {
+    return api.put(`/practice-sessions/${id}/status?status=${status}`)
+  },
+  
+  // Xóa session
+  deleteSession: (id) => {
+    return api.delete(`/practice-sessions/${id}`)
+  },
+  
+  // Lấy sessions trong khoảng thời gian
+  getSessionsByDateRange: (startDate, endDate) => {
+    return api.get(`/practice-sessions/range?start=${startDate}&end=${endDate}`)
+  }
+}
+
+export default practiceSessionService
+```
+
+---
+
+### 5. Các Service Khác
 
 Tạo tương tự:
 - `packageService.js`: CRUD packages
@@ -698,6 +750,103 @@ const Loader = () => {
 }
 
 export default Loader
+```
+
+---
+
+### 4. `PracticeSessionCard.jsx` - Hiển Thị Practice Session
+
+```jsx
+import React from 'react'
+import { Card, Badge, Button } from 'react-bootstrap'
+import { FaClock, FaUser, FaRobot } from 'react-icons/fa'
+
+const PracticeSessionCard = ({ session, onStatusUpdate }) => {
+  const getStatusVariant = (status) => {
+    switch (status) {
+      case 'SCHEDULED': return 'primary'
+      case 'COMPLETED': return 'success'
+      case 'CANCELLED': return 'danger'
+      default: return 'secondary'
+    }
+  }
+  
+  const getSessionIcon = (type) => {
+    return type === 'MENTOR_LED' ? <FaUser /> : <FaRobot />
+  }
+  
+  const formatDateTime = (dateTime) => {
+    return new Date(dateTime).toLocaleString('vi-VN')
+  }
+  
+  const handleComplete = () => {
+    onStatusUpdate(session.id, 'COMPLETED')
+  }
+  
+  const handleCancel = () => {
+    onStatusUpdate(session.id, 'CANCELLED')
+  }
+  
+  return (
+    <Card className="mb-3">
+      <Card.Body>
+        <div className="d-flex justify-content-between align-items-start">
+          <div>
+            <h6 className="d-flex align-items-center">
+              {getSessionIcon(session.sessionType)}
+              <span className="ms-2">{session.topic || 'Practice Session'}</span>
+            </h6>
+            <p className="text-muted mb-1">
+              <FaClock className="me-1" />
+              {formatDateTime(session.startTime)}
+            </p>
+            {session.mentorName && (
+              <p className="text-muted mb-1">
+                Mentor: {session.mentorName}
+              </p>
+            )}
+            <p className="text-muted mb-1">
+              Duration: {session.durationMinutes} minutes
+            </p>
+            {session.cost > 0 && (
+              <p className="text-muted mb-1">
+                Cost: ${session.cost}
+              </p>
+            )}
+          </div>
+          
+          <div className="text-end">
+            <Badge bg={getStatusVariant(session.sessionStatus)} className="mb-2">
+              {session.sessionStatus}
+            </Badge>
+            
+            {session.sessionStatus === 'SCHEDULED' && (
+              <div>
+                <Button 
+                  size="sm" 
+                  variant="success" 
+                  className="me-1"
+                  onClick={handleComplete}
+                >
+                  Complete
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant="outline-danger"
+                  onClick={handleCancel}
+                >
+                  Cancel
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
+      </Card.Body>
+    </Card>
+  )
+}
+
+export default PracticeSessionCard
 ```
 
 ---
@@ -973,16 +1122,21 @@ import { Container, Row, Col, Card } from 'react-bootstrap'
 import { useAuth } from '../../context/AuthContext'
 import subscriptionService from '../../services/subscriptionService'
 import learningProgressService from '../../services/learningProgressService'
+import practiceSessionService from '../../services/practiceSessionService'
 import ProgressChart from '../../components/learner/ProgressChart'
 import SessionHistory from '../../components/learner/SessionHistory'
+import PracticeSessionCard from '../../components/learner/PracticeSessionCard'
 
 const LearnerDashboard = () => {
   const { user } = useAuth()
   const [stats, setStats] = useState({
     activeSubscription: null,
     totalSessions: 0,
-    averageScore: 0
+    averageScore: 0,
+    aiSessions: 0,
+    mentorSessions: 0
   })
+  const [recentSessions, setRecentSessions] = useState([])
   const [loading, setLoading] = useState(true)
   
   useEffect(() => {
@@ -997,21 +1151,42 @@ const LearnerDashboard = () => {
       
       // Fetch learning progress
       const progressResponse = await learningProgressService.getMyProgress()
-      const sessions = progressResponse.data
+      const lessons = progressResponse.data
       
-      const avgScore = sessions.length > 0
-        ? sessions.reduce((sum, s) => sum + s.overallScore, 0) / sessions.length
+      // Fetch practice sessions
+      const sessionsResponse = await practiceSessionService.getLearnerSessions(user.id)
+      const sessions = sessionsResponse.data
+      
+      const avgScore = lessons.length > 0
+        ? lessons.reduce((sum, s) => sum + s.overallScore, 0) / lessons.length
         : 0
+      
+      const aiSessions = sessions.filter(s => s.sessionType === 'AI_ASSISTED').length
+      const mentorSessions = sessions.filter(s => s.sessionType === 'MENTOR_LED').length
       
       setStats({
         activeSubscription: activeSub,
         totalSessions: sessions.length,
-        averageScore: avgScore.toFixed(2)
+        averageScore: avgScore.toFixed(2),
+        aiSessions,
+        mentorSessions
       })
+      
+      // Get 5 most recent sessions
+      setRecentSessions(sessions.slice(0, 5))
     } catch (error) {
       console.error('Error fetching dashboard data:', error)
     } finally {
       setLoading(false)
+    }
+  }
+  
+  const handleSessionStatusUpdate = async (sessionId, status) => {
+    try {
+      await practiceSessionService.updateSessionStatus(sessionId, status)
+      fetchDashboardData() // Refresh data
+    } catch (error) {
+      console.error('Error updating session status:', error)
     }
   }
   
@@ -1022,7 +1197,7 @@ const LearnerDashboard = () => {
       <h2>Welcome back, {user.fullName}!</h2>
       
       <Row className="mt-4">
-        <Col md={4}>
+        <Col md={3}>
           <Card>
             <Card.Body>
               <h5>Active Package</h5>
@@ -1031,20 +1206,31 @@ const LearnerDashboard = () => {
           </Card>
         </Col>
         
-        <Col md={4}>
+        <Col md={3}>
           <Card>
             <Card.Body>
               <h5>Total Sessions</h5>
               <h3>{stats.totalSessions}</h3>
+              <small>AI: {stats.aiSessions} | Mentor: {stats.mentorSessions}</small>
             </Card.Body>
           </Card>
         </Col>
         
-        <Col md={4}>
+        <Col md={3}>
           <Card>
             <Card.Body>
               <h5>Average Score</h5>
               <h3>{stats.averageScore}%</h3>
+            </Card.Body>
+          </Card>
+        </Col>
+        
+        <Col md={3}>
+          <Card>
+            <Card.Body>
+              <h5>This Week</h5>
+              <h3>5</h3>
+              <small>Sessions completed</small>
             </Card.Body>
           </Card>
         </Col>
@@ -1055,7 +1241,24 @@ const LearnerDashboard = () => {
           <ProgressChart />
         </Col>
         <Col md={6}>
-          <SessionHistory />
+          <Card>
+            <Card.Header>
+              <h5>Recent Practice Sessions</h5>
+            </Card.Header>
+            <Card.Body>
+              {recentSessions.length > 0 ? (
+                recentSessions.map(session => (
+                  <PracticeSessionCard 
+                    key={session.id}
+                    session={session}
+                    onStatusUpdate={handleSessionStatusUpdate}
+                  />
+                ))
+              ) : (
+                <p>No practice sessions yet</p>
+              )}
+            </Card.Body>
+          </Card>
         </Col>
       </Row>
     </Container>
@@ -1175,11 +1378,12 @@ npm run preview
 - [ ] Cấu hình `vite.config.js` với proxy
 - [ ] Tạo `.env` file với API URL
 - [ ] Implement `AuthContext` cho authentication
-- [ ] Tạo `api.js` và các service files
+- [ ] Tạo `api.js` và các service files (bao gồm practiceSessionService)
 - [ ] Implement `ProtectedRoute` component
 - [ ] Tạo `Header`, `Footer` components
 - [ ] Implement `LoginPage`, `RegisterPage`
-- [ ] Tạo dashboards cho Learner, Mentor, Admin
+- [ ] Tạo dashboards cho Learner, Mentor, Admin (với practice sessions)
+- [ ] Implement components cho Practice Sessions
 - [ ] Test integration với Backend API
 - [ ] Build và deploy
 

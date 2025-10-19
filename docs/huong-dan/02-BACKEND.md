@@ -94,7 +94,8 @@ backend/
 │   │   │           │   ├── UserController.java
 │   │   │           │   ├── MentorController.java
 │   │   │           │   ├── LearnerController.java
-│   │   │           │   └── PackageController.java
+│   │   │           │   ├── PackageController.java
+│   │   │           │   └── PracticeSessionController.java
 │   │   │           ├── dto/                          # Data Transfer Objects
 │   │   │           │   ├── request/
 │   │   │           │   │   ├── LoginRequest.java
@@ -111,7 +112,8 @@ backend/
 │   │   │           │   ├── Learner.java
 │   │   │           │   ├── Package.java
 │   │   │           │   ├── Subscription.java
-│   │   │           │   └── LearningProgress.java
+│   │   │           │   ├── LearningProgress.java
+│   │   │           │   └── PracticeSession.java
 │   │   │           ├── repository/                   # JPA Repositories
 │   │   │           │   ├── UserRepository.java
 │   │   │           │   ├── RoleRepository.java
@@ -119,13 +121,15 @@ backend/
 │   │   │           │   ├── LearnerRepository.java
 │   │   │           │   ├── PackageRepository.java
 │   │   │           │   ├── SubscriptionRepository.java
-│   │   │           │   └── LearningProgressRepository.java
+│   │   │           │   ├── LearningProgressRepository.java
+│   │   │           │   └── PracticeSessionRepository.java
 │   │   │           ├── service/                      # Business Logic
 │   │   │           │   ├── AuthService.java
 │   │   │           │   ├── UserService.java
 │   │   │           │   ├── MentorService.java
 │   │   │           │   ├── LearnerService.java
 │   │   │           │   ├── PackageService.java
+│   │   │           │   ├── PracticeSessionService.java
 │   │   │           │   └── JwtService.java
 │   │   │           ├── security/                     # Security classes
 │   │   │           │   ├── JwtTokenProvider.java
@@ -701,7 +705,102 @@ enum ProficiencyLevel {
 
 ---
 
-### 5. Các Entity Còn Lại
+### 5. `PracticeSession.java` - Phiên Luyện Tập
+
+```java
+package com.aesp.entity;
+
+import jakarta.persistence.*;
+import lombok.*;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+
+@Entity
+@Table(name = "practice_sessions")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class PracticeSession {
+    
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+    
+    @ManyToOne
+    @JoinColumn(name = "learner_id", nullable = false)
+    private Learner learner;
+    
+    @ManyToOne
+    @JoinColumn(name = "mentor_id")
+    private Mentor mentor; // NULL cho AI sessions
+    
+    @Enumerated(EnumType.STRING)
+    @Column(name = "session_type", nullable = false)
+    private SessionType sessionType;
+    
+    @Column(name = "start_time", nullable = false)
+    private LocalDateTime startTime;
+    
+    @Column(name = "end_time")
+    private LocalDateTime endTime;
+    
+    @Column(name = "duration_minutes")
+    private Integer durationMinutes;
+    
+    @Column(length = 255)
+    private String topic;
+    
+    @Column(precision = 10, scale = 2)
+    private BigDecimal cost = BigDecimal.ZERO;
+    
+    @Enumerated(EnumType.STRING)
+    @Column(name = "session_status")
+    private SessionStatus sessionStatus = SessionStatus.SCHEDULED;
+    
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+    
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+    
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
+    }
+    
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
+}
+
+// Enum cho session type
+enum SessionType {
+    MENTOR_LED,
+    AI_ASSISTED
+}
+
+// Enum cho session status
+enum SessionStatus {
+    SCHEDULED,
+    COMPLETED,
+    CANCELLED
+}
+```
+
+**Giải thích:**
+- `@ManyToOne`: Many sessions thuộc về 1 learner/mentor
+- `mentor`: Có thể NULL (cho AI sessions)
+- `sessionType`: MENTOR_LED hoặc AI_ASSISTED
+- `cost`: BigDecimal cho số tiền (AI sessions = 0.00)
+- `sessionStatus`: SCHEDULED, COMPLETED, CANCELLED
+
+---
+
+### 6. Các Entity Còn Lại
 
 Tương tự, bạn tự tạo:
 - `Package.java` (gói học phí)
@@ -793,6 +892,36 @@ Tạo tương tự cho:
 - `PackageRepository.java`
 - `SubscriptionRepository.java`
 - `LearningProgressRepository.java`
+- `PracticeSessionRepository.java`
+
+**Ví dụ PracticeSessionRepository:**
+
+```java
+@Repository
+public interface PracticeSessionRepository extends JpaRepository<PracticeSession, Long> {
+    
+    // Tìm sessions theo learner
+    List<PracticeSession> findByLearnerId(Long learnerId);
+    
+    // Tìm sessions theo mentor
+    List<PracticeSession> findByMentorId(Long mentorId);
+    
+    // Tìm sessions theo status
+    List<PracticeSession> findBySessionStatus(SessionStatus status);
+    
+    // Tìm sessions theo type
+    List<PracticeSession> findBySessionType(SessionType sessionType);
+    
+    // Tìm sessions trong khoảng thời gian
+    @Query("SELECT ps FROM PracticeSession ps WHERE ps.startTime BETWEEN :startDate AND :endDate")
+    List<PracticeSession> findByDateRange(@Param("startDate") LocalDateTime startDate, 
+                                          @Param("endDate") LocalDateTime endDate);
+    
+    // Thống kê revenue theo mentor
+    @Query("SELECT SUM(ps.cost) FROM PracticeSession ps WHERE ps.mentor.id = :mentorId AND ps.sessionStatus = 'COMPLETED'")
+    BigDecimal calculateMentorRevenue(@Param("mentorId") Long mentorId);
+}
+```
 
 **Ví dụ custom query nâng cao:**
 
@@ -1261,6 +1390,75 @@ public class UserController {
 
 ---
 
+### 3. `PracticeSessionController.java`
+
+```java
+package com.aesp.controller;
+
+import com.aesp.dto.request.PracticeSessionRequest;
+import com.aesp.dto.response.PracticeSessionResponse;
+import com.aesp.dto.response.MessageResponse;
+import com.aesp.service.PracticeSessionService;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/practice-sessions")
+@RequiredArgsConstructor
+@CrossOrigin(origins = "*")
+public class PracticeSessionController {
+    
+    private final PracticeSessionService practiceSessionService;
+    
+    // Tạo session mới
+    @PostMapping
+    @PreAuthorize("hasAnyRole('LEARNER', 'MENTOR')")
+    public ResponseEntity<PracticeSessionResponse> createSession(@Valid @RequestBody PracticeSessionRequest request) {
+        PracticeSessionResponse response = practiceSessionService.createSession(request);
+        return ResponseEntity.ok(response);
+    }
+    
+    // Lấy sessions của learner
+    @GetMapping("/learner/{learnerId}")
+    @PreAuthorize("hasAnyRole('LEARNER', 'MENTOR', 'ADMIN')")
+    public ResponseEntity<List<PracticeSessionResponse>> getLearnerSessions(@PathVariable Long learnerId) {
+        List<PracticeSessionResponse> sessions = practiceSessionService.getSessionsByLearner(learnerId);
+        return ResponseEntity.ok(sessions);
+    }
+    
+    // Lấy sessions của mentor
+    @GetMapping("/mentor/{mentorId}")
+    @PreAuthorize("hasAnyRole('MENTOR', 'ADMIN')")
+    public ResponseEntity<List<PracticeSessionResponse>> getMentorSessions(@PathVariable Long mentorId) {
+        List<PracticeSessionResponse> sessions = practiceSessionService.getSessionsByMentor(mentorId);
+        return ResponseEntity.ok(sessions);
+    }
+    
+    // Cập nhật session status
+    @PutMapping("/{id}/status")
+    @PreAuthorize("hasAnyRole('LEARNER', 'MENTOR')")
+    public ResponseEntity<MessageResponse> updateSessionStatus(
+            @PathVariable Long id, 
+            @RequestParam String status) {
+        practiceSessionService.updateSessionStatus(id, status);
+        return ResponseEntity.ok(new MessageResponse("Cập nhật session thành công"));
+    }
+    
+    // Xóa session
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('MENTOR', 'ADMIN')")
+    public ResponseEntity<MessageResponse> deleteSession(@PathVariable Long id) {
+        practiceSessionService.deleteSession(id);
+        return ResponseEntity.ok(new MessageResponse("Xóa session thành công"));
+    }
+}
+
+---
+
 ## Security và JWT
 
 ### 1. `SecurityConfig.java`
@@ -1521,12 +1719,12 @@ class UserServiceTest {
 - [ ] Setup Spring Boot project với Maven
 - [ ] Cấu hình `pom.xml` với tất cả dependencies
 - [ ] Tạo `application.properties` (database connection, JWT config)
-- [ ] Tạo 7 Entity classes với relationships
-- [ ] Tạo 7 Repository interfaces
+- [ ] Tạo 8 Entity classes với relationships (bao gồm PracticeSession)
+- [ ] Tạo 8 Repository interfaces
 - [ ] Tạo Request/Response DTOs
-- [ ] Implement `JwtService`, `AuthService`
+- [ ] Implement `JwtService`, `AuthService`, `PracticeSessionService`
 - [ ] Tạo `SecurityConfig`, `JwtAuthenticationFilter`
-- [ ] Implement `AuthController`, `UserController`
+- [ ] Implement `AuthController`, `UserController`, `PracticeSessionController`
 - [ ] Tạo `GlobalExceptionHandler`
 - [ ] Test endpoints với Postman
 - [ ] Viết Unit Tests (optional)
