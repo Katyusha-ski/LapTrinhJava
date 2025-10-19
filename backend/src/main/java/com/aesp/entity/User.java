@@ -13,49 +13,39 @@ import java.util.Set;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@ToString(exclude = {"passwordHash", "roles", "learner", "mentor"})
+@EqualsAndHashCode(of = "id")
 public class User {
     
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     
-    @Column(nullable = false, unique = true, length = 50)
+    @Column(name = "username", nullable = false, unique = true, length = 50)
     private String username;
     
-    @Column(nullable = false, unique = true, length = 100)
+    @Column(name = "email", nullable = false, unique = true, length = 100)
     private String email;
     
-    @Column(nullable = false, length = 255)
-    private String password; // BCrypt hashed
+    @Column(name = "password_hash", nullable = false, length = 255)
+    private String passwordHash;
     
-    @Column(name = "full_name", length = 100)
+    @Column(name = "full_name", nullable = false, length = 100)
     private String fullName;
     
-    @Column(length = 20)
+    @Column(name = "phone", length = 20)
     private String phone;
     
     @Column(name = "avatar_url", length = 500)
     private String avatarUrl;
     
     @Column(name = "is_active")
+    @Builder.Default
     private Boolean isActive = true;
     
-    // Many-to-Many với Role
-    @ManyToMany(fetch = FetchType.EAGER)
-    @JoinTable(
-        name = "user_roles",
-        joinColumns = @JoinColumn(name = "user_id"),
-        inverseJoinColumns = @JoinColumn(name = "role_id")
-    )
-    private Set<Role> roles = new HashSet<>();
-    
-    // One-to-One với Mentor
-    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Mentor mentor;
-    
-    // One-to-One với Learner
-    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Learner learner;
+    @Column(name = "email_verified")
+    @Builder.Default
+    private Boolean emailVerified = false;
     
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -63,6 +53,23 @@ public class User {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
     
+    // Relationships
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+        name = "user_roles",
+        joinColumns = @JoinColumn(name = "user_id"),
+        inverseJoinColumns = @JoinColumn(name = "role_id")
+    )
+    @Builder.Default
+    private Set<Role> roles = new HashSet<>();
+    
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Mentor mentor;
+    
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Learner learner;
+    
+    // Lifecycle callbacks
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();

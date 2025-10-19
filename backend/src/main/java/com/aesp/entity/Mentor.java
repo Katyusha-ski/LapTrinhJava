@@ -14,6 +14,8 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@ToString(exclude = {"user", "learners", "practiceSessions"})
+@EqualsAndHashCode(of = "id")
 public class Mentor {
     
     @Id
@@ -24,34 +26,40 @@ public class Mentor {
     @JoinColumn(name = "user_id", nullable = false, unique = true)
     private User user;
     
-    @Column(length = 1000)
+    @Column(columnDefinition = "TEXT")
     private String bio;
     
     @Column(name = "experience_years")
+    @Builder.Default
     private Integer experienceYears = 0;
     
-    @Column(length = 255)
-    private String specialization;
+    @Column(name = "certification", length = 255)
+    private String certification;
     
     @Column(name = "hourly_rate", precision = 10, scale = 2)
-    private BigDecimal hourlyRate;
+    @Builder.Default
+    private BigDecimal hourlyRate = BigDecimal.ZERO;
     
-    @Column(precision = 3, scale = 2)
+    @Column(name = "rating", precision = 3, scale = 2)
+    @Builder.Default
     private BigDecimal rating = BigDecimal.ZERO;
     
-    @Column(name = "total_reviews")
-    private Integer totalReviews = 0;
+    @Column(name = "total_students")
+    @Builder.Default
+    private Integer totalStudents = 0;
     
     @Column(name = "is_available")
+    @Builder.Default
     private Boolean isAvailable = true;
     
-    // One-to-Many với Learner
+    // Relationships
     @OneToMany(mappedBy = "mentor", cascade = CascadeType.ALL)
+    @Builder.Default
     private List<Learner> learners = new ArrayList<>();
     
-    // One-to-Many với LearningProgress
     @OneToMany(mappedBy = "mentor", cascade = CascadeType.ALL)
-    private List<LearningProgress> learningProgresses = new ArrayList<>();
+    @Builder.Default
+    private List<PracticeSession> practiceSessions = new ArrayList<>();
     
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
