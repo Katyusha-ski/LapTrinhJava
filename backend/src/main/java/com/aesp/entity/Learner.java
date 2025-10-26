@@ -1,5 +1,6 @@
 package com.aesp.entity;
 
+import com.aesp.enums.EnglishLevel;
 import jakarta.persistence.*;
 import lombok.*;
 import java.math.BigDecimal;
@@ -92,12 +93,6 @@ public class Learner {
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
     }
-}
-
-enum EnglishLevel {
-    BEGINNER,
-    INTERMEDIATE,
-    ADVANCED
 }
 
 

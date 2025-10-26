@@ -1,5 +1,7 @@
 package com.aesp.entity;
 
+import com.aesp.enums.SessionStatus;
+import com.aesp.enums.SessionType;
 import jakarta.persistence.*;
 import lombok.*;
 import java.math.BigDecimal;
@@ -69,16 +71,5 @@ public class PracticeSession {
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
     }
-}
-
-enum SessionType {
-    MENTOR_LED,
-    AI_ASSISTED
-}
-
-enum SessionStatus {
-    SCHEDULED,
-    COMPLETED,
-    CANCELLED
 }
 

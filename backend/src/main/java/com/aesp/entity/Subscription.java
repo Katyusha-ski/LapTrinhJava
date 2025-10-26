@@ -1,5 +1,7 @@
 package com.aesp.entity;
 
+import com.aesp.enums.PaymentMethod;
+import com.aesp.enums.SubscriptionStatus;
 import jakarta.persistence.*;
 import lombok.*;
 import java.math.BigDecimal;
@@ -70,20 +72,5 @@ public class Subscription {
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
     }
-}
-
-enum SubscriptionStatus {
-    ACTIVE,
-    EXPIRED,
-    CANCELLED
-}
-
-enum PaymentMethod {
-    CREDIT_CARD,
-    PAYPAL,
-    BANK_TRANSFER,
-    CASH,
-    VISA,
-    MOMO
 }
 
