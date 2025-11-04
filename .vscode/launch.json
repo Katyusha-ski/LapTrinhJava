@@ -3,6 +3,13 @@
     "configurations": [
         {
             "type": "java",
+            "name": "AespApplication",
+            "request": "launch",
+            "mainClass": "com.aesp.AespApplication",
+            "projectName": "aesp-backend"
+        },
+        {
+            "type": "java",
             "name": "Launch Main",
             "request": "launch",
             "mainClass": "com.example.app.Main",

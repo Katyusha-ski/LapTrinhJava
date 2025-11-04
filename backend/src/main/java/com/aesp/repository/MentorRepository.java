@@ -1,11 +1,13 @@
 package com.aesp.repository;
 
-import com.aesp.entity.Mentor;
-import com.aesp.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+
+import com.aesp.entity.Mentor;
+import com.aesp.entity.User;
+
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
