@@ -48,9 +48,28 @@ public class LearningProgress {
     @Column(columnDefinition = "TEXT")
     private String notes;
     
+    @Column(name = "grammar_score", precision = 5, scale = 2)
+    private BigDecimal grammarScore;
+
+    @Column(name = "vocabulary_score", precision = 5, scale = 2)
+    private BigDecimal vocabularyScore;
+
+    @Column(name = "listening_score", precision = 5, scale = 2)
+    private BigDecimal listeningScore;
+
+    @Column(name = "speaking_score", precision = 5, scale = 2)
+    private BigDecimal speakingScore;
+
+    @Column(name = "progress_date")
+    private LocalDateTime progressDate;
+
+
     // Lifecycle callbacks
     @PrePersist
     protected void onCreate() {
+        if (progressDate == null) {
+            progressDate = LocalDateTime.now();
+        }
         if (completedAt == null) {
             completedAt = LocalDateTime.now();
         }

@@ -32,10 +32,10 @@ public class Subscription {
     private Package packageEntity;
     
     @Column(name = "start_date", nullable = false)
-    private LocalDate startDate;
+    private LocalDateTime startDate;
     
     @Column(name = "end_date", nullable = false)
-    private LocalDate endDate;
+    private LocalDateTime endDate;
     
     @Enumerated(EnumType.STRING)
     @Column(name = "status")

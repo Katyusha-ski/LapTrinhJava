@@ -27,15 +27,15 @@ public interface SubscriptionRepository extends JpaRepository<Subscription, Long
 
 
        // Package related
-       Optional<Subscription> findByLearnerIdAndPackageId(Long learnerId, Long packageId);
+       Optional<Subscription> findByLearnerIdAndPackageEntity_Id(Long learnerId, Long packageId);
 
-       Boolean existsByLearnerIdAndPackageId(Long learnerId, Long packageId);
+       Boolean existsByLearnerIdAndPackageEntity_Id(Long learnerId, Long packageId);
 
        List<Subscription> findByPackageEntity(Package packageEntity);
 
-       List<Subscription> findByPackageId(Long packageId);
+       List<Subscription> findByPackageEntity_Id(Long packageId);
 
-       Long countByPackageId(Long packageId);
+       Long countByPackageEntity_Id(Long packageId);
 
        // Status and payment
        List<Subscription> findByStatus(SubscriptionStatus status);
@@ -59,8 +59,8 @@ public interface SubscriptionRepository extends JpaRepository<Subscription, Long
        List<Subscription> findExpiredSubscriptions(@Param("now") LocalDateTime now,
                                                                                     @Param("status") SubscriptionStatus status);
 
-    @Query("SELECT s FROM Subscription s WHERE s.learner.id =: learnerId AND s.status = :status" + 
-           "AND s.status = 'ACTIVE'" +
+    @Query("SELECT s FROM Subscription s WHERE s.learner.id =:learnerId AND s.status =:status " + 
+           "AND s.status = 'ACTIVE' " +
            "AND s.endDate > :now")
     Optional<Subscription> findActiveSubscriptionByLearner(@Param("learnerId") Long learnerId,
                                                                                     @Param("now") LocalDateTime now);
@@ -70,14 +70,14 @@ public interface SubscriptionRepository extends JpaRepository<Subscription, Long
        List<Subscription> findSubscriptionsExpiringWithin(@Param("now") LocalDateTime now,
                                                                                      @Param("futureDate") LocalDateTime futureDate);
 
-    @Query("SELECT s FROM Subscription s WHERE s.learner.id = :learnerId " +
-           "AND (:packageId IS NULL OR s.packageEntity.id = :packageId) " +
-           "AND s.status = :status ")
+    @Query("SELECT s FROM Subscription s WHERE s.learner.id =:learnerId " +
+           "AND (:packageId IS NULL OR s.packageEntity.id =:packageId) " +
+           "AND s.status =:status ")
     Optional<Subscription> findByLearnerWithPackageAndStatus(@Param("learnerId") Long learnerId,
                                                            @Param("packageId") Long packageId,
                                                            @Param("status") SubscriptionStatus status);
 
-    @Query("SELECT s FROM Subscription s WHERE s.learner.id = :learnerId " +
+    @Query("SELECT s FROM Subscription s WHERE s.learner.id =:learnerId " +
            "ORDER BY s.startDate DESC")
     List<Subscription> findSubscriptionHistoryByLearner(@Param("learnerId") Long learnerId);
 
