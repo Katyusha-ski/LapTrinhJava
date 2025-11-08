@@ -1,6 +1,8 @@
 package com.aesp.controller;
+package com.aesp.controller;
 
 import com.aesp.dto.response.UserResponse;
+import com.aesp.dto.response.MessageResponse;
 import com.aesp.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -13,23 +15,26 @@ import java.util.List;
 @RequiredArgsConstructor
 @CrossOrigin(origins = "*")
 public class UserController {
-    
+
     private final UserService userService;
-    
-    // Chỉ ADMIN mới truy cập được
+
+    // Lấy tất cả user - chỉ ADMIN được phép
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<UserResponse>> getAllUsers() {
         List<UserResponse> users = userService.getAllUsers();
         return ResponseEntity.ok(users);
     }
-    
+
+    // Lấy thông tin 1 user cụ thể
     @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MENTOR', 'LEARNER')")
     public ResponseEntity<UserResponse> getUserById(@PathVariable Long id) {
         UserResponse user = userService.getUserById(id);
         return ResponseEntity.ok(user);
     }
-    
+
+    // Xóa user - chỉ ADMIN được phép
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<MessageResponse> deleteUser(@PathVariable Long id) {
