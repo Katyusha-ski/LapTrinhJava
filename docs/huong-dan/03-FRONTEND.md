@@ -515,7 +515,7 @@ export default api
 
 ---
 
-### 2. `authService.js` - Authentication API Calls
+#### `LoginRequest.java`
 
 ```javascript
 import api from './api'
@@ -523,11 +523,13 @@ import api from './api'
 const authService = {
   // Login
   login: (credentials) => {
+    // credentials: { username: string, password: string }
     return api.post('/auth/login', credentials)
   },
   
   // Register
   register: (userData) => {
+    // userData: { username, email, password, fullName, phone, role: 'LEARNER' | 'MENTOR' }
     return api.post('/auth/register', userData)
   },
   
@@ -538,6 +540,42 @@ const authService = {
 }
 
 export default authService
+```
+
+**Request/Response Format:**
+
+```javascript
+// Login Request
+{
+  "username": "user123",
+  "password": "password123"
+}
+
+// Login Response (JwtResponse)
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "type": "Bearer",
+  "id": 1,
+  "username": "user123",
+  "email": "user@example.com",
+  "fullName": "Full Name",
+  "roles": ["ROLE_LEARNER"]
+}
+
+// Register Request
+{
+  "username": "newuser",
+  "email": "newuser@example.com",
+  "password": "password123",
+  "fullName": "New User",
+  "phone": "0123456789",
+  "role": "LEARNER"  // String: "LEARNER" or "MENTOR"
+}
+
+// Register Response
+{
+  "message": "Đăng ký thành công"
+}
 ```
 
 ---
@@ -984,6 +1022,7 @@ const RegisterPage = () => {
     setLoading(true)
     try {
       const { confirmPassword, ...registerData } = formData
+      // Gửi role dưới dạng string: 'LEARNER' hoặc 'MENTOR'
       await register(registerData)
     } catch (error) {
       // Error được xử lý trong AuthContext
@@ -1396,6 +1435,8 @@ npm run preview
 3. ✅ Hoàn thành Frontend
 4. ➡️ **Integration Testing**: Test toàn bộ flow Login → Dashboard → API calls
 5. ➡️ **Deployment**: Deploy Backend (Heroku/Railway) + Frontend (Vercel/Netlify)
+
+---
 
 ---
 
