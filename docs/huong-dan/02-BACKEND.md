@@ -85,26 +85,27 @@ backend/
 │   │   │   └── com/
 │   │   │       └── aesp/
 │   │   │           ├── AespApplication.java          # Main class
-│   │   │           ├── config/                       # Configuration
+│   │   │           ├── security/                     # Security & JWT classes
 │   │   │           │   ├── SecurityConfig.java
 │   │   │           │   ├── JwtAuthenticationFilter.java
-│   │   │           │   └── CorsConfig.java
+│   │   │           │   └── UserDetailsServiceImpl.java
 │   │   │           ├── controller/                   # REST Controllers
-│   │   │           │   ├── AuthController.java
-│   │   │           │   ├── UserController.java
-│   │   │           │   ├── MentorController.java
-│   │   │           │   ├── LearnerController.java
-│   │   │           │   ├── PackageController.java
-│   │   │           │   └── PracticeSessionController.java
+│   │   │           │   ├── AuthController.java       # TODO: Chưa có
+│   │   │           │   ├── UserController.java       # ✅ Có
+│   │   │           │   ├── MentorController.java     # TODO: Chưa có
+│   │   │           │   ├── LearnerController.java    # TODO: Chưa có
+│   │   │           │   ├── PackageController.java    # TODO: Chưa có
+│   │   │           │   └── PracticeSessionController.java # ✅ Có
 │   │   │           ├── dto/                          # Data Transfer Objects
 │   │   │           │   ├── request/
-│   │   │           │   │   ├── LoginRequest.java
-│   │   │           │   │   ├── RegisterRequest.java
-│   │   │           │   │   └── UpdateProfileRequest.java
+│   │   │           │   │   ├── LoginRequest.java      # ✅ Có
+│   │   │           │   │   ├── RegisterRequest.java   # ✅ Có
+│   │   │           │   │   └── PracticeSessionRequest.java # TODO: Chưa có
 │   │   │           │   └── response/
-│   │   │           │       ├── JwtResponse.java
-│   │   │           │       ├── MessageResponse.java
-│   │   │           │       └── UserResponse.java
+│   │   │           │       ├── JwtResponse.java       # ✅ Có
+│   │   │           │       ├── MessageResponse.java   # ✅ Có
+│   │   │           │       ├── UserResponse.java      # ✅ Có
+│   │   │           │       └── PracticeSessionResponse.java # TODO: Chưa có
 │   │   │           ├── entity/                       # JPA Entities
 │   │   │           │   ├── User.java
 │   │   │           │   ├── Role.java
@@ -124,16 +125,16 @@ backend/
 │   │   │           │   ├── LearningProgressRepository.java
 │   │   │           │   └── PracticeSessionRepository.java
 │   │   │           ├── service/                      # Business Logic
-│   │   │           │   ├── AuthService.java
-│   │   │           │   ├── UserService.java
-│   │   │           │   ├── MentorService.java
-│   │   │           │   ├── LearnerService.java
-│   │   │           │   ├── PackageService.java
-│   │   │           │   ├── PracticeSessionService.java
-│   │   │           │   └── JwtService.java
+│   │   │           │   ├── AuthService.java          # TODO: Chưa có
+│   │   │           │   ├── UserService.java          # ✅ Có
+│   │   │           │   ├── MentorService.java        # TODO: Chưa có
+│   │   │           │   ├── LearnerService.java       # TODO: Chưa có
+│   │   │           │   ├── PackageService.java       # TODO: Chưa có
+│   │   │           │   ├── PracticeSessionService.java # TODO: Chưa có
+│   │   │           │   └── JwtService.java           # ✅ Có
 │   │   │           ├── security/                     # Security classes
-│   │   │           │   ├── JwtTokenProvider.java
-│   │   │           │   └── UserDetailsServiceImpl.java
+│   │   │           │   ├── JwtTokenProvider.java     # TODO: Chưa có
+│   │   │           │   └── UserDetailsServiceImpl.java # ✅ Có
 │   │   │           └── exception/                    # Exception handling
 │   │   │               ├── GlobalExceptionHandler.java
 │   │   │               ├── ResourceNotFoundException.java
@@ -815,6 +816,96 @@ Tương tự, bạn tự tạo:
 
 ---
 
+## Enum Types
+
+### Các Enums Được Sử Dụng
+
+#### `SessionStatus.java`
+
+```java
+package com.aesp.enums;
+
+public enum SessionStatus {
+    SCHEDULED,   // Chưa bắt đầu
+    COMPLETED,   // Đã hoàn thành
+    CANCELLED    // Đã hủy
+}
+```
+
+#### `SessionType.java`
+
+```java
+package com.aesp.enums;
+
+public enum SessionType {
+    MENTOR_LED,    // Hướng dẫn bởi mentor
+    AI_ASSISTED    // Hỗ trợ bởi AI
+}
+```
+
+#### `UserRole.java`
+
+```java
+package com.aesp.enums;
+
+public enum UserRole {
+    ADMIN("ADMIN"),
+    MENTOR("MENTOR"),
+    LEARNER("LEARNER");
+    
+    private final String value;
+    
+    UserRole(String value) {
+        this.value = value;
+    }
+    
+    public String getValue() {
+        return value;
+    }
+}
+```
+
+#### `EnglishLevel.java`
+
+```java
+package com.aesp.enums;
+
+public enum EnglishLevel {
+    BEGINNER,      // Mới bắt đầu
+    INTERMEDIATE,  // Trung bình
+    ADVANCED,      // Nâng cao
+    FLUENT         // Thành thạo
+}
+```
+
+#### `PaymentMethod.java`
+
+```java
+package com.aesp.enums;
+
+public enum PaymentMethod {
+    CREDIT_CARD,
+    DEBIT_CARD,
+    BANK_TRANSFER,
+    PAYPAL,
+    E_WALLET
+}
+```
+
+#### `SubscriptionStatus.java`
+
+```java
+package com.aesp.enums;
+
+public enum SubscriptionStatus {
+    ACTIVE,        // Còn hiệu lực
+    EXPIRED,       // Hết hạn
+    CANCELLED      // Đã hủy
+}
+```
+
+---
+
 ## Repository Layer
 
 **Repository** = Interface kế thừa `JpaRepository` để tương tác với database.
@@ -1032,6 +1123,7 @@ public class RegisterRequest {
 package com.aesp.dto.response;
 
 import lombok.*;
+import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -1071,6 +1163,7 @@ package com.aesp.dto.response;
 
 import lombok.*;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -1089,6 +1182,149 @@ public class UserResponse {
     private LocalDateTime createdAt;
     
     // KHÔNG BAO GỒM password!
+}
+```
+
+#### `PracticeSessionRequest.java`
+
+```java
+package com.aesp.dto.request;
+
+import jakarta.validation.constraints.NotNull;
+import lombok.*;
+import java.time.LocalDateTime;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class PracticeSessionRequest {
+    
+    @NotNull(message = "Learner ID không được để trống")
+    private Long learnerId;
+    
+    private Long mentorId; // NULL cho AI sessions
+    
+    @NotNull(message = "Session type không được để trống")
+    private String sessionType; // "MENTOR_LED" hoặc "AI_ASSISTED"
+    
+    @NotNull(message = "Start time không được để trống")
+    private LocalDateTime startTime;
+    
+    private LocalDateTime endTime;
+    
+    private Integer durationMinutes;
+    
+    private String topic;
+}
+```
+
+#### `PracticeSessionResponse.java`
+
+```java
+package com.aesp.dto.response;
+
+import lombok.*;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class PracticeSessionResponse {
+    
+    private Long id;
+    private Long learnerId;
+    private Long mentorId;
+    private String sessionType;
+    private LocalDateTime startTime;
+    private LocalDateTime endTime;
+    private Integer durationMinutes;
+    private String topic;
+    private BigDecimal cost;
+    private String sessionStatus;
+    private LocalDateTime createdAt;
+}
+```
+
+#### `UpdateProfileRequest.java`
+
+```java
+package com.aesp.dto.request;
+
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.Size;
+import lombok.*;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class UpdateProfileRequest {
+    
+    @Size(min = 3, max = 50, message = "Username phải từ 3-50 ký tự")
+    private String username;
+    
+    @Email(message = "Email không hợp lệ")
+    private String email;
+    
+    private String fullName;
+    
+    private String phone;
+    
+    private String avatarUrl;
+}
+```
+
+#### `MentorRequest.java`
+
+```java
+package com.aesp.dto.request;
+
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Min;
+import lombok.*;
+import java.math.BigDecimal;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class MentorRequest {
+    
+    @NotBlank(message = "Bio không được để trống")
+    private String bio;
+    
+    @Min(value = 0, message = "Năm kinh nghiệm phải >= 0")
+    private Integer experienceYears;
+    
+    private String specialization;
+    
+    private BigDecimal hourlyRate;
+    
+    private Boolean isAvailable;
+}
+```
+
+#### `LearnerRequest.java`
+
+```java
+package com.aesp.dto.request;
+
+import jakarta.validation.constraints.NotBlank;
+import lombok.*;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class LearnerRequest {
+    
+    @NotBlank(message = "Proficiency level không được để trống")
+    private String proficiencyLevel; // "BEGINNER", "INTERMEDIATE", "ADVANCED"
+    
+    private String learningGoals;
+    
+    private String preferredTopics;
+    
+    private Long mentorId; // Assigned mentor
 }
 ```
 
@@ -1187,6 +1423,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -1273,10 +1510,232 @@ public class AuthService {
 
 ---
 
-### 3. Các Service Khác
+### 3. `UserService.java` - User Management
+
+```java
+package com.aesp.service;
+
+import com.aesp.dto.request.UpdateProfileRequest;
+import com.aesp.dto.response.UserResponse;
+import com.aesp.entity.Role;
+import com.aesp.entity.User;
+import com.aesp.repository.RoleRepository;
+import com.aesp.repository.UserRepository;
+import jakarta.persistence.EntityNotFoundException;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import java.util.List;
+import java.util.stream.Collectors;
+
+@Service
+@RequiredArgsConstructor
+@Transactional(readOnly = true)
+public class UserService {
+    
+    private final UserRepository userRepository;
+    private final RoleRepository roleRepository;
+    private final PasswordEncoder passwordEncoder;
+    
+    public List<User> getAllUsers() {
+        return userRepository.findAll();
+    }
+    
+    public User getUserById(Long id) {
+        return userRepository.findById(id)
+            .orElseThrow(() -> new EntityNotFoundException("User not found with id: " + id));
+    }
+    
+    public User getUserByUsername(String username) {
+        return userRepository.findByUsername(username)
+            .orElseThrow(() -> new EntityNotFoundException("User not found with username: " + username));
+    }
+    
+    @Transactional
+    public User updateProfile(Long id, UpdateProfileRequest request) {
+        User user = getUserById(id);
+        
+        if (request.getFullName() != null) {
+            user.setFullName(request.getFullName());
+        }
+        if (request.getPhone() != null) {
+            user.setPhone(request.getPhone());
+        }
+        if (request.getAvatarUrl() != null) {
+            user.setAvatarUrl(request.getAvatarUrl());
+        }
+        
+        return userRepository.save(user);
+    }
+    
+    @Transactional
+    public void changePassword(Long id, String newPassword) {
+        User user = getUserById(id);
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+    }
+    
+    @Transactional
+    public void deleteUser(Long id) {
+        User user = getUserById(id);
+        userRepository.delete(user);
+    }
+    
+    @Transactional
+    public void setUserActiveStatus(Long id, boolean active) {
+        User user = getUserById(id);
+        user.setIsActive(active);
+        userRepository.save(user);
+    }
+    
+    public UserResponse toResponse(User user) {
+        List<String> roles = user.getRoles().stream()
+            .map(Role::getName)
+            .collect(Collectors.toList());
+        
+        return UserResponse.builder()
+            .id(user.getId())
+            .username(user.getUsername())
+            .email(user.getEmail())
+            .fullName(user.getFullName())
+            .phone(user.getPhone())
+            .avatarUrl(user.getAvatarUrl())
+            .isActive(user.getIsActive())
+            .roles(roles)
+            .createdAt(user.getCreatedAt())
+            .build();
+    }
+}
+```
+
+---
+
+### 4. `PracticeSessionService.java` - Practice Session Management
+
+```java
+package com.aesp.service;
+
+import com.aesp.dto.request.PracticeSessionRequest;
+import com.aesp.dto.response.PracticeSessionResponse;
+import com.aesp.entity.Learner;
+import com.aesp.entity.Mentor;
+import com.aesp.entity.PracticeSession;
+import com.aesp.enums.SessionStatus;
+import com.aesp.enums.SessionType;
+import com.aesp.repository.LearnerRepository;
+import com.aesp.repository.MentorRepository;
+import com.aesp.repository.PracticeSessionRepository;
+import jakarta.persistence.EntityNotFoundException;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.stream.Collectors;
+
+@Service
+@RequiredArgsConstructor
+@Transactional(readOnly = true)
+public class PracticeSessionService {
+    
+    private final PracticeSessionRepository sessionRepository;
+    private final LearnerRepository learnerRepository;
+    private final MentorRepository mentorRepository;
+    
+    @Transactional
+    public PracticeSessionResponse createSession(PracticeSessionRequest request) {
+        Learner learner = learnerRepository.findById(request.getLearnerId())
+            .orElseThrow(() -> new EntityNotFoundException("Learner not found"));
+        
+        Mentor mentor = null;
+        if (request.getMentorId() != null) {
+            mentor = mentorRepository.findById(request.getMentorId())
+                .orElseThrow(() -> new EntityNotFoundException("Mentor not found"));
+        }
+        
+        SessionType type = SessionType.valueOf(request.getSessionType());
+        
+        PracticeSession session = PracticeSession.builder()
+            .learner(learner)
+            .mentor(mentor)
+            .sessionType(type)
+            .startTime(request.getStartTime())
+            .endTime(request.getEndTime())
+            .durationMinutes(request.getDurationMinutes())
+            .topic(request.getTopic())
+            .cost(mentor != null ? BigDecimal.ZERO : BigDecimal.ZERO) // Tính cost từ mentor hourly rate
+            .sessionStatus(SessionStatus.SCHEDULED)
+            .build();
+        
+        PracticeSession saved = sessionRepository.save(session);
+        return toResponse(saved);
+    }
+    
+    public PracticeSessionResponse getSessionById(Long id) {
+        PracticeSession session = sessionRepository.findById(id)
+            .orElseThrow(() -> new EntityNotFoundException("Session not found"));
+        return toResponse(session);
+    }
+    
+    public List<PracticeSessionResponse> getSessionsByLearner(Long learnerId) {
+        return sessionRepository.findByLearnerId(learnerId).stream()
+            .map(this::toResponse)
+            .collect(Collectors.toList());
+    }
+    
+    public List<PracticeSessionResponse> getSessionsByMentor(Long mentorId) {
+        return sessionRepository.findByMentorId(mentorId).stream()
+            .map(this::toResponse)
+            .collect(Collectors.toList());
+    }
+    
+    public List<PracticeSessionResponse> getAllSessions() {
+        return sessionRepository.findAll().stream()
+            .map(this::toResponse)
+            .collect(Collectors.toList());
+    }
+    
+    @Transactional
+    public void updateSessionStatus(Long id, String status) {
+        PracticeSession session = sessionRepository.findById(id)
+            .orElseThrow(() -> new EntityNotFoundException("Session not found"));
+        
+        SessionStatus newStatus = SessionStatus.valueOf(status.toUpperCase());
+        session.setSessionStatus(newStatus);
+        sessionRepository.save(session);
+    }
+    
+    @Transactional
+    public void deleteSession(Long id) {
+        PracticeSession session = sessionRepository.findById(id)
+            .orElseThrow(() -> new EntityNotFoundException("Session not found"));
+        sessionRepository.delete(session);
+    }
+    
+    private PracticeSessionResponse toResponse(PracticeSession session) {
+        return PracticeSessionResponse.builder()
+            .id(session.getId())
+            .learnerId(session.getLearner().getId())
+            .mentorId(session.getMentor() != null ? session.getMentor().getId() : null)
+            .sessionType(session.getSessionType().toString())
+            .startTime(session.getStartTime())
+            .endTime(session.getEndTime())
+            .durationMinutes(session.getDurationMinutes())
+            .topic(session.getTopic())
+            .cost(session.getCost())
+            .sessionStatus(session.getSessionStatus().toString())
+            .createdAt(session.getCreatedAt())
+            .build();
+    }
+}
+```
+
+---
+
+### 5. Các Service Khác
 
 Tạo tương tự:
-- `UserService.java`: CRUD users, update profile
 - `MentorService.java`: Quản lý mentors
 - `LearnerService.java`: Quản lý learners
 - `PackageService.java`: Quản lý packages
@@ -1345,12 +1804,15 @@ public class AuthController {
 package com.aesp.controller;
 
 import com.aesp.dto.response.UserResponse;
+import com.aesp.dto.response.MessageResponse;
+import com.aesp.entity.User;
 import com.aesp.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/users")
@@ -1364,14 +1826,18 @@ public class UserController {
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<UserResponse>> getAllUsers() {
-        List<UserResponse> users = userService.getAllUsers();
-        return ResponseEntity.ok(users);
+        List<User> users = userService.getAllUsers();
+        List<UserResponse> responses = users.stream()
+            .map(userService::toResponse)
+            .collect(Collectors.toList());
+        return ResponseEntity.ok(responses);
     }
     
     @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MENTOR', 'LEARNER')")
     public ResponseEntity<UserResponse> getUserById(@PathVariable Long id) {
-        UserResponse user = userService.getUserById(id);
-        return ResponseEntity.ok(user);
+        User user = userService.getUserById(id);
+        return ResponseEntity.ok(userService.toResponse(user));
     }
     
     @DeleteMapping("/{id}")
@@ -1387,6 +1853,11 @@ public class UserController {
 - `hasRole('ADMIN')`: Chỉ user có role ADMIN mới gọi được
 - `hasAnyRole('ADMIN', 'MENTOR')`: ADMIN hoặc MENTOR
 - `isAuthenticated()`: Bất kỳ user đã login
+
+**Lưu ý quan trọng:**
+- Dùng `userService.toResponse(user)` để convert `User` entity → `UserResponse` DTO
+- KHÔNG trả về Entity trực tiếp, luôn dùng DTO
+- Import `java.util.stream.Collectors` để dùng `map()` và `collect()`
 
 ---
 
@@ -1587,6 +2058,60 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
 ---
 
+### 3. `UserDetailsServiceImpl.java`
+
+```java
+package com.aesp.security;
+
+import com.aesp.entity.Role;
+import com.aesp.entity.User;
+import com.aesp.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.stereotype.Service;
+import java.util.Collection;
+import java.util.stream.Collectors;
+
+@Service
+@RequiredArgsConstructor
+public class UserDetailsServiceImpl implements UserDetailsService {
+    
+    private final UserRepository userRepository;
+    
+    @Override
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        User user = userRepository.findByUsername(username)
+            .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
+        
+        Collection<GrantedAuthority> authorities = user.getRoles().stream()
+            .map(role -> new SimpleGrantedAuthority("ROLE_" + role.getName()))
+            .collect(Collectors.toList());
+        
+        return org.springframework.security.core.userdetails.User.builder()
+            .username(user.getUsername())
+            .password(user.getPassword())
+            .authorities(authorities)
+            .accountExpired(false)
+            .accountLocked(false)
+            .credentialsExpired(false)
+            .disabled(!user.getIsActive())
+            .build();
+    }
+}
+```
+
+**Giải thích:**
+- `loadUserByUsername()`: Spring Security gọi method này để load user từ database
+- Convert `Role` entities thành `SimpleGrantedAuthority` (authorities)
+- Prefix "ROLE_" để Spring Security nhận diện quyền
+- `disabled` được set từ `isActive` của user
+
+---
+
 ## Exception Handling
 
 ### `GlobalExceptionHandler.java`
@@ -1731,14 +2256,64 @@ class UserServiceTest {
 
 ---
 
-## 🎯 Bước Tiếp Theo
+## ⚠️ Lưu Ý Quan Trọng - Chuẩn Bị Áp Dụng
 
-1. ✅ Hoàn thành Database + Backend
-2. ➡️ Chuyển sang **06-FRONTEND.md**: Setup React, Components, API calls
-3. Integration: Connect Frontend ↔ Backend ↔ Database
+### ✅ Đã Có Code Chi Tiết Cho:
+1. **JwtService.java** - JWT token generation & validation
+2. **AuthService.java** - Login/Register logic
+3. **UserService.java** - User CRUD + toResponse() conversion
+4. **PracticeSessionService.java** - Session CRUD
+5. **UserDetailsServiceImpl.java** - Load user by username
+6. **SecurityConfig.java** - Spring Security configuration
+7. **JwtAuthenticationFilter.java** - JWT token validation filter
+8. **Tất cả DTOs** - LoginRequest, RegisterRequest, UserResponse, JwtResponse, PracticeSessionRequest, PracticeSessionResponse, UpdateProfileRequest, MentorRequest, LearnerRequest
+9. **Tất cả Controllers** - AuthController, UserController (fixed), PracticeSessionController
+10. **Tất cả Enums** - SessionStatus, SessionType, UserRole, EnglishLevel, PaymentMethod, SubscriptionStatus
+
+### ⚠️ Vẫn Cần Implement (Theo Hướng Dẫn):
+1. **MentorService.java**, **MentorController.java** - Tạo tương tự UserService/UserController
+2. **LearnerService.java**, **LearnerController.java** - Tạo tương tự UserService/UserController
+3. **PackageService.java**, **PackageController.java** - Quản lý gói học
+4. **SubscriptionService.java** - Đăng ký gói
+5. **Exception classes** - BadRequestException, etc.
+
+### 🔧 Cách Sửa Repo Hiện Tại:
+1. **Sửa `UserController.java`:**
+   - Loại bỏ dòng `package` duplicate
+   - Thêm conversion: `userService.toResponse(user)` thay vì trả User
+   - Thêm import: `Collectors` để dùng `.stream().map().collect()`
+
+2. **Tạo DTOs:**
+   - Tạo `PracticeSessionRequest.java`, `PracticeSessionResponse.java`, UpdateProfileRequest, MentorRequest, LearnerRequest
+
+3. **Tạo Services:**
+   - Tạo `AuthService.java`, `PracticeSessionService.java` (copy từ hướng dẫn)
+
+4. **Tạo Controllers:**
+   - Tạo `AuthController.java` (copy từ hướng dẫn)
+
+5. **Tạo Enums:**
+   - Tạo toàn bộ enum files trong package `com.aesp.enums`
+
+### 💡 Lưu Ý An Toàn:
+- **Luôn dùng DTOs**, không trả Entity trực tiếp từ Controller
+- **Import đầy đủ** - Kiểm tra `import java.util.List`, `java.util.stream.Collectors`, `java.time.LocalDateTime`
+- **Validate input** - Dùng `@Valid`, `@NotBlank`, `@Email`, `@Size` trên DTO
+- **@Transactional** - Dùng cho create/update/delete methods
+- **@PreAuthorize** - Luôn kiểm tra quyền hạn trước khi thực thi endpoint
 
 ---
 
-**File:** `docs/huong-dan/05-BACKEND.md`  
-**Tác giả:** AESP Development Team  
-**Cập nhật:** 2024-01-01
+## 📊 Tóm Tắt Cấu Trúc File
+
+```
+✅ Hoàn thành:      Entity, Repository, Enum, Config, Security Filter
+📝 Có code mẫu:     Service (JWT, Auth, User, Session), Controller (Auth, User, Session), DTO đầy đủ
+⚠️ Cần implement:   MentorService/Controller, LearnerService/Controller, PackageService/Controller, SubscriptionService
+```
+
+---
+
+**File:** `docs/huong-dan/02-BACKEND.md`  
+**Cập nhật:** 2024-11-13  
+**Trạng thái:** ✅ Bổ sung đầy đủ code chi tiết, sẵn sàng áp dụng
