@@ -515,7 +515,7 @@ export default api
 
 ---
 
-#### `LoginRequest.java`
+### 2. `authService.js` - Authentication API Calls
 
 ```javascript
 import api from './api'
@@ -533,28 +533,28 @@ const authService = {
     return api.post('/auth/register', userData)
   },
   
-  // Get current user
+  // Get current user profile
   getCurrentUser: () => {
-    return api.get('/auth/me')
+    return api.get('/users/me')
   }
 }
 
 export default authService
 ```
 
-**Request/Response Format:**
+**Request/Response Format (từ AuthController):**
 
 ```javascript
-// Login Request
+// POST /api/auth/login
+Request:
 {
   "username": "user123",
   "password": "password123"
 }
 
-// Login Response (JwtResponse)
+Response (JwtResponse):
 {
   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "type": "Bearer",
   "id": 1,
   "username": "user123",
   "email": "user@example.com",
@@ -562,18 +562,19 @@ export default authService
   "roles": ["ROLE_LEARNER"]
 }
 
-// Register Request
+// POST /api/auth/register
+Request:
 {
   "username": "newuser",
   "email": "newuser@example.com",
   "password": "password123",
   "fullName": "New User",
-  "phone": "0123456789",
-  "role": "LEARNER"  // String: "LEARNER" or "MENTOR"
+  "phone": "0123456789"
 }
 
-// Register Response
+Response (MessageResponse):
 {
+  "success": true,
   "message": "Đăng ký thành công"
 }
 ```
@@ -610,8 +611,6 @@ const userService = {
 export default userService
 ```
 
----
-
 ### 4. `practiceSessionService.js` - Practice Session API Calls
 
 ```javascript
@@ -620,16 +619,22 @@ import api from './api'
 const practiceSessionService = {
   // Tạo session mới
   createSession: (sessionData) => {
+    // sessionData: { learnerId, mentorId?, type, scheduledAt, durationMinutes, topic?, notes? }
     return api.post('/practice-sessions', sessionData)
   },
   
+  // Lấy tất cả sessions
+  getAllSessions: () => {
+    return api.get('/practice-sessions')
+  },
+  
   // Lấy sessions của learner
-  getLearnerSessions: (learnerId) => {
+  getSessionsByLearner: (learnerId) => {
     return api.get(`/practice-sessions/learner/${learnerId}`)
   },
   
   // Lấy sessions của mentor
-  getMentorSessions: (mentorId) => {
+  getSessionsByMentor: (mentorId) => {
     return api.get(`/practice-sessions/mentor/${mentorId}`)
   },
   
@@ -640,31 +645,185 @@ const practiceSessionService = {
   
   // Cập nhật session status
   updateSessionStatus: (id, status) => {
-    return api.put(`/practice-sessions/${id}/status?status=${status}`)
+    return api.patch(`/practice-sessions/${id}/status?status=${status}`)
   },
   
   // Xóa session
   deleteSession: (id) => {
     return api.delete(`/practice-sessions/${id}`)
-  },
-  
-  // Lấy sessions trong khoảng thời gian
-  getSessionsByDateRange: (startDate, endDate) => {
-    return api.get(`/practice-sessions/range?start=${startDate}&end=${endDate}`)
   }
 }
 
 export default practiceSessionService
 ```
 
----
+**PracticeSessionRequest Format (từ BE):**
 
-### 5. Các Service Khác
+```javascript
+{
+  "learnerId": 1,
+  "mentorId": null,  // optional
+  "type": "MENTOR_LED",  // enum: MENTOR_LED | AI_ASSISTED
+  "scheduledAt": "2024-01-15T14:30:00",
+  "durationMinutes": 60,
+  "topic": "Pronunciation",  // optional
+  "notes": "Practice notes"   // optional
+}
+```
 
-Tạo tương tự:
-- `packageService.js`: CRUD packages
-- `subscriptionService.js`: Đăng ký gói, xem subscriptions
-- `learningProgressService.js`: Xem tiến độ, thêm session
+**PracticeSessionResponse Format:**
+
+```javascript
+{
+  "id": 1,
+  "learnerId": 1,
+  "mentorId": 2,
+  "type": "MENTOR_LED",
+  "status": "PENDING",  // enum: PENDING | COMPLETED | CANCELLED
+  "scheduledAt": "2024-01-15T14:30:00",
+  "durationMinutes": 60,
+  "topic": "Pronunciation",
+  "notes": "Practice notes",
+  "createdAt": "2024-01-14T10:00:00",
+  "updatedAt": "2024-01-14T10:00:00"
+}
+```
+
+### 5. `mentorService.js` - Mentor API Calls
+
+```javascript
+import api from './api'
+
+const mentorService = {
+  // Lấy tất cả mentors
+  getAllMentors: () => {
+    return api.get('/mentors')
+  },
+  
+  // Lấy mentor theo ID
+  getMentorById: (id) => {
+    return api.get(`/mentors/${id}`)
+  },
+  
+  // Tạo mentor mới
+  createMentor: (mentorData) => {
+    return api.post('/mentors', mentorData)
+  },
+  
+  // Cập nhật mentor
+  updateMentor: (id, mentorData) => {
+    return api.put(`/mentors/${id}`, mentorData)
+  },
+  
+  // Xóa mentor
+  deleteMentor: (id) => {
+    return api.delete(`/mentors/${id}`)
+  },
+  
+  // Toggle availability
+  toggleAvailability: (id) => {
+    return api.patch(`/mentors/${id}/availability`)
+  }
+}
+
+export default mentorService
+```
+
+### 6. `learnerService.js` - Learner API Calls
+
+```javascript
+import api from './api'
+
+const learnerService = {
+  // Lấy tất cả learners
+  getAllLearners: () => {
+    return api.get('/learners')
+  },
+  
+  // Lấy learner theo ID
+  getLearnerById: (id) => {
+    return api.get(`/learners/${id}`)
+  },
+  
+  // Tạo learner mới
+  createLearner: (learnerData) => {
+    return api.post('/learners', learnerData)
+  },
+  
+  // Cập nhật learner
+  updateLearner: (id, learnerData) => {
+    return api.put(`/learners/${id}`, learnerData)
+  },
+  
+  // Xóa learner
+  deleteLearner: (id) => {
+    return api.delete(`/learners/${id}`)
+  },
+  
+  // Gán mentor cho learner
+  assignMentor: (learnerId, mentorId) => {
+    return api.post(`/learners/${learnerId}/assign-mentor/${mentorId}`)
+  }
+}
+
+export default learnerService
+```
+
+### 7. `packageService.js` - Package API Calls
+
+```javascript
+import api from './api'
+
+const packageService = {
+  // Lấy tất cả packages
+  getAllPackages: () => {
+    return api.get('/packages')
+  },
+  
+  // Lấy package theo ID
+  getPackageById: (id) => {
+    return api.get(`/packages/${id}`)
+  },
+  
+  // Tạo package mới
+  createPackage: (packageData) => {
+    return api.post('/packages', packageData)
+  },
+  
+  // Cập nhật package
+  updatePackage: (id, packageData) => {
+    return api.put(`/packages/${id}`, packageData)
+  },
+  
+  // Xóa package
+  deletePackage: (id) => {
+    return api.delete(`/packages/${id}`)
+  },
+  
+  // Cập nhật status
+  updateStatus: (id, isActive) => {
+    return api.patch(`/packages/${id}/status?active=${isActive}`)
+  }
+}
+
+export default packageService
+```
+
+**PackageResponse Format:**
+
+```javascript
+{
+  "id": 1,
+  "name": "Starter Package",
+  "description": "Perfect for beginners",
+  "price": 99.99,
+  "durationDays": 30,
+  "features": ["10 sessions", "Basic support", "Certificate"],
+  "isActive": true,
+  "createdAt": "2024-01-14T10:00:00",
+  "updatedAt": "2024-01-14T10:00:00"
+}
+```
 
 ---
 
@@ -676,9 +835,15 @@ Tạo tương tự:
 import React from 'react'
 import { Navigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
+import Loader from './Loader'
 
 const ProtectedRoute = ({ children, roles }) => {
-  const { user, isAuthenticated } = useAuth()
+  const { user, isAuthenticated, loading } = useAuth()
+  
+  // Đang load dữ liệu → hiển thị loading
+  if (loading) {
+    return <Loader />
+  }
   
   // Chưa đăng nhập → redirect về login
   if (!isAuthenticated) {
@@ -687,7 +852,7 @@ const ProtectedRoute = ({ children, roles }) => {
   
   // Kiểm tra role nếu có yêu cầu
   if (roles && roles.length > 0) {
-    const hasRequiredRole = roles.some(role => user.roles.includes(role))
+    const hasRequiredRole = roles.some(role => user?.roles?.includes(role))
     if (!hasRequiredRole) {
       return <Navigate to="/" replace />
     }
@@ -715,24 +880,72 @@ const Header = () => {
   
   const handleLogout = () => {
     logout()
+    navigate('/login')
+  }
+  
+  // Helper function: Check if user has specific role
+  const hasRole = (role) => {
+    return user?.roles?.includes(role)
   }
   
   return (
     <Navbar bg="dark" variant="dark" expand="lg" sticky="top">
       <Container>
         <Navbar.Brand as={Link} to="/">
-          AESP
+          🎓 AESP
         </Navbar.Brand>
         <Navbar.Toggle aria-controls="basic-navbar-nav" />
         <Navbar.Collapse id="basic-navbar-nav">
           <Nav className="ms-auto">
             {!isAuthenticated ? (
               <>
-                <Nav.Link as={Link} to="/">Home</Nav.Link>
-                <Nav.Link as={Link} to="/login">Login</Nav.Link>
-                <Nav.Link as={Link} to="/register">Register</Nav.Link>
+                <Nav.Link as={Link} to="/">Trang chủ</Nav.Link>
+                <Nav.Link as={Link} to="/login">Đăng Nhập</Nav.Link>
+                <Nav.Link as={Link} to="/register">Đăng Ký</Nav.Link>
               </>
             ) : (
+              <>
+                {/* Learner navigation */}
+                {hasRole('ROLE_LEARNER') && (
+                  <>
+                    <Nav.Link as={Link} to="/learner">Dashboard</Nav.Link>
+                    <Nav.Link as={Link} to="/learner/packages">Gói học</Nav.Link>
+                    <Nav.Link as={Link} to="/learner/sessions">Luyện tập</Nav.Link>
+                    <Nav.Link as={Link} to="/learner/progress">Tiến độ</Nav.Link>
+                  </>
+                )}
+                
+                {/* Mentor navigation */}
+                {hasRole('ROLE_MENTOR') && (
+                  <>
+                    <Nav.Link as={Link} to="/mentor">Dashboard</Nav.Link>
+                    <Nav.Link as={Link} to="/mentor/learners">Học viên</Nav.Link>
+                    <Nav.Link as={Link} to="/mentor/sessions">Phiên họp</Nav.Link>
+                  </>
+                )}
+                
+                {/* Admin navigation */}
+                {hasRole('ROLE_ADMIN') && (
+                  <>
+                    <Nav.Link as={Link} to="/admin">Dashboard</Nav.Link>
+                    <Nav.Link as={Link} to="/admin/users">Người dùng</Nav.Link>
+                    <Nav.Link as={Link} to="/admin/packages">Gói học</Nav.Link>
+                  </>
+                )}
+                
+                {/* User dropdown */}
+                <NavDropdown title={user?.fullName || user?.username} id="user-dropdown">
+                  <NavDropdown.Item as={Link} to="/profile">Hồ sơ</NavDropdown.Item>
+                  <NavDropdown.Divider />
+                  <NavDropdown.Item onClick={handleLogout}>Đăng xuất</NavDropdown.Item>
+                </NavDropdown>
+              </>
+            )}
+          </Nav>
+        </Navbar.Collapse>
+      </Container>
+    </Navbar>
+  )
               <>
                 <Nav.Link as={Link} to="/">Home</Nav.Link>
                 

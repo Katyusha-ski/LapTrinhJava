@@ -13,14 +13,14 @@
 - `PracticeSessionService` — CRUD session
 
 ### DTOs Request
-- `PracticeSessionRequest` — learnerId, mentorId, type, scheduledAt, durationMinutes, notes
+- `PracticeSessionRequest` — learnerId, mentorId, type, startTime, endTime, topic
 - `MentorRequest` — userId, bio, experienceYears, hourlyRate, isAvailable
 - `LearnerRequest` — userId, mentorId, englishLevel, learningGoals
 - `PackageRequest` — name, description, price, durationDays, features, isActive
 - `UpdateProfileRequest` — email, fullName, phone, avatarUrl
 
 ### DTOs Response
-- `PracticeSessionResponse` — id, learnerId, mentorId, type, status, scheduledAt, durationMinutes, notes, createdAt, updatedAt
+- `PracticeSessionResponse` — id, learnerId, mentorId, type, sessionStatus, startTime, endTime, topic, createdAt, updatedAt
 - `MentorResponse` — id, userId, fullName, bio, experienceYears, hourlyRate, rating, isAvailable
 - `LearnerResponse` — id, userId, mentorId, englishLevel, scores, createdAt
 - `PackageResponse` — id, name, description, price, durationDays, features, isActive
@@ -133,14 +133,10 @@ public class PracticeSessionRequest {
     @NotNull(message = "Session type không được null")
     private SessionType type;
 
-    @NotNull(message = "Scheduled time không được null")
-    private LocalDateTime scheduledAt;
+    @NotNull(message = "Start time không được null")
+    private LocalDateTime startTime;
 
-    @NotNull(message = "Duration không được null")
-    @Min(value = 1, message = "Duration phải lớn hơn 0")
-    private Integer durationMinutes;
-
-    private String notes;
+    private LocalDateTime endTime;
 }
 ```
 
@@ -165,11 +161,10 @@ public class PracticeSessionResponse {
     private Long learnerId;
     private Long mentorId;
     private SessionType type;
-    private SessionStatus status;
-    private LocalDateTime scheduledAt;
-    private Integer durationMinutes;
+    private SessionStatus sessionStatus;
+    private LocalDateTime startTime;
+    private LocalDateTime endTime;
     private String topic;
-    private String notes;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }
@@ -452,12 +447,11 @@ public class PracticeSessionService {
         PracticeSession session = new PracticeSession();
         session.setLearner(learner);
         session.setMentor(mentor);
-        session.setType(request.getType());
-        session.setStatus(SessionStatus.PENDING);
-        session.setScheduledAt(request.getScheduledAt());
-        session.setDurationMinutes(request.getDurationMinutes());
+        session.setSessionType(request.getType());
+        session.setSessionStatus(SessionStatus.SCHEDULED);
+        session.setStartTime(request.getStartTime());
+        session.setEndTime(request.getEndTime());
         session.setTopic(request.getTopic());
-        session.setNotes(request.getNotes());
         session.setCreatedAt(LocalDateTime.now());
         session.setUpdatedAt(LocalDateTime.now());
 
@@ -493,10 +487,10 @@ public class PracticeSessionService {
     }
 
     @Transactional
-    public void updateSessionStatus(Long sessionId, SessionStatus status) {
+    public void updateSessionStatus(Long sessionId, SessionStatus sessionStatus) {
         PracticeSession session = sessionRepository.findById(sessionId)
             .orElseThrow(() -> new ResourceNotFoundException("Session not found"));
-        session.setStatus(status);
+        session.setSessionStatus(sessionStatus);
         session.setUpdatedAt(LocalDateTime.now());
         sessionRepository.save(session);
     }
@@ -513,12 +507,11 @@ public class PracticeSessionService {
             session.getId(),
             session.getLearner().getId(),
             session.getMentor() != null ? session.getMentor().getId() : null,
-            session.getType(),
-            session.getStatus(),
-            session.getScheduledAt(),
-            session.getDurationMinutes(),
+            session.getSessionType(),
+            session.getSessionStatus(),
+            session.getStartTime(),
+            session.getEndTime(),
             session.getTopic(),
-            session.getNotes(),
             session.getCreatedAt(),
             session.getUpdatedAt()
         );

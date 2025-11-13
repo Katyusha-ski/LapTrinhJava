@@ -22,12 +22,8 @@ public class PracticeSessionRequest {
     @NotNull(message = "Session type không được null")
     private SessionType type;
 
-    @NotNull(message = "Scheduled time không được null")
-    private LocalDateTime scheduledAt;
+    @NotNull(message = "Start time không được null")
+    private LocalDateTime startTime;
 
-    @NotNull(message = "Duration không được null")
-    @Min(value = 1, message = "Duration phải lớn hơn 0")
-    private Integer durationMinutes;
-
-    private String notes;
+    private LocalDateTime endTime;
 }

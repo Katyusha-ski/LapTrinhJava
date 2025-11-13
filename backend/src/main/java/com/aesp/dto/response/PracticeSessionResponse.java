@@ -16,11 +16,10 @@ public class PracticeSessionResponse {
     private Long learnerId;
     private Long mentorId;
     private SessionType type;
-    private SessionStatus status;
-    private LocalDateTime scheduledAt;
-    private Integer durationMinutes;
+    private SessionStatus sessionStatus;
+    private LocalDateTime startTime;
+    private LocalDateTime endTime;
     private String topic;
-    private String notes;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }
