@@ -28,15 +28,24 @@ public class UserService {
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
 
-    public List<User> getAllUsers() {
-        return userRepository.findAll();
+    // Public API methods returning UserResponse
+    public List<UserResponse> getAllUsers() {
+        return userRepository.findAll().stream()
+                .map(this::toResponse)
+                .collect(Collectors.toList());
     }
 
+    public UserResponse getUserById(Long id) {
+        User user = getUserEntityById(id);
+        return toResponse(user);
+    }
+
+    // Internal methods returning User entities
     public List<User> getActiveUsers() {
         return userRepository.findByIsActiveTrue();
     }
 
-    public User getUserById(Long id) {
+    private User getUserEntityById(Long id) {
         Objects.requireNonNull(id, "User id must not be null");
         return userRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("User with id %d not found".formatted(id)));
@@ -98,7 +107,7 @@ public class UserService {
     @Transactional
     public User updateUser(Long id, User request) {
         Objects.requireNonNull(request, "User request must not be null");
-        User existing = getUserById(id);
+        User existing = getUserEntityById(id);
 
         if (request.getUsername() != null) {
             String newUsername = requireText(request.getUsername(), "Username must not be blank");
@@ -156,24 +165,30 @@ public class UserService {
     @Transactional
     public User changePassword(Long id, String newRawPassword) {
         String password = requireText(newRawPassword, "New password must not be blank");
-        User user = getUserById(id);
+        User user = getUserEntityById(id);
         user.setPasswordHash(passwordEncoder.encode(password));
         return saveUser(user);
     }
 
     @Transactional
     public User setUserActiveStatus(Long id, boolean active) {
-        User user = getUserById(id);
+        User user = getUserEntityById(id);
         user.setIsActive(active);
         return saveUser(user);
     }
 
     @Transactional
     public User updateRoles(Long userId, Collection<UserRole> roles) {
-        User user = getUserById(userId);
+        User user = getUserEntityById(userId);
         Set<Role> resolvedRoles = resolveRoles(roles);
         user.setRoles(resolvedRoles);
         return saveUser(user);
+    }
+
+    @Transactional
+    public void deleteUser(Long id) {
+        User user = getUserEntityById(id);
+        userRepository.delete(user);
     }
 
     public UserResponse toResponse(User user) {
