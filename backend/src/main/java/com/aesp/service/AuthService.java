@@ -4,134 +4,135 @@ import com.aesp.dto.request.LoginRequest;
 import com.aesp.dto.request.RegisterRequest;
 import com.aesp.dto.response.JwtResponse;
 import com.aesp.dto.response.MessageResponse;
-import com.aesp.entity.Learner;
-import com.aesp.entity.Mentor;
+import com.aesp.dto.response.UserResponse;
 import com.aesp.entity.Role;
 import com.aesp.entity.User;
 import com.aesp.enums.UserRole;
-import com.aesp.repository.LearnerRepository;
-import com.aesp.repository.MentorRepository;
+import com.aesp.exception.BadRequestException;
+import com.aesp.exception.ResourceNotFoundException;
 import com.aesp.repository.RoleRepository;
 import com.aesp.repository.UserRepository;
-import jakarta.persistence.EntityNotFoundException;
+import com.aesp.security.JwtProvider;
+import jakarta.transaction.Transactional;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Collections;
-import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
 public class AuthService {
 
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
-    private final LearnerRepository learnerRepository;
-    private final MentorRepository mentorRepository;
-    private final PasswordEncoder passwordEncoder;
-    private final AuthenticationManager authenticationManager;
-    private final JwtService jwtService;
+    private final PasswordEncoder passwordEncoder; // Injected via @Configuration bean
+    private final JwtProvider jwtProvider;         // JWT generator/validator
 
     @Transactional
-    public JwtResponse login(LoginRequest request) {
-        try {
-            // Authenticate username + password
-            Authentication authentication = authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(
-                            request.getUsername(),
-                            request.getPassword()
-                    )
-            );
-
-            SecurityContextHolder.getContext().setAuthentication(authentication);
-
-            // Generate JWT token
-            String jwt = jwtService.generateToken(authentication);
-
-            // Get user info
-            User user = userRepository.findByUsername(request.getUsername())
-                    .orElseThrow(() -> new EntityNotFoundException("User not found with username: " + request.getUsername()));
-
-            // Check if user is active
-            if (Boolean.FALSE.equals(user.getIsActive())) {
-                throw new BadCredentialsException("User account is inactive");
-            }
-
-            // Get user roles
-            List<String> roles = user.getRoles().stream()
-                    .map(Role::getName)
-                    .collect(Collectors.toList());
-
-            return JwtResponse.builder()
-                    .token(jwt)
-                    .type("Bearer")
-                    .id(user.getId())
-                    .username(user.getUsername())
-                    .email(user.getEmail())
-                    .fullName(user.getFullName())
-                    .roles(roles)
-                    .build();
-        } catch (org.springframework.security.core.AuthenticationException e) {
-            throw new BadCredentialsException("Invalid username or password");
+    public MessageResponse register(@Valid RegisterRequest request) {
+        // @Valid đã handle validation, không cần validateRegisterRequest() nữa
+        
+        if (userRepository.existsByUsername(request.getUsername())) {
+            throw new BadRequestException("Username đã tồn tại");
         }
-    }
-
-    @Transactional
-    public MessageResponse register(RegisterRequest request) {
-        // Check if username already exists
-        if (Boolean.TRUE.equals(userRepository.existsByUsername(request.getUsername()))) {
-            throw new IllegalArgumentException("Username already exists: " + request.getUsername());
+        if (userRepository.existsByEmail(request.getEmail())) {
+            throw new BadRequestException("Email đã tồn tại");
         }
 
-        // Check if email already exists
-        if (Boolean.TRUE.equals(userRepository.existsByEmail(request.getEmail()))) {
-            throw new IllegalArgumentException("Email already exists: " + request.getEmail());
-        }
-
-        // Get role from repository
-        Role role = roleRepository.findByName(request.getRole().getValue())
-                .orElseThrow(() -> new EntityNotFoundException("Role not found: " + request.getRole().getValue()));
-
-        // Create user entity
         User user = User.builder()
-                .username(request.getUsername())
-                .email(request.getEmail())
+                .username(request.getUsername().trim())
+                .email(request.getEmail().trim())
                 .passwordHash(passwordEncoder.encode(request.getPassword()))
-                .fullName(request.getFullName())
-                .phone(request.getPhone() != null && !request.getPhone().isEmpty() ? request.getPhone() : null)
+                .fullName(request.getFullName().trim())
+                .phone(request.getPhone())
                 .isActive(true)
                 .emailVerified(false)
-                .roles(Collections.singleton(role))
                 .build();
 
-        // Save user
-        User savedUser = userRepository.save(user);
+        Role role = resolveOrCreateRole(request.getRole());
+        user.getRoles().add(role);
 
-        // Create profile based on role
-        if (request.getRole() == UserRole.LEARNER) {
-            Learner learner = Learner.builder()
-                    .user(savedUser)
-                    .build();
-            learnerRepository.save(learner);
-        } else if (request.getRole() == UserRole.MENTOR) {
-            Mentor mentor = Mentor.builder()
-                    .user(savedUser)
-                    .isAvailable(true)
-                    .build();
-            mentorRepository.save(mentor);
+        userRepository.save(user);
+        return MessageResponse.builder().message("Đăng ký thành công").build();
+    }
+
+    public JwtResponse login(@Valid LoginRequest request) {
+        // @Valid đã handle validation cơ bản
+        
+        // Security: Luôn throw cùng message để tránh leak thông tin (user tồn tại hay không)
+        String username = request.getUsername().trim();
+        String password = request.getPassword();
+        
+        User user = userRepository.findByUsername(username)
+                .orElse(null); // Không throw ngay, check password trước
+        
+        // Security: Check password ngay cả khi user không tồn tại
+        // Dummy hash check để tránh timing attack (constant-time comparison)
+        String dummyHash = "$2a$10$dummyHashToPreventTimingAttack1234567890123456789012";
+        
+        if (user == null) {
+            // Dummy check để tốn thời gian tương đương với password check thật
+            passwordEncoder.matches(password, dummyHash);
+            throw new BadRequestException("Sai username hoặc password");
         }
-        // ADMIN role doesn't need a profile
+        
+        if (!passwordEncoder.matches(password, user.getPasswordHash())) {
+            throw new BadRequestException("Sai username hoặc password");
+        }
+        
+        if (Boolean.FALSE.equals(user.getIsActive())) {
+            throw new BadRequestException("Tài khoản đã bị vô hiệu hóa");
+        }
 
-        return new MessageResponse("Đăng ký thành công");
+        String token = jwtProvider.generateToken(user);
+
+        return JwtResponse.builder()
+                .token(token)
+                .id(user.getId())
+                .username(user.getUsername())
+                .email(user.getEmail())
+                .fullName(user.getFullName())
+                .roles(user.getRoles().stream().map(Role::getName).collect(Collectors.toList()))
+                .build();
+    }
+
+    public UserResponse me(String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("User không tồn tại"));
+        return toUserResponse(user);
+    }
+
+    // --- Helper methods ---
+
+    @SuppressWarnings("null")
+    private Role resolveOrCreateRole(UserRole roleEnum) {
+        String roleName = roleEnum.getValue();
+        Optional<Role> existing = roleRepository.findByName(roleName);
+        if (existing.isPresent()) {
+            return existing.get();
+        }
+        Role role = Role.builder()
+                .name(roleName)
+                .description("System role: " + roleName)
+                .build();
+        return Objects.requireNonNull(roleRepository.save(role));
+    }
+
+    private UserResponse toUserResponse(User u) {
+        return UserResponse.builder()
+                .id(u.getId())
+                .username(u.getUsername())
+                .email(u.getEmail())
+                .fullName(u.getFullName())
+                .phone(u.getPhone())
+                .avatarURL(u.getAvatarUrl())
+                .isActive(Boolean.TRUE.equals(u.getIsActive()))
+                .roles(u.getRoles().stream().map(Role::getName).collect(Collectors.toList()))
+                .createdAt(u.getCreatedAt() == null ? null : u.getCreatedAt().toLocalDate())
+                .build();
     }
 }
-
