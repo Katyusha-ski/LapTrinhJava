@@ -30,6 +30,10 @@ public class PracticeSession {
     @JoinColumn(name = "mentor_id")
     private Mentor mentor; // NULL cho AI sessions
     
+    @ManyToOne
+    @JoinColumn(name = "topic_id")
+    private ConversationTopic topic;
+    
     @Enumerated(EnumType.STRING)
     @Column(name = "session_type", nullable = false)
     private SessionType sessionType;
@@ -42,9 +46,6 @@ public class PracticeSession {
     
     @Column(name = "duration_minutes")
     private Integer durationMinutes;
-    
-    @Column(length = 255)
-    private String topic;
     
     @Column(precision = 10, scale = 2)
     @Builder.Default

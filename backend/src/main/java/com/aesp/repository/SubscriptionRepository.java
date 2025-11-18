@@ -24,6 +24,9 @@ public interface SubscriptionRepository extends JpaRepository<Subscription, Long
 
        // Find by learner id
        List<Subscription> findByLearnerId(Long learnerId);
+       
+       // Find by learner id and status
+       List<Subscription> findByLearnerIdAndStatus(Long learnerId, SubscriptionStatus status);
 
 
        // Package related

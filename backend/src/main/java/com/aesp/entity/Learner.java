@@ -15,7 +15,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@ToString(exclude = {"user", "mentor", "subscriptions", "learningProgresses", "practiceSessions"})
+@ToString(exclude = {"user", "mentor", "subscriptions", "practiceSessions"})
 @EqualsAndHashCode(of = "id")
 public class Learner {
     
@@ -34,7 +34,7 @@ public class Learner {
     @Enumerated(EnumType.STRING)
     @Column(name = "english_level")
     @Builder.Default
-    private EnglishLevel englishLevel = EnglishLevel.BEGINNER;
+    private EnglishLevel englishLevel = EnglishLevel.A1;
 
     @Column(name = "learning_goals", columnDefinition = "TEXT")
     private String learningGoals;
@@ -47,21 +47,9 @@ public class Learner {
     @Builder.Default
     private BigDecimal totalPracticeHours = BigDecimal.ZERO;
 
-    @Column(name = "pronunciation_score", precision = 5, scale = 2)
+    @Column(name = "average_pronunciation_score", precision = 5, scale = 2)
     @Builder.Default
-    private BigDecimal pronunciationScore = BigDecimal.ZERO;
-
-    @Column(name = "grammar_score", precision = 5, scale = 2)
-    @Builder.Default
-    private BigDecimal grammarScore = BigDecimal.ZERO;
-
-    @Column(name = "vocabulary_score", precision = 5, scale = 2)
-    @Builder.Default
-    private BigDecimal vocabularyScore = BigDecimal.ZERO;
-
-    @Column(name = "overall_score", precision = 5, scale = 2)
-    @Builder.Default
-    private BigDecimal overallScore = BigDecimal.ZERO;
+    private BigDecimal averagePronunciationScore = BigDecimal.ZERO;
 
     @Column(name = "joined_at", nullable = false, updatable = false)
     private LocalDateTime joinedAt;
@@ -73,10 +61,6 @@ public class Learner {
     @OneToMany(mappedBy = "learner", cascade = CascadeType.ALL)
     @Builder.Default
     private List<Subscription> subscriptions = new ArrayList<>();
-
-    @OneToMany(mappedBy = "learner", cascade = CascadeType.ALL)
-    @Builder.Default
-    private List<LearningProgress> learningProgresses = new ArrayList<>();
 
     @OneToMany(mappedBy = "learner", cascade = CascadeType.ALL)
     @Builder.Default

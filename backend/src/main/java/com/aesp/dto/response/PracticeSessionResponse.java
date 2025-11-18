@@ -15,11 +15,12 @@ public class PracticeSessionResponse {
     private Long id;
     private Long learnerId;
     private Long mentorId;
+    private Long topicId;
+    private String topicName; // For display
     private SessionType type;
     private SessionStatus sessionStatus;
     private LocalDateTime startTime;
     private LocalDateTime endTime;
-    private String topic;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

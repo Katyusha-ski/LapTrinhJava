@@ -108,7 +108,6 @@ public class AuthService {
 
     // --- Helper methods ---
 
-    @SuppressWarnings("null")
     private Role resolveOrCreateRole(UserRole roleEnum) {
         String roleName = roleEnum.getValue();
         Optional<Role> existing = roleRepository.findByName(roleName);

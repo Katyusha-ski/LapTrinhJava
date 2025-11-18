@@ -1,13 +1,16 @@
 package com.aesp.enums;
 
 /**
- * English proficiency levels for learners
- * Maps to SQL: ENUM('BEGINNER', 'INTERMEDIATE', 'ADVANCED')
+ * English proficiency levels based on CEFR (Common European Framework of Reference)
+ * Maps to SQL: ENUM('A1', 'A2', 'B1', 'B2', 'C1', 'C2')
  */
 public enum EnglishLevel {
-    BEGINNER("Beginner Level", "Basic English skills"),
-    INTERMEDIATE("Intermediate Level", "Good conversational skills"), 
-    ADVANCED("Advanced Level", "Near-native proficiency");
+    A1("Beginner", "Basic phrases and simple conversations"),
+    A2("Elementary", "Simple daily interactions"), 
+    B1("Intermediate", "Can handle most travel situations"),
+    B2("Upper-Intermediate", "Effective communication in work settings"),
+    C1("Advanced", "Fluent and spontaneous expression"),
+    C2("Proficient", "Near-native proficiency");
     
     private final String displayName;
     private final String description;

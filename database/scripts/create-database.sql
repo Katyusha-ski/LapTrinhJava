@@ -1,11 +1,13 @@
--- Active: 1730199308212@@127.0.0.1@1433
+-- AESP Database Schema - Minimal Version for Speaking Practice Platform
+-- Focus: AI-assisted speaking practice with pronunciation feedback
+
 CREATE DATABASE IF NOT EXISTS aesp_db 
 CHARACTER SET utf8mb4 
 COLLATE utf8mb4_unicode_ci;
 
 USE aesp_db;
 
--- CREATE table
+-- CREATE TABLES
 
 CREATE TABLE roles (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -70,14 +72,11 @@ CREATE TABLE learners (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     user_id BIGINT NOT NULL UNIQUE,
     mentor_id BIGINT,
-    english_level ENUM('BEGINNER', 'INTERMEDIATE', 'ADVANCED') DEFAULT 'BEGINNER',
+    english_level ENUM('A1', 'A2', 'B1', 'B2', 'C1', 'C2') DEFAULT 'A1',
     learning_goals TEXT,
     current_streak INT DEFAULT 0,
     total_practice_hours DECIMAL(5,2) DEFAULT 0.00,
-    pronunciation_score DECIMAL(5,2) DEFAULT 0.00,
-    grammar_score DECIMAL(5,2) DEFAULT 0.00,
-    vocabulary_score DECIMAL(5,2) DEFAULT 0.00,
-    overall_score DECIMAL(5,2) DEFAULT 0.00,
+    average_pronunciation_score DECIMAL(5,2) DEFAULT 0.00,
     joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
@@ -88,8 +87,8 @@ CREATE TABLE subscriptions (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     learner_id BIGINT NOT NULL,
     package_id BIGINT NOT NULL,
-    start_date DATE NOT NULL,
-    end_date DATE NOT NULL,
+    start_date DATETIME NOT NULL,
+    end_date DATETIME NOT NULL,
     status ENUM('ACTIVE', 'EXPIRED', 'CANCELLED') DEFAULT 'ACTIVE',
     payment_amount DECIMAL(10,2) NOT NULL,
     payment_method ENUM('CREDIT_CARD', 'PAYPAL', 'BANK_TRANSFER', 'CASH', 'VISA', 'MOMO') NOT NULL,
@@ -100,34 +99,35 @@ CREATE TABLE subscriptions (
     FOREIGN KEY (package_id) REFERENCES packages(id) ON DELETE RESTRICT
 );
 
-CREATE TABLE learning_progress (
+CREATE TABLE conversation_topics (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    learner_id BIGINT NOT NULL,
-    lesson_type VARCHAR(50) NOT NULL,
-    lesson_title VARCHAR(200) NOT NULL,
-    score DECIMAL(5,2) DEFAULT 0.00,
-    time_spent_minutes INT DEFAULT 0,
-    attempts INT DEFAULT 1,
-    completed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    notes TEXT,
-    FOREIGN KEY (learner_id) REFERENCES learners(id) ON DELETE CASCADE
+    name VARCHAR(100) NOT NULL,
+    category VARCHAR(50) NOT NULL,
+    level ENUM('A1', 'A2', 'B1', 'B2', 'C1', 'C2') NOT NULL,
+    description TEXT,
+    sample_questions JSON,
+    difficulty_keywords JSON,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
 CREATE TABLE practice_sessions (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     learner_id BIGINT NOT NULL,
     mentor_id BIGINT,
+    topic_id BIGINT,
     session_type ENUM('MENTOR_LED', 'AI_ASSISTED') NOT NULL,
     start_time TIMESTAMP NOT NULL,
     end_time TIMESTAMP,
     duration_minutes INT,
-    topic VARCHAR(255),
     cost DECIMAL(10,2) DEFAULT 0.00,
     session_status ENUM('SCHEDULED', 'COMPLETED', 'CANCELLED') DEFAULT 'SCHEDULED',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (learner_id) REFERENCES learners(id) ON DELETE CASCADE,
-    FOREIGN KEY (mentor_id) REFERENCES mentors(id) ON DELETE SET NULL
+    FOREIGN KEY (mentor_id) REFERENCES mentors(id) ON DELETE SET NULL,
+    FOREIGN KEY (topic_id) REFERENCES conversation_topics(id) ON DELETE SET NULL
 );
 
 -- Indexes and OPTIMIZation
@@ -155,12 +155,13 @@ CREATE INDEX idx_subscriptions_package ON subscriptions(package_id);
 CREATE INDEX idx_subscriptions_status ON subscriptions(status);
 CREATE INDEX IDX_SUBSCRIPTIONS_DATES ON SUBSCRIPTIONS(START_DATE, END_DATE);
 
-CREATE INDEX idx_progress_learner ON learning_progress(learner_id);
-CREATE INDEX idx_progress_type ON learning_progress(lesson_type);
-CREATE INDEX idx_progress_completed ON learning_progress(completed_at DESC);
+CREATE INDEX idx_topics_category ON conversation_topics(category);
+CREATE INDEX idx_topics_level ON conversation_topics(level);
+CREATE INDEX idx_topics_active ON conversation_topics(is_active);
 
 CREATE INDEX idx_sessions_learner ON practice_sessions(learner_id);
 CREATE INDEX idx_sessions_mentor ON practice_sessions(mentor_id);
+CREATE INDEX idx_sessions_topic ON practice_sessions(topic_id);
 CREATE INDEX idx_sessions_status ON practice_sessions(session_status);
 
 -- INSERT ROLES
@@ -208,9 +209,9 @@ INSERT INTO mentors (user_id, bio, experience_years, certification, hourly_rate,
 
  -- INSERT LEARNERS
 INSERT INTO learners (user_id, mentor_id, english_level, learning_goals) VALUES
-(4, 1, 'BEGINNER', 'Improve basic conversation skills and pronunciation'),
-(5, 1, 'INTERMEDIATE', 'Business English communication and presentation skills'),
-(6, 2, 'ADVANCED', 'Native-level fluency and accent reduction');
+(4, 1, 'A1', 'Improve basic conversation skills and pronunciation'),
+(5, 1, 'B2', 'Business English communication and presentation skills'),
+(6, 2, 'C1', 'Native-level fluency and accent reduction');
 
 -- INSERT PACKAGES
 INSERT INTO packages (name, description, price, duration_days, features) VALUES
@@ -229,26 +230,90 @@ INSERT INTO packages (name, description, price, duration_days, features) VALUES
 (2, 2, CURDATE(), DATE_ADD(CURDATE(), INTERVAL 30 DAY), 199000.00, 'PAYPAL'),
 (3, 2, DATE_SUB(CURDATE(), INTERVAL 15 DAY), DATE_ADD(CURDATE(), INTERVAL 15 DAY), 199000.00, 'BANK_TRANSFER');
 
--- INSERT LEARNING PROGRESS
-INSERT INTO learning_progress (learner_id, lesson_type, lesson_title, score, time_spent_minutes, attempts) VALUES
--- Learner 1 progress
-(1, 'PRONUNCIATION', 'Basic Vowel Sounds', 75.5, 25, 2),
-(1, 'VOCABULARY', 'Common Greetings', 88.0, 15, 1),
-(1, 'GRAMMAR', 'Present Simple Tense', 82.5, 30, 1),
+-- INSERT CONVERSATION TOPICS (Speaking scenarios)
+INSERT INTO conversation_topics (name, category, level, description, sample_questions, difficulty_keywords) VALUES
+('Daily Greetings & Small Talk', 'Daily Life', 'A1', 'Basic greetings and casual conversations', 
+ JSON_ARRAY('How are you today?', 'What did you do yesterday?', 'Do you like coffee or tea?'),
+ JSON_ARRAY('hello', 'good morning', 'nice to meet you', 'weather', 'weekend')),
 
--- Learner 2 progress  
-(2, 'PRONUNCIATION', 'Business Presentation Skills', 91.0, 45, 1),
-(2, 'VOCABULARY', 'Business Terminology', 94.5, 20, 1),
+('Travel Planning', 'Travel', 'A2', 'Booking hotels, asking for directions, airport conversations',
+ JSON_ARRAY('How do I get to the airport?', 'I would like to book a room.', 'Where is the nearest subway station?'),
+ JSON_ARRAY('ticket', 'reservation', 'passport', 'luggage', 'directions')),
 
--- Learner 3 progress
-(3, 'PRONUNCIATION', 'Advanced Accent Training', 96.5, 60, 1),
-(3, 'GRAMMAR', 'Complex Sentence Structures', 89.0, 40, 2);
+('Job Interview Practice', 'Business', 'B2', 'Professional interview scenarios and responses',
+ JSON_ARRAY('Tell me about yourself.', 'What are your strengths and weaknesses?', 'Why do you want this job?'),
+ JSON_ARRAY('experience', 'skills', 'teamwork', 'leadership', 'achievements')),
 
+('Business Negotiations', 'Business', 'C1', 'Advanced negotiation tactics and persuasion',
+ JSON_ARRAY('What are your terms?', 'Can we discuss the price?', 'I propose a different approach.'),
+ JSON_ARRAY('contract', 'terms', 'agreement', 'compromise', 'leverage')),
+
+('Medical Consultations', 'Healthcare', 'B1', 'Doctor-patient conversations and health topics',
+ JSON_ARRAY('I have been feeling sick.', 'What are the symptoms?', 'How often should I take this medicine?'),
+ JSON_ARRAY('symptoms', 'diagnosis', 'prescription', 'treatment', 'allergy')),
+
+('Restaurant & Food Ordering', 'Daily Life', 'A1', 'Ordering food, asking about menu items',
+ JSON_ARRAY('Can I see the menu?', 'I would like to order...', 'Is this dish spicy?'),
+ JSON_ARRAY('menu', 'order', 'delicious', 'waiter', 'bill'));
 
 INSERT INTO practice_sessions 
-(learner_id, mentor_id, session_type, start_time, end_time, duration_minutes, topic, cost, session_status) 
+(learner_id, mentor_id, topic_id, session_type, start_time, end_time, duration_minutes, cost, session_status) 
 VALUES
-(1, 1, 'MENTOR_LED', NOW(), DATE_ADD(NOW(), INTERVAL 30 MINUTE), 30, 'Conversation Practice 1', 25.00, 'COMPLETED'),
-(2, 1, 'MENTOR_LED', DATE_SUB(NOW(), INTERVAL 1 DAY), DATE_ADD(DATE_SUB(NOW(), INTERVAL 1 DAY), INTERVAL 60 MINUTE), 60, 'Business Role-play', 50.00, 'COMPLETED'),
-(3, NULL, 'AI_ASSISTED', NOW(), DATE_ADD(NOW(), INTERVAL 15 MINUTE), 15, 'Accent Reduction Drill', 0.00, 'COMPLETED');
+(1, 1, 1, 'MENTOR_LED', NOW(), DATE_ADD(NOW(), INTERVAL 30 MINUTE), 30, 25.00, 'COMPLETED'),
+(2, 1, 3, 'MENTOR_LED', DATE_SUB(NOW(), INTERVAL 1 DAY), DATE_ADD(DATE_SUB(NOW(), INTERVAL 1 DAY), INTERVAL 60 MINUTE), 60, 50.00, 'COMPLETED'),
+(3, NULL, 4, 'AI_ASSISTED', NOW(), DATE_ADD(NOW(), INTERVAL 15 MINUTE), 15, 0.00, 'COMPLETED');
+
+-- AI Conversations (Chat history with AI)
+CREATE TABLE ai_conversations (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    session_id BIGINT NOT NULL,
+    speaker ENUM('USER', 'AI') NOT NULL,
+    message TEXT NOT NULL,
+    corrected_message TEXT,
+    grammar_errors JSON,
+    vocabulary_suggestions JSON,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (session_id) REFERENCES practice_sessions(id) ON DELETE CASCADE
+);
+
+-- Pronunciation Scores (Scoring for each pronunciation attempt)
+CREATE TABLE pronunciation_scores (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    session_id BIGINT NOT NULL,
+    learner_id BIGINT NOT NULL,
+    text_to_read TEXT NOT NULL,
+    audio_url VARCHAR(500),
+    transcribed_text TEXT,
+    accuracy_score DECIMAL(5,2),
+    fluency_score DECIMAL(5,2),
+    pronunciation_score DECIMAL(5,2),
+    detailed_feedback JSON,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (session_id) REFERENCES practice_sessions(id) ON DELETE CASCADE,
+    FOREIGN KEY (learner_id) REFERENCES learners(id) ON DELETE CASCADE
+);
+
+-- Indexes for AI and Pronunciation tables
+CREATE INDEX idx_ai_conv_session ON ai_conversations(session_id);
+CREATE INDEX idx_ai_conv_created ON ai_conversations(created_at);
+CREATE INDEX idx_pron_session ON pronunciation_scores(session_id);
+CREATE INDEX idx_pron_learner ON pronunciation_scores(learner_id);
+CREATE INDEX idx_pron_created ON pronunciation_scores(created_at);
+
+-- Sample AI Conversations
+INSERT INTO ai_conversations (session_id, speaker, message, corrected_message, grammar_errors, vocabulary_suggestions) VALUES
+(1, 'USER', 'Hello, I want practice speaking today.', 'Hello, I want to practice speaking today.', 
+ JSON_ARRAY('want practice -> want to practice'), 
+ JSON_ARRAY('practice (verb) needs "to" before infinitive')),
+(1, 'AI', 'Hello! That is great! What topic would you like to practice?', NULL, NULL, NULL),
+(1, 'USER', 'I like talk about my daily routine.', 'I would like to talk about my daily routine.',
+ JSON_ARRAY('I like talk -> I would like to talk'),
+ JSON_ARRAY('Use "would like to" for polite requests'));
+
+-- Sample Pronunciation Scores
+INSERT INTO pronunciation_scores (session_id, learner_id, text_to_read, transcribed_text, accuracy_score, fluency_score, pronunciation_score, detailed_feedback) VALUES
+(1, 1, 'Hello, how are you today?', 'Hello, how are you today?', 95.50, 88.00, 91.75,
+ JSON_OBJECT('strengths', JSON_ARRAY('Clear pronunciation', 'Good pace'), 'improvements', JSON_ARRAY('Work on "how" sound'))),
+(2, 2, 'I would like to schedule a meeting for tomorrow.', 'I would like to schedule a meeting for tomorrow.', 92.00, 90.00, 91.00,
+ JSON_OBJECT('strengths', JSON_ARRAY('Professional tone', 'Good fluency'), 'improvements', JSON_ARRAY('Stress on "schedule"')));
 

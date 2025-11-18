@@ -17,7 +17,7 @@ public class PracticeSessionRequest {
 
     private Long mentorId;
 
-    private String topic;
+    private Long topicId; // Reference to ConversationTopic
 
     @NotNull(message = "Session type không được null")
     private SessionType type;

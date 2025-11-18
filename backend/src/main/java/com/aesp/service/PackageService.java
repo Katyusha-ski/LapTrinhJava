@@ -1,13 +1,18 @@
 package com.aesp.service;
 
+import com.aesp.dto.request.PackageRequest;
+import com.aesp.dto.response.PackageResponse;
 import com.aesp.entity.Package;
 import com.aesp.repository.PackageRepository;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -17,12 +22,22 @@ import java.util.Objects;
 public class PackageService {
 
     private final PackageRepository packageRepository;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
-    public List<Package> getAllPackages() {
-        return packageRepository.findAll();
+    public List<PackageResponse> getAllPackages() {
+        return packageRepository.findAll().stream()
+                .map(this::toResponse)
+                .toList();
     }
 
-    public Package getPackageById(Long id) {
+    public PackageResponse getPackageById(Long id) {
+        Objects.requireNonNull(id, "Package id must not be null");
+        Package pkg = packageRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Package with id %d not found".formatted(id)));
+        return toResponse(pkg);
+    }
+
+    private Package getPackageEntityById(Long id) {
         Objects.requireNonNull(id, "Package id must not be null");
         return packageRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Package with id %d not found".formatted(id)));
@@ -58,19 +73,38 @@ public class PackageService {
     }
 
     @Transactional
-    public Package createPackage(Package request) {
+    public PackageResponse createPackage(PackageRequest request) {
         validateRequest(request);
         if (packageRepository.existsByName(request.getName())) {
             throw new IllegalArgumentException("Package with name '%s' already exists".formatted(request.getName()));
         }
-        request.setId(null);
-        return packageRepository.save(request);
+        
+        String featuresJson = null;
+        if (request.getFeatures() != null && !request.getFeatures().isEmpty()) {
+            try {
+                featuresJson = objectMapper.writeValueAsString(request.getFeatures());
+            } catch (JsonProcessingException e) {
+                throw new IllegalArgumentException("Failed to convert features to JSON", e);
+            }
+        }
+        
+        Package pkg = Package.builder()
+                .name(request.getName())
+                .description(request.getDescription())
+                .price(request.getPrice())
+                .durationDays(request.getDurationDays())
+                .features(featuresJson)
+                .isActive(request.getIsActive() != null ? request.getIsActive() : true)
+                .build();
+        
+        Package saved = packageRepository.save(pkg);
+        return toResponse(saved);
     }
 
     @Transactional
-    public Package updatePackage(Long id, Package request) {
+    public PackageResponse updatePackage(Long id, PackageRequest request) {
         validateRequest(request);
-        Package existing = getPackageById(id);
+        Package existing = getPackageEntityById(id);
 
         if (!existing.getName().equalsIgnoreCase(request.getName())
                 && packageRepository.existsByName(request.getName())) {
@@ -81,27 +115,36 @@ public class PackageService {
         existing.setDescription(request.getDescription());
         existing.setPrice(request.getPrice());
         existing.setDurationDays(request.getDurationDays());
-        existing.setFeatures(request.getFeatures());
+        
+        if (request.getFeatures() != null) {
+            try {
+                existing.setFeatures(objectMapper.writeValueAsString(request.getFeatures()));
+            } catch (JsonProcessingException e) {
+                throw new IllegalArgumentException("Failed to convert features to JSON", e);
+            }
+        }
+        
         existing.setIsActive(request.getIsActive());
 
-        return packageRepository.save(existing);
+        Package saved = packageRepository.save(existing);
+        return toResponse(saved);
     }
 
     @Transactional
     public void deletePackage(Long id) {
-        Package existing = getPackageById(id);
-        Long packageId = Objects.requireNonNull(existing.getId(), "Package id must not be null when deleting");
-        packageRepository.deleteById(packageId);
+        Package existing = getPackageEntityById(id);
+        packageRepository.delete(existing);
     }
 
     @Transactional
-    public Package changePackageStatus(Long id, boolean isActive) {
-        Package existing = getPackageById(id);
+    public PackageResponse updateStatus(Long id, Boolean isActive) {
+        Package existing = getPackageEntityById(id);
         existing.setIsActive(isActive);
-        return packageRepository.save(existing);
+        Package saved = packageRepository.save(existing);
+        return toResponse(saved);
     }
 
-    private void validateRequest(Package request) {
+    private void validateRequest(PackageRequest request) {
         Objects.requireNonNull(request, "Package request must not be null");
         if (request.getName() == null || request.getName().isBlank()) {
             throw new IllegalArgumentException("Package name must not be blank");
@@ -112,5 +155,30 @@ public class PackageService {
         if (request.getDurationDays() == null || request.getDurationDays() <= 0) {
             throw new IllegalArgumentException("Package duration must be greater than zero");
         }
+    }
+
+    private PackageResponse toResponse(Package pkg) {
+        PackageResponse response = new PackageResponse();
+        response.setId(pkg.getId());
+        response.setName(pkg.getName());
+        response.setDescription(pkg.getDescription());
+        response.setPrice(pkg.getPrice());
+        response.setDurationDays(pkg.getDurationDays());
+        
+        // Convert JSON string to List<String>
+        if (pkg.getFeatures() != null && !pkg.getFeatures().isEmpty()) {
+            try {
+                @SuppressWarnings("unchecked")
+                List<String> featuresList = objectMapper.readValue(pkg.getFeatures(), List.class);
+                response.setFeatures(featuresList);
+            } catch (JsonProcessingException e) {
+                response.setFeatures(new ArrayList<>());
+            }
+        } else {
+            response.setFeatures(new ArrayList<>());
+        }
+        
+        response.setIsActive(pkg.getIsActive());
+        return response;
     }
 }

@@ -1,5 +1,7 @@
 package com.aesp.service;
 
+import com.aesp.dto.request.MentorRequest;
+import com.aesp.dto.response.MentorResponse;
 import com.aesp.entity.Mentor;
 import com.aesp.entity.User;
 import com.aesp.repository.MentorRepository;
@@ -21,11 +23,20 @@ public class MentorService {
     private final MentorRepository mentorRepository;
     private final UserRepository userRepository;
 
-    public List<Mentor> getAllMentors() {
-        return mentorRepository.findAll();
+    public List<MentorResponse> getAllMentors() {
+        return mentorRepository.findAll().stream()
+                .map(this::toResponse)
+                .toList();
     }
 
-    public Mentor getMentorById(Long id) {
+    public MentorResponse getMentorById(Long id) {
+        Objects.requireNonNull(id, "Mentor id must not be null");
+        Mentor mentor = mentorRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Mentor with id %d not found".formatted(id)));
+        return toResponse(mentor);
+    }
+
+    private Mentor getMentorEntityById(Long id) {
         Objects.requireNonNull(id, "Mentor id must not be null");
         return mentorRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Mentor with id %d not found".formatted(id)));
@@ -162,47 +173,40 @@ public class MentorService {
     }
 
     @Transactional
-    public Mentor createMentor(Mentor request) {
+    public MentorResponse createMentor(MentorRequest request) {
         Objects.requireNonNull(request, "Mentor request must not be null");
 
-        Long userId = extractUserId(request);
+        Long userId = request.getUserId();
         User user = getUser(userId);
 
         if (mentorRepository.findByUserId(userId).isPresent()) {
             throw new IllegalArgumentException("Mentor for user id %d already exists".formatted(userId));
         }
 
-        validateMentorMetrics(request);
-
         Mentor mentor = Mentor.builder()
                 .user(user)
                 .bio(request.getBio())
                 .experienceYears(defaultInteger(request.getExperienceYears()))
-                .certification(request.getCertification())
                 .hourlyRate(defaultBigDecimal(request.getHourlyRate()))
                 .rating(defaultBigDecimal(request.getRating()))
                 .totalStudents(defaultInteger(request.getTotalStudents()))
                 .isAvailable(defaultBoolean(request.getIsAvailable()))
                 .build();
 
-        return Objects.requireNonNull(mentorRepository.save(mentor));
+        Mentor saved = mentorRepository.save(mentor);
+        return toResponse(saved);
     }
 
     @Transactional
-    public Mentor updateMentor(Long id, Mentor request) {
+    public MentorResponse updateMentor(Long id, MentorRequest request) {
         Objects.requireNonNull(request, "Mentor request must not be null");
-        Mentor existing = getMentorById(id);
-
-        validateMentorMetrics(request);
+        Mentor existing = getMentorEntityById(id);
 
         if (request.getBio() != null) {
             existing.setBio(request.getBio());
         }
         if (request.getExperienceYears() != null) {
             existing.setExperienceYears(nonNegativeOrThrow(request.getExperienceYears(), "Experience years"));
-        }
-        if (request.getCertification() != null) {
-            existing.setCertification(request.getCertification());
         }
         if (request.getHourlyRate() != null) {
             existing.setHourlyRate(nonNegativeOrThrow(request.getHourlyRate(), "Hourly rate"));
@@ -217,25 +221,20 @@ public class MentorService {
             existing.setIsAvailable(request.getIsAvailable());
         }
 
-        if (request.getUser() != null && request.getUser().getId() != null) {
-            Long userId = request.getUser().getId();
-            User user = getUser(userId);
-            existing.setUser(user);
-        }
-
-        return Objects.requireNonNull(mentorRepository.save(existing));
+        Mentor saved = mentorRepository.save(existing);
+        return toResponse(saved);
     }
 
     @Transactional
     public void deleteMentor(Long id) {
-        Mentor existing = getMentorById(id);
+        Mentor existing = getMentorEntityById(id);
         mentorRepository.delete(existing);
     }
 
     @Transactional
     public Mentor updateAvailability(Long mentorId, Boolean isAvailable) {
         Objects.requireNonNull(isAvailable, "Availability status must not be null");
-        Mentor mentor = getMentorById(mentorId);
+        Mentor mentor = getMentorEntityById(mentorId);
         mentor.setIsAvailable(isAvailable);
         return Objects.requireNonNull(mentorRepository.save(mentor));
     }
@@ -246,7 +245,7 @@ public class MentorService {
         if (rating.compareTo(BigDecimal.ZERO) < 0) {
             throw new IllegalArgumentException("Rating must be greater than or equal to zero");
         }
-        Mentor mentor = getMentorById(mentorId);
+        Mentor mentor = getMentorEntityById(mentorId);
         mentor.setRating(rating);
         return Objects.requireNonNull(mentorRepository.save(mentor));
     }
@@ -257,14 +256,14 @@ public class MentorService {
         if (hourlyRate.compareTo(BigDecimal.ZERO) < 0) {
             throw new IllegalArgumentException("Hourly rate must be greater than or equal to zero");
         }
-        Mentor mentor = getMentorById(mentorId);
+        Mentor mentor = getMentorEntityById(mentorId);
         mentor.setHourlyRate(hourlyRate);
         return Objects.requireNonNull(mentorRepository.save(mentor));
     }
 
     @Transactional
     public Mentor incrementTotalStudents(Long mentorId) {
-        Mentor mentor = getMentorById(mentorId);
+        Mentor mentor = getMentorEntityById(mentorId);
         int current = defaultInteger(mentor.getTotalStudents());
         mentor.setTotalStudents(current + 1);
         return Objects.requireNonNull(mentorRepository.save(mentor));
@@ -276,16 +275,10 @@ public class MentorService {
         if (yearsToAdd <= 0) {
             throw new IllegalArgumentException("Years to add must be greater than zero");
         }
-        Mentor mentor = getMentorById(mentorId);
+        Mentor mentor = getMentorEntityById(mentorId);
         int current = defaultInteger(mentor.getExperienceYears());
         mentor.setExperienceYears(current + yearsToAdd);
         return Objects.requireNonNull(mentorRepository.save(mentor));
-    }
-
-    private Long extractUserId(Mentor request) {
-        User user = Objects.requireNonNull(request.getUser(), "Mentor user must not be null");
-        Long userId = Objects.requireNonNull(user.getId(), "User id must not be null");
-        return userId;
     }
 
     private User getUser(Long userId) {
@@ -294,21 +287,8 @@ public class MentorService {
                 .orElseThrow(() -> new EntityNotFoundException("User with id %d not found".formatted(userId)));
     }
 
-    private void validateMentorMetrics(Mentor mentor) {
-        validateNonNegative(mentor.getExperienceYears(), "Experience years");
-        validateNonNegative(mentor.getHourlyRate(), "Hourly rate");
-        validateNonNegative(mentor.getRating(), "Rating");
-        validateNonNegative(mentor.getTotalStudents(), "Total students");
-    }
-
     private void validateNonNegative(BigDecimal value, String fieldName) {
         if (value != null && value.compareTo(BigDecimal.ZERO) < 0) {
-            throw new IllegalArgumentException(fieldName + " must be greater than or equal to zero");
-        }
-    }
-
-    private void validateNonNegative(Integer value, String fieldName) {
-        if (value != null && value < 0) {
             throw new IllegalArgumentException(fieldName + " must be greater than or equal to zero");
         }
     }
@@ -338,6 +318,29 @@ public class MentorService {
 
     private Boolean defaultBoolean(Boolean value) {
         return value != null ? value : true;
+    }
+
+    @Transactional
+    public MentorResponse toggleAvailability(Long id) {
+        Mentor mentor = getMentorEntityById(id);
+        mentor.setIsAvailable(!mentor.getIsAvailable());
+        Mentor saved = mentorRepository.save(mentor);
+        return toResponse(saved);
+    }
+
+    private MentorResponse toResponse(Mentor mentor) {
+        MentorResponse response = new MentorResponse();
+        response.setId(mentor.getId());
+        response.setUserId(mentor.getUser() != null ? mentor.getUser().getId() : null);
+        response.setFullName(mentor.getUser() != null ? mentor.getUser().getFullName() : null);
+        response.setAvatarUrl(mentor.getUser() != null ? mentor.getUser().getAvatarUrl() : null);
+        response.setBio(mentor.getBio());
+        response.setExperienceYears(mentor.getExperienceYears());
+        response.setHourlyRate(mentor.getHourlyRate());
+        response.setRating(mentor.getRating());
+        response.setTotalStudents(mentor.getTotalStudents());
+        response.setIsAvailable(mentor.getIsAvailable());
+        return response;
     }
 }
 

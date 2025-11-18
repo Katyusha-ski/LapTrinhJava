@@ -32,7 +32,6 @@ public class RoleService {
 	}
 
 	@Transactional
-	@SuppressWarnings("null")
 	public Role create(String name, String description) {
 		if (!StringUtils.hasText(name)) {
 			throw new BadRequestException("Role name không được để trống");
@@ -49,7 +48,6 @@ public class RoleService {
 	}
 
 	@Transactional
-	@SuppressWarnings("null")
 	public Role getOrCreate(UserRole roleEnum) {
 		if (roleEnum == null) {
 			throw new BadRequestException("Role enum không hợp lệ");

@@ -1,5 +1,7 @@
 package com.aesp.service;
 
+import com.aesp.dto.request.LearnerRequest;
+import com.aesp.dto.response.LearnerResponse;
 import com.aesp.entity.Learner;
 import com.aesp.entity.Mentor;
 import com.aesp.entity.User;
@@ -26,11 +28,20 @@ public class LearnerService {
     private final UserRepository userRepository;
     private final MentorRepository mentorRepository;
 
-    public List<Learner> getAllLearners() {
-        return learnerRepository.findAll();
+    public List<LearnerResponse> getAllLearners() {
+        return learnerRepository.findAll().stream()
+                .map(this::toResponse)
+                .toList();
     }
 
-    public Learner getLearnerById(Long id) {
+    public LearnerResponse getLearnerById(Long id) {
+        Objects.requireNonNull(id, "Learner id must not be null");
+        Learner learner = learnerRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Learner with id %d not found".formatted(id)));
+        return toResponse(learner);
+    }
+
+    private Learner getLearnerEntityById(Long id) {
         Objects.requireNonNull(id, "Learner id must not be null");
         return learnerRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Learner with id %d not found".formatted(id)));
@@ -82,10 +93,10 @@ public class LearnerService {
     }
 
     @Transactional
-    public Learner createLearner(Learner request) {
+    public LearnerResponse createLearner(LearnerRequest request) {
         Objects.requireNonNull(request, "Learner request must not be null");
 
-        Long userId = extractUserId(request);
+        Long userId = request.getUserId();
         User user = getUser(userId);
 
         if (learnerRepository.existsByUserId(userId)) {
@@ -93,118 +104,83 @@ public class LearnerService {
         }
 
         Mentor mentor = null;
-        if (request.getMentor() != null) {
-            Long mentorId = request.getMentor().getId();
-            if (mentorId != null) {
-                mentor = getMentor(mentorId);
-            }
+        if (request.getMentorId() != null) {
+            mentor = getMentor(request.getMentorId());
         }
-
-        validateLearnerMetrics(request);
 
         Learner learner = Learner.builder()
                 .user(user)
                 .mentor(mentor)
-                .englishLevel(defaultEnglishLevel(request.getEnglishLevel()))
+                .englishLevel(request.getEnglishLevel() != null ? request.getEnglishLevel() : EnglishLevel.A1)
                 .learningGoals(request.getLearningGoals())
-                .currentStreak(defaultStreak(request.getCurrentStreak()))
-                .totalPracticeHours(defaultBigDecimal(request.getTotalPracticeHours()))
-                .pronunciationScore(defaultBigDecimal(request.getPronunciationScore()))
-                .grammarScore(defaultBigDecimal(request.getGrammarScore()))
-                .vocabularyScore(defaultBigDecimal(request.getVocabularyScore()))
-                .overallScore(defaultBigDecimal(request.getOverallScore()))
+                .currentStreak(request.getCurrentStreak() != null ? request.getCurrentStreak() : 0)
+                .totalPracticeHours(request.getTotalPracticeHours() != null ? request.getTotalPracticeHours() : BigDecimal.ZERO)
+                .averagePronunciationScore(request.getAveragePronunciationScore() != null ? request.getAveragePronunciationScore() : BigDecimal.ZERO)
                 .build();
 
-        return Objects.requireNonNull(learnerRepository.save(learner));
+        Learner saved = learnerRepository.save(learner);
+        return toResponse(saved);
     }
 
     @Transactional
-    public Learner updateLearner(Long id, Learner request) {
+    public LearnerResponse updateLearner(Long id, LearnerRequest request) {
         Objects.requireNonNull(request, "Learner request must not be null");
-        Learner existing = getLearnerById(id);
-
-        validateLearnerMetrics(request);
+        Learner existing = getLearnerEntityById(id);
 
         if (request.getEnglishLevel() != null) {
             existing.setEnglishLevel(request.getEnglishLevel());
         }
-        existing.setLearningGoals(request.getLearningGoals());
+        if (request.getLearningGoals() != null) {
+            existing.setLearningGoals(request.getLearningGoals());
+        }
         if (request.getCurrentStreak() != null) {
-            existing.setCurrentStreak(nonNegativeOrThrow(request.getCurrentStreak(), "Current streak"));
+            existing.setCurrentStreak(request.getCurrentStreak());
         }
         if (request.getTotalPracticeHours() != null) {
-            existing.setTotalPracticeHours(nonNegativeOrThrow(request.getTotalPracticeHours(), "Total practice hours"));
+            existing.setTotalPracticeHours(request.getTotalPracticeHours());
         }
-        if (request.getPronunciationScore() != null) {
-            existing.setPronunciationScore(nonNegativeOrThrow(request.getPronunciationScore(), "Pronunciation score"));
-        }
-        if (request.getGrammarScore() != null) {
-            existing.setGrammarScore(nonNegativeOrThrow(request.getGrammarScore(), "Grammar score"));
-        }
-        if (request.getVocabularyScore() != null) {
-            existing.setVocabularyScore(nonNegativeOrThrow(request.getVocabularyScore(), "Vocabulary score"));
-        }
-        if (request.getOverallScore() != null) {
-            existing.setOverallScore(nonNegativeOrThrow(request.getOverallScore(), "Overall score"));
+        if (request.getAveragePronunciationScore() != null) {
+            existing.setAveragePronunciationScore(request.getAveragePronunciationScore());
         }
 
-        if (request.getMentor() != null) {
-            Long mentorId = request.getMentor().getId();
-            Mentor mentor = mentorId == null ? null : getMentor(mentorId);
+        if (request.getMentorId() != null) {
+            Mentor mentor = getMentor(request.getMentorId());
             existing.setMentor(mentor);
         }
 
-        if (request.getUser() != null && request.getUser().getId() != null) {
-            Long userId = request.getUser().getId();
-            User user = getUser(userId);
-            existing.setUser(user);
-        }
-
-        return Objects.requireNonNull(learnerRepository.save(existing));
+        Learner saved = learnerRepository.save(existing);
+        return toResponse(saved);
     }
 
     @Transactional
     public void deleteLearner(Long id) {
-        Learner existing = getLearnerById(id);
+        Learner existing = getLearnerEntityById(id);
         learnerRepository.delete(existing);
     }
 
     @Transactional
-    public Learner assignMentor(Long learnerId, Long mentorId) {
-        Learner learner = getLearnerById(learnerId);
+    public LearnerResponse assignMentor(Long learnerId, Long mentorId) {
+        Learner learner = learnerRepository.findById(learnerId)
+                .orElseThrow(() -> new EntityNotFoundException("Learner not found"));
         Mentor mentor = getMentor(mentorId);
         learner.setMentor(mentor);
-        return Objects.requireNonNull(learnerRepository.save(learner));
+        Learner saved = learnerRepository.save(learner);
+        return toResponse(saved);
     }
 
     @Transactional
     public Learner unassignMentor(Long learnerId) {
-        Learner learner = getLearnerById(learnerId);
+        Learner learner = getLearnerEntityById(learnerId);
         learner.setMentor(null);
         return Objects.requireNonNull(learnerRepository.save(learner));
     }
 
     @Transactional
-    public Learner updatePerformanceScores(Long learnerId,
-                                           BigDecimal pronunciationScore,
-                                           BigDecimal grammarScore,
-                                           BigDecimal vocabularyScore,
-                                           BigDecimal overallScore) {
-        Learner learner = getLearnerById(learnerId);
-
-        if (pronunciationScore != null) {
-            learner.setPronunciationScore(nonNegativeOrThrow(pronunciationScore, "Pronunciation score"));
+    public Learner updateAveragePronunciationScore(Long learnerId, BigDecimal averageScore) {
+        Learner learner = getLearnerEntityById(learnerId);
+        if (averageScore != null) {
+            learner.setAveragePronunciationScore(nonNegativeOrThrow(averageScore, "Average pronunciation score"));
         }
-        if (grammarScore != null) {
-            learner.setGrammarScore(nonNegativeOrThrow(grammarScore, "Grammar score"));
-        }
-        if (vocabularyScore != null) {
-            learner.setVocabularyScore(nonNegativeOrThrow(vocabularyScore, "Vocabulary score"));
-        }
-        if (overallScore != null) {
-            learner.setOverallScore(nonNegativeOrThrow(overallScore, "Overall score"));
-        }
-
         return Objects.requireNonNull(learnerRepository.save(learner));
     }
 
@@ -215,7 +191,7 @@ public class LearnerService {
             throw new IllegalArgumentException("Hours to add must be greater than zero");
         }
 
-        Learner learner = getLearnerById(learnerId);
+        Learner learner = getLearnerEntityById(learnerId);
         BigDecimal current = defaultBigDecimal(learner.getTotalPracticeHours());
         learner.setTotalPracticeHours(current.add(hoursToAdd));
 
@@ -224,7 +200,7 @@ public class LearnerService {
 
     @Transactional
     public Learner incrementCurrentStreak(Long learnerId) {
-        Learner learner = getLearnerById(learnerId);
+        Learner learner = getLearnerEntityById(learnerId);
         int current = defaultStreak(learner.getCurrentStreak());
         learner.setCurrentStreak(current + 1);
         return Objects.requireNonNull(learnerRepository.save(learner));
@@ -232,15 +208,9 @@ public class LearnerService {
 
     @Transactional
     public Learner resetCurrentStreak(Long learnerId) {
-        Learner learner = getLearnerById(learnerId);
+        Learner learner = getLearnerEntityById(learnerId);
         learner.setCurrentStreak(0);
         return Objects.requireNonNull(learnerRepository.save(learner));
-    }
-
-    private Long extractUserId(Learner request) {
-        User user = Objects.requireNonNull(request.getUser(), "Learner user must not be null");
-        Long userId = Objects.requireNonNull(user.getId(), "User id must not be null");
-        return userId;
     }
 
     private User getUser(Long userId) {
@@ -262,17 +232,6 @@ public class LearnerService {
         }
     }
 
-    private void validateLearnerMetrics(Learner learner) {
-        if (learner.getCurrentStreak() != null && learner.getCurrentStreak() < 0) {
-            throw new IllegalArgumentException("Current streak must be greater than or equal to zero");
-        }
-        validateNonNegative(learner.getTotalPracticeHours(), "Total practice hours");
-        validateNonNegative(learner.getPronunciationScore(), "Pronunciation score");
-        validateNonNegative(learner.getGrammarScore(), "Grammar score");
-        validateNonNegative(learner.getVocabularyScore(), "Vocabulary score");
-        validateNonNegative(learner.getOverallScore(), "Overall score");
-    }
-
     private void validateNonNegative(BigDecimal value, String fieldName) {
         if (value != null && value.compareTo(BigDecimal.ZERO) < 0) {
             throw new IllegalArgumentException(fieldName + " must be greater than or equal to zero");
@@ -284,25 +243,28 @@ public class LearnerService {
         return value;
     }
 
-    private Integer nonNegativeOrThrow(Integer value, String fieldName) {
-        if (value == null) {
-            return null;
-        }
-        if (value < 0) {
-            throw new IllegalArgumentException(fieldName + " must be greater than or equal to zero");
-        }
-        return value;
-    }
-
-    private EnglishLevel defaultEnglishLevel(EnglishLevel level) {
-        return level != null ? level : EnglishLevel.BEGINNER;
-    }
-
     private BigDecimal defaultBigDecimal(BigDecimal value) {
         return value != null ? value : BigDecimal.ZERO;
     }
 
     private int defaultStreak(Integer streak) {
         return streak != null ? streak : 0;
+    }
+    
+    // Mapper method
+    private LearnerResponse toResponse(Learner learner) {
+        LearnerResponse response = new LearnerResponse();
+        response.setId(learner.getId());
+        response.setUserId(learner.getUser() != null ? learner.getUser().getId() : null);
+        response.setMentorId(learner.getMentor() != null ? learner.getMentor().getId() : null);
+        response.setFullName(learner.getUser() != null ? learner.getUser().getFullName() : null);
+        response.setAvatarUrl(learner.getUser() != null ? learner.getUser().getAvatarUrl() : null);
+        response.setEnglishLevel(learner.getEnglishLevel());
+        response.setLearningGoals(learner.getLearningGoals());
+        response.setCurrentStreak(learner.getCurrentStreak());
+        response.setTotalPracticeHours(learner.getTotalPracticeHours());
+        response.setAveragePronunciationScore(learner.getAveragePronunciationScore());
+        response.setCreatedAt(learner.getJoinedAt());
+        return response;
     }
 }

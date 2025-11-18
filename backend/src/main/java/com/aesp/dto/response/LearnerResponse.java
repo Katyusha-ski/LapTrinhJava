@@ -21,9 +21,6 @@ public class LearnerResponse {
     private String learningGoals;
     private Integer currentStreak;
     private BigDecimal totalPracticeHours;
-    private BigDecimal pronunciationScore;
-    private BigDecimal grammarScore;
-    private BigDecimal vocabularyScore;
-    private BigDecimal overallScore;
+    private BigDecimal averagePronunciationScore;
     private LocalDateTime createdAt;
 }

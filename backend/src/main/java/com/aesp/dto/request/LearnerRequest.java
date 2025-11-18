@@ -25,11 +25,5 @@ public class LearnerRequest {
 
     private BigDecimal totalPracticeHours = BigDecimal.ZERO;
 
-    private BigDecimal pronunciationScore = BigDecimal.ZERO;
-
-    private BigDecimal grammarScore = BigDecimal.ZERO;
-
-    private BigDecimal vocabularyScore = BigDecimal.ZERO;
-
-    private BigDecimal overallScore = BigDecimal.ZERO;
+    private BigDecimal averagePronunciationScore = BigDecimal.ZERO;
 }

@@ -27,13 +27,23 @@ public class UserService {
     private final RoleRepository roleRepository;
 
     // Read-only operations
-    public UserResponse getById(Long id) {
+    public List<UserResponse> getAllUsers() {
+        return userRepository.findAll().stream()
+                .map(this::toResponse)
+                .collect(Collectors.toList());
+    }
+
+    public UserResponse getUserById(Long id) {
         if (id == null) {
             throw new BadRequestException("User id không được null");
         }
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User không tồn tại"));
         return toResponse(user);
+    }
+
+    public UserResponse getById(Long id) {
+        return getUserById(id);
     }
 
     public List<UserResponse> listAllActive() {
@@ -43,7 +53,6 @@ public class UserService {
                 .collect(Collectors.toList());
     }
 
-    @SuppressWarnings("null")
     public Page<UserResponse> listAll(int page, int size) {
         PageRequest pageable = PageRequest.of(Math.max(page, 0), Math.max(size, 1));
         Page<User> p = userRepository.findAll(pageable);
@@ -55,7 +64,6 @@ public class UserService {
 
     // Write operations
     @Transactional
-    @SuppressWarnings("null")
     public UserResponse updateProfile(Long id, String fullName, String phone, String avatarUrl) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User không tồn tại"));
@@ -73,7 +81,6 @@ public class UserService {
     }
 
     @Transactional
-    @SuppressWarnings("null")
     public UserResponse setActive(Long id, boolean active) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User không tồn tại"));
@@ -82,7 +89,6 @@ public class UserService {
     }
 
     @Transactional
-    @SuppressWarnings("null")
     public UserResponse assignRole(Long userId, String roleName) {
         if (!StringUtils.hasText(roleName)) {
             throw new BadRequestException("Role không hợp lệ");
@@ -101,7 +107,6 @@ public class UserService {
     }
 
     @Transactional
-    @SuppressWarnings("null")
     public UserResponse removeRole(Long userId, String roleName) {
         if (!StringUtils.hasText(roleName)) {
             throw new BadRequestException("Role không hợp lệ");
@@ -114,6 +119,13 @@ public class UserService {
 
         user.getRoles().remove(role);
         return toResponse(Objects.requireNonNull(userRepository.save(user)));
+    }
+
+    @Transactional
+    public void deleteUser(Long id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("User không tồn tại"));
+        userRepository.delete(user);
     }
 
     // Mapper
