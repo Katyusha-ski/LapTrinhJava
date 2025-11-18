@@ -1,63 +1,99 @@
-# 06 - HƯỚNG DẪN FRONTEND REACT
+# 03 - HƯỚNG DẪN FRONTEND REACT + OPENAI INTEGRATION
 
 ## 📋 Mục Lục
-1. [Tổng Quan](#tổng-quan)
-2. [Setup React Project với Vite](#setup-react-project-với-vite)
-3. [Cấu Trúc Thư Mục](#cấu-trúc-thư-mục)
-4. [Configuration Files](#configuration-files)
-5. [Routing với React Router](#routing-với-react-router)
-6. [Authentication Context](#authentication-context)
-7. [API Service Layer](#api-service-layer)
-8. [Components](#components)
-9. [Pages](#pages)
-10. [Styling với Bootstrap](#styling-với-bootstrap)
-11. [State Management](#state-management)
-12. [Testing và Deployment](#testing-và-deployment)
+1. [Tổng Quan](#1-tổng-quan)
+2. [Setup Project](#2-setup-project)
+3. [Cấu Trúc Thư Mục](#3-cấu-trúc-thư-mục)
+4. [Configuration Files](#4-configuration-files)
+5. [TypeScript Types](#5-typescript-types)
+6. [API Service Layer](#6-api-service-layer)
+7. [Context & Hooks](#7-context--hooks)
+8. [Components](#8-components)
+9. [Pages](#9-pages)
+10. [OpenAI Integration](#10-openai-integration)
+11. [Audio Recording & TTS](#11-audio-recording--tts)
+12. [Deployment](#12-deployment)
 
 ---
 
-## Tổng Quan
+## 1. Tổng Quan
 
 ### Tech Stack
-- **Framework**: React 18.2.0
-- **Build Tool**: Vite 5.0.8 (nhanh hơn Create React App)
-- **Routing**: React Router DOM 6.20.0
-- **HTTP Client**: Axios 1.6.2
-- **UI Library**: React Bootstrap 2.9.1
-- **State Management**: Context API (hoặc Redux)
-- **Charts**: Chart.js 4.4.0
+- **Framework**: React 18.3+ với TypeScript
+- **Build Tool**: Vite 5.0+
+- **Routing**: React Router DOM 6.20+
+- **HTTP Client**: Axios
+- **UI**: Tailwind CSS 3.4+
+- **State Management**: Context API + React Hooks
+- **AI**: OpenAI API (GPT-4, Whisper, TTS)
+- **Forms**: React Hook Form + Zod
+- **Notifications**: React Toastify
 
-### Kiến Trúc
+### Kiến Trúc Backend-Frontend
 ```
-Pages (UI Screens)
-    ↓
-Components (Reusable UI)
-    ↓
-Services (API Calls)
-    ↓
-Backend API
+┌─────────────────────────────────────────┐
+│         Frontend (React + TS)           │
+│  ┌───────────────────────────────────┐  │
+│  │  Pages (Login, Dashboard, etc.)   │  │
+│  └───────────┬───────────────────────┘  │
+│              ↓                           │
+│  ┌───────────────────────────────────┐  │
+│  │  Context (Auth, AI)               │  │
+│  └───────────┬───────────────────────┘  │
+│              ↓                           │
+│  ┌───────────────────────────────────┐  │
+│  │  Services (API Calls)             │  │
+│  └───────────┬───────────────────────┘  │
+└──────────────┼─────────────────────────┘
+               │ HTTP (Axios)
+               ↓
+┌─────────────────────────────────────────┐
+│      Backend (Spring Boot)              │
+│  ┌───────────────────────────────────┐  │
+│  │  Controllers (10 endpoints)       │  │
+│  │  - AuthController                 │  │
+│  │  - UserController                 │  │
+│  │  - LearnerController              │  │
+│  │  - MentorController               │  │
+│  │  - PackageController              │  │
+│  │  - SubscriptionController         │  │
+│  │  - PracticeSessionController      │  │
+│  │  - AIConversationController       │  │
+│  │  - ConversationTopicController    │  │
+│  │  - PronunciationScoreController   │  │
+│  └───────────┬───────────────────────┘  │
+│              ↓                           │
+│  ┌───────────────────────────────────┐  │
+│  │  Services (Business Logic)        │  │
+│  └───────────┬───────────────────────┘  │
+│              ↓                           │
+│  ┌───────────────────────────────────┐  │
+│  │  Repositories (JPA)               │  │
+│  └───────────┬───────────────────────┘  │
+└──────────────┼─────────────────────────┘
+               ↓
+┌─────────────────────────────────────────┐
+│         Database (MySQL)                │
+│  - users, roles                         │
+│  - learners, mentors                    │
+│  - packages, subscriptions              │
+│  - practice_sessions                    │
+│  - ai_conversations                     │
+│  - pronunciation_scores                 │
+└─────────────────────────────────────────┘
 ```
 
 ---
 
-## Setup React Project với Vite
+## 2. Setup Project
 
-### Bước 1: Tạo Project với Vite
+### Bước 1: Kiểm Tra Project Hiện Tại
 
 ```bash
-# Trong folder frontend/
-npm create vite@latest . -- --template react
-
-# Hoặc nếu folder chưa tồn tại:
-npm create vite@latest frontend -- --template react
 cd frontend
+ls -la
+# Nên thấy: vite.config.ts, tsconfig.json, tailwind.config.cjs
 ```
-
-**Lựa chọn:**
-- Framework: **React**
-- Variant: **JavaScript** (hoặc TypeScript nếu bạn muốn)
-
----
 
 ### Bước 2: Install Dependencies
 
@@ -65,378 +101,512 @@ cd frontend
 npm install
 ```
 
----
-
 ### Bước 3: Install Thêm Packages
 
 ```bash
-# Routing
-npm install react-router-dom
+# Core libraries
+npm install react-router-dom axios
 
-# HTTP Client
-npm install axios
+# UI & Styling (Tailwind đã có)
+npm install @headlessui/react @heroicons/react react-icons
 
-# UI Library
-npm install react-bootstrap bootstrap
-
-# Icons
-npm install react-icons
-
-# Toast Notifications
+# Notifications
 npm install react-toastify
 
-# Charts (optional)
-npm install chart.js react-chartjs-2
+# OpenAI Integration
+npm install openai
 
-# Form Validation (optional)
-npm install formik yup
+# Audio Recording
+npm install recordrtc
+
+# Forms & Validation
+npm install react-hook-form zod @hookform/resolvers
+
+# Utilities
+npm install date-fns clsx
 ```
 
 ---
 
-## Cấu Trúc Thư Mục
+## 3. Cấu Trúc Thư Mục
 
 ```
 frontend/
-├── public/
-│   └── vite.svg                    # Favicon
 ├── src/
-│   ├── assets/                     # Images, fonts
-│   │   └── logo.png
-│   ├── components/                 # Reusable components
+│   ├── types/              # TypeScript types
+│   │   ├── auth.types.ts
+│   │   ├── user.types.ts
+│   │   ├── learner.types.ts
+│   │   ├── mentor.types.ts
+│   │   ├── package.types.ts
+│   │   ├── session.types.ts
+│   │   └── ai.types.ts
+│   ├── services/           # API services
+│   │   ├── api.ts
+│   │   ├── authService.ts
+│   │   ├── userService.ts
+│   │   ├── learnerService.ts
+│   │   ├── mentorService.ts
+│   │   ├── packageService.ts
+│   │   ├── subscriptionService.ts
+│   │   ├── practiceSessionService.ts
+│   │   ├── aiConversationService.ts
+│   │   ├── pronunciationScoreService.ts
+│   │   ├── conversationTopicService.ts
+│   │   └── openaiService.ts
+│   ├── context/
+│   │   ├── AuthContext.tsx
+│   │   └── AIContext.tsx
+│   ├── hooks/
+│   │   ├── useAuth.ts
+│   │   ├── useAI.ts
+│   │   └── useAudioRecorder.ts
+│   ├── components/
 │   │   ├── common/
-│   │   │   ├── Header.jsx
-│   │   │   ├── Footer.jsx
-│   │   │   ├── Sidebar.jsx
-│   │   │   ├── Loader.jsx
-│   │   │   └── ProtectedRoute.jsx
 │   │   ├── auth/
-│   │   │   ├── LoginForm.jsx
-│   │   │   └── RegisterForm.jsx
 │   │   ├── learner/
-│   │   │   ├── PackageCard.jsx
-│   │   │   ├── ProgressChart.jsx
-│   │   │   ├── SessionHistory.jsx
-│   │   │   └── PracticeSessionCard.jsx
-│   │   └── mentor/
-│   │       ├── LearnerList.jsx
-│   │       ├── SessionForm.jsx
-│   │       └── SessionManagement.jsx
-│   ├── context/                    # React Context
-│   │   └── AuthContext.jsx
-│   ├── pages/                      # Page components
-│   │   ├── auth/
-│   │   │   ├── LoginPage.jsx
-│   │   │   └── RegisterPage.jsx
-│   │   ├── learner/
-│   │   │   ├── LearnerDashboard.jsx
-│   │   │   ├── PackagesPage.jsx
-│   │   │   ├── MyProgressPage.jsx
-│   │   │   ├── PracticePage.jsx
-│   │   │   └── MySessionsPage.jsx
 │   │   ├── mentor/
-│   │   │   ├── MentorDashboard.jsx
-│   │   │   ├── MyLearnersPage.jsx
-│   │   │   ├── SessionsPage.jsx
-│   │   │   └── SessionSchedulePage.jsx
-│   │   ├── admin/
-│   │   │   ├── AdminDashboard.jsx
-│   │   │   ├── UsersPage.jsx
-│   │   │   └── PackagesManagement.jsx
-│   │   ├── HomePage.jsx
-│   │   ├── AboutPage.jsx
-│   │   └── NotFoundPage.jsx
-│   ├── services/                   # API calls
-│   │   ├── api.js                  # Axios instance
-│   │   ├── authService.js
-│   │   ├── userService.js
-│   │   ├── packageService.js
-│   │   ├── practiceSessionService.js
-│   │   └── learningProgressService.js
-│   ├── utils/                      # Utility functions
-│   │   ├── constants.js
-│   │   ├── validators.js
-│   │   └── helpers.js
-│   ├── styles/                     # CSS files
-│   │   ├── App.css
-│   │   ├── Dashboard.css
-│   │   └── Auth.css
-│   ├── App.jsx                     # Main App component
-│   ├── main.jsx                    # Entry point
-│   └── index.css                   # Global styles
-├── .env                            # Environment variables
-├── .env.example                    # Example env file
-├── vite.config.js                  # Vite configuration
-├── package.json                    # Dependencies
-└── README.md
+│   │   └── ai/
+│   ├── pages/
+│   │   ├── auth/
+│   │   ├── learner/
+│   │   ├── mentor/
+│   │   └── admin/
+│   ├── utils/
+│   │   ├── constants.ts
+│   │   ├── validators.ts
+│   │   └── helpers.ts
+│   ├── App.tsx
+│   └── main.tsx
+├── .env
+├── .env.example
+├── vite.config.ts
+├── tailwind.config.cjs
+└── tsconfig.json
 ```
 
 ---
 
-## Configuration Files
+## 4. Configuration Files
 
-### 1. `vite.config.js` - Vite Configuration
+### 4.1. `.env`
 
-```javascript
+```env
+# Backend API
+VITE_API_URL=http://localhost:8080/api
+
+# OpenAI (CHỈ CHO DEV - PRODUCTION DÙNG BACKEND)
+VITE_OPENAI_API_KEY=sk-your-key-here
+
+# App Config
+VITE_APP_NAME=AESP
+VITE_ENV=development
+```
+
+### 4.2. `vite.config.ts`
+
+```typescript
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import path from 'path'
 
 export default defineConfig({
   plugins: [react()],
   server: {
     port: 5173,
     proxy: {
-      // Proxy API requests to backend
       '/api': {
         target: 'http://localhost:8080',
         changeOrigin: true,
-        secure: false,
+        secure: false
       }
+    }
+  },
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './src')
     }
   }
 })
 ```
 
-**Giải thích:**
-- `port: 5173`: Frontend chạy ở port 5173
-- `proxy`: Chuyển tiếp requests từ `/api` sang `http://localhost:8080/api`
-  - Tránh CORS errors khi development
-  - Frontend gọi `/api/auth/login` → Backend `http://localhost:8080/api/auth/login`
-
 ---
 
-### 2. `.env` - Environment Variables
+## 5. TypeScript Types
 
-```env
-# Backend API URL
-VITE_API_URL=http://localhost:8080/api
+### 5.1. `types/auth.types.ts`
 
-# App Name
-VITE_APP_NAME=AESP - AI English Speaking Practice
+```typescript
+export interface LoginRequest {
+  username: string;
+  password: string;
+}
+
+export interface RegisterRequest {
+  username: string;
+  email: string;
+  password: string;
+  fullName: string;
+  phone?: string;
+}
+
+export interface JwtResponse {
+  token: string;
+  id: number;
+  username: string;
+  email: string;
+  fullName: string;
+  roles: string[];
+}
+
+export interface User {
+  id: number;
+  username: string;
+  email: string;
+  fullName: string;
+  phone?: string;
+  avatarUrl?: string;
+  isActive: boolean;
+  roles: string[];
+  createdAt: string;
+}
 ```
 
-**Lưu ý:**
-- Vite yêu cầu prefix `VITE_` cho environment variables
-- Sử dụng: `import.meta.env.VITE_API_URL`
+### 5.2. `types/session.types.ts`
+
+```typescript
+export enum SessionType {
+  AI_ASSISTED = 'AI_ASSISTED',
+  MENTOR_LED = 'MENTOR_LED'
+}
+
+export enum SessionStatus {
+  SCHEDULED = 'SCHEDULED',
+  IN_PROGRESS = 'IN_PROGRESS',
+  COMPLETED = 'COMPLETED',
+  CANCELLED = 'CANCELLED'
+}
+
+export interface PracticeSession {
+  id: number;
+  learnerId: number;
+  mentorId?: number;
+  sessionType: SessionType;
+  sessionStatus: SessionStatus;
+  startTime: string;
+  endTime?: string;
+  topic?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PracticeSessionRequest {
+  learnerId: number;
+  mentorId?: number;
+  sessionType: SessionType;
+  startTime: string;
+  endTime?: string;
+  topic?: string;
+}
+```
+
+### 5.3. `types/ai.types.ts`
+
+```typescript
+export interface AIMessage {
+  id?: number;
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  timestamp: string;
+}
+
+export interface AIConversation {
+  id: number;
+  practiceSessionId: number;
+  messages: AIMessage[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PronunciationScore {
+  id: number;
+  learnerId: number;
+  practiceSessionId?: number;
+  text: string;
+  audioUrl?: string;
+  accuracyScore: number;
+  fluencyScore: number;
+  completenessScore: number;
+  overallScore: number;
+  feedback: string;
+  createdAt: string;
+}
+
+export interface ConversationTopic {
+  id: number;
+  title: string;
+  description: string;
+  difficulty: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED';
+  category: string;
+  isActive: boolean;
+}
+```
 
 ---
 
-### 3. `package.json` - Dependencies
+## 6. API Service Layer
 
-```json
-{
-  "name": "aesp-frontend",
-  "version": "1.0.0",
-  "type": "module",
-  "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
-  },
-  "dependencies": {
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "react-router-dom": "^6.20.0",
-    "axios": "^1.6.2",
-    "react-bootstrap": "^2.9.1",
-    "bootstrap": "^5.3.2",
-    "react-icons": "^4.12.0",
-    "react-toastify": "^9.1.3",
-    "chart.js": "^4.4.0",
-    "react-chartjs-2": "^5.2.0"
-  },
-  "devDependencies": {
-    "@vitejs/plugin-react": "^4.2.1",
-    "vite": "^5.0.8"
+### 6.1. `services/api.ts` - Axios Instance
+
+```typescript
+import axios from 'axios';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+
+const api = axios.create({
+  baseURL: API_URL,
+  headers: {
+    'Content-Type': 'application/json'
   }
-}
+});
+
+// Request Interceptor: Add JWT token
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+// Response Interceptor: Handle 401
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  }
+);
+
+export default api;
 ```
 
----
+### 6.2. `services/authService.ts`
 
-## Routing với React Router
+```typescript
+import api from './api';
+import { LoginRequest, RegisterRequest, JwtResponse } from '@/types/auth.types';
 
-### 1. `main.jsx` - Entry Point
-
-```jsx
-import React from 'react'
-import ReactDOM from 'react-dom/client'
-import { BrowserRouter } from 'react-router-dom'
-import App from './App.jsx'
-import './index.css'
-import 'bootstrap/dist/css/bootstrap.min.css'
-import 'react-toastify/dist/ReactToastify.css'
-
-ReactDOM.createRoot(document.getElementById('root')).render(
-  <React.StrictMode>
-    <BrowserRouter>
-      <App />
-    </BrowserRouter>
-  </React.StrictMode>,
-)
-```
-
----
-
-### 2. `App.jsx` - Main App Component với Routes
-
-```jsx
-import React from 'react'
-import { Routes, Route } from 'react-router-dom'
-import { ToastContainer } from 'react-toastify'
-import { AuthProvider } from './context/AuthContext'
-import ProtectedRoute from './components/common/ProtectedRoute'
-import Header from './components/common/Header'
-import Footer from './components/common/Footer'
-
-// Pages
-import HomePage from './pages/HomePage'
-import LoginPage from './pages/auth/LoginPage'
-import RegisterPage from './pages/auth/RegisterPage'
-import LearnerDashboard from './pages/learner/LearnerDashboard'
-import MentorDashboard from './pages/mentor/MentorDashboard'
-import AdminDashboard from './pages/admin/AdminDashboard'
-import NotFoundPage from './pages/NotFoundPage'
-
-import './App.css'
-
-function App() {
-  return (
-    <AuthProvider>
-      <div className="app">
-        <Header />
-        <main className="main-content">
-          <Routes>
-            {/* Public Routes */}
-            <Route path="/" element={<HomePage />} />
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/register" element={<RegisterPage />} />
-            
-            {/* Protected Routes - Learner */}
-            <Route 
-              path="/learner/*" 
-              element={
-                <ProtectedRoute roles={['ROLE_LEARNER']}>
-                  <LearnerDashboard />
-                </ProtectedRoute>
-              } 
-            />
-            
-            {/* Protected Routes - Mentor */}
-            <Route 
-              path="/mentor/*" 
-              element={
-                <ProtectedRoute roles={['ROLE_MENTOR']}>
-                  <MentorDashboard />
-                </ProtectedRoute>
-              } 
-            />
-            
-            {/* Protected Routes - Admin */}
-            <Route 
-              path="/admin/*" 
-              element={
-                <ProtectedRoute roles={['ROLE_ADMIN']}>
-                  <AdminDashboard />
-                </ProtectedRoute>
-              } 
-            />
-            
-            {/* 404 Page */}
-            <Route path="*" element={<NotFoundPage />} />
-          </Routes>
-        </main>
-        <Footer />
-        <ToastContainer position="top-right" autoClose={3000} />
-      </div>
-    </AuthProvider>
-  )
-}
-
-export default App
-```
-
----
-
-## Authentication Context
-
-### `AuthContext.jsx` - Quản Lý Authentication State
-
-```jsx
-import React, { createContext, useState, useEffect, useContext } from 'react'
-import { useNavigate } from 'react-router-dom'
-import authService from '../services/authService'
-import { toast } from 'react-toastify'
-
-const AuthContext = createContext(null)
-
-export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const navigate = useNavigate()
+export const authService = {
+  login: (credentials: LoginRequest) => 
+    api.post<JwtResponse>('/auth/login', credentials),
   
-  // Load user từ localStorage khi app khởi động
+  register: (userData: RegisterRequest) => 
+    api.post('/auth/register', userData),
+  
+  getCurrentUser: () => 
+    api.get('/users/me')
+};
+```
+
+### 6.3. `services/practiceSessionService.ts`
+
+```typescript
+import api from './api';
+import { PracticeSession, PracticeSessionRequest, SessionStatus } from '@/types/session.types';
+
+export const practiceSessionService = {
+  createSession: (data: PracticeSessionRequest) =>
+    api.post<PracticeSession>('/practice-sessions', data),
+  
+  getAllSessions: () =>
+    api.get<PracticeSession[]>('/practice-sessions'),
+  
+  getSessionsByLearner: (learnerId: number) =>
+    api.get<PracticeSession[]>(`/practice-sessions/learner/${learnerId}`),
+  
+  getSessionsByMentor: (mentorId: number) =>
+    api.get<PracticeSession[]>(`/practice-sessions/mentor/${mentorId}`),
+  
+  getSessionById: (id: number) =>
+    api.get<PracticeSession>(`/practice-sessions/${id}`),
+  
+  updateSessionStatus: (id: number, status: SessionStatus) =>
+    api.patch(`/practice-sessions/${id}/status`, null, { params: { status } }),
+  
+  deleteSession: (id: number) =>
+    api.delete(`/practice-sessions/${id}`)
+};
+```
+
+### 6.4. `services/aiConversationService.ts`
+
+```typescript
+import api from './api';
+import { AIConversation, AIMessage } from '@/types/ai.types';
+
+export const aiConversationService = {
+  // Lấy conversation của session
+  getConversationBySession: (sessionId: number) =>
+    api.get<AIConversation>(`/ai-conversations/session/${sessionId}`),
+  
+  // Tạo conversation mới
+  createConversation: (sessionId: number) =>
+    api.post<AIConversation>('/ai-conversations', { sessionId }),
+  
+  // Gửi message và nhận response từ AI (qua backend)
+  sendMessage: (conversationId: number, message: string) =>
+    api.post<AIMessage>(`/ai-conversations/${conversationId}/message`, { 
+      content: message 
+    }),
+  
+  // Lấy lịch sử chat
+  getMessages: (conversationId: number) =>
+    api.get<AIMessage[]>(`/ai-conversations/${conversationId}/messages`)
+};
+```
+
+### 6.5. `services/pronunciationScoreService.ts`
+
+```typescript
+import api from './api';
+import { PronunciationScore } from '@/types/ai.types';
+
+export const pronunciationScoreService = {
+  // Đánh giá phát âm (gửi audio file)
+  evaluatePronunciation: (learnerId: number, audioBlob: Blob, text: string) => {
+    const formData = new FormData();
+    formData.append('audio', audioBlob, 'recording.wav');
+    formData.append('text', text);
+    formData.append('learnerId', learnerId.toString());
+    
+    return api.post<PronunciationScore>('/pronunciation-scores/evaluate', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+  },
+  
+  // Lấy scores của learner
+  getScoresByLearner: (learnerId: number) =>
+    api.get<PronunciationScore[]>(`/pronunciation-scores/learner/${learnerId}`),
+  
+  // Lấy score theo ID
+  getScoreById: (id: number) =>
+    api.get<PronunciationScore>(`/pronunciation-scores/${id}`)
+};
+```
+
+### 6.6. `services/conversationTopicService.ts`
+
+```typescript
+import api from './api';
+import { ConversationTopic } from '@/types/ai.types';
+
+export const conversationTopicService = {
+  getAllTopics: () =>
+    api.get<ConversationTopic[]>('/conversation-topics'),
+  
+  getActiveTopics: () =>
+    api.get<ConversationTopic[]>('/conversation-topics/active'),
+  
+  getTopicById: (id: number) =>
+    api.get<ConversationTopic>(`/conversation-topics/${id}`),
+  
+  createTopic: (data: Partial<ConversationTopic>) =>
+    api.post<ConversationTopic>('/conversation-topics', data),
+  
+  updateTopic: (id: number, data: Partial<ConversationTopic>) =>
+    api.put<ConversationTopic>(`/conversation-topics/${id}`, data)
+};
+```
+
+---
+
+## 7. Context & Hooks
+
+### 7.1. `context/AuthContext.tsx`
+
+```typescript
+import React, { createContext, useState, useEffect, ReactNode } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { authService } from '@/services/authService';
+import { LoginRequest, RegisterRequest, JwtResponse } from '@/types/auth.types';
+import { toast } from 'react-toastify';
+
+interface AuthContextType {
+  user: JwtResponse | null;
+  login: (credentials: LoginRequest) => Promise<void>;
+  register: (userData: RegisterRequest) => Promise<void>;
+  logout: () => void;
+  hasRole: (role: string) => boolean;
+  isAuthenticated: boolean;
+}
+
+export const AuthContext = createContext<AuthContextType | null>(null);
+
+export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const [user, setUser] = useState<JwtResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
+  
   useEffect(() => {
-    const storedUser = localStorage.getItem('user')
+    const storedUser = localStorage.getItem('user');
     if (storedUser) {
-      setUser(JSON.parse(storedUser))
+      setUser(JSON.parse(storedUser));
     }
-    setLoading(false)
-  }, [])
+    setLoading(false);
+  }, []);
   
-  // Login
-  const login = async (credentials) => {
+  const login = async (credentials: LoginRequest) => {
     try {
-      const response = await authService.login(credentials)
-      const userData = response.data
+      const response = await authService.login(credentials);
+      const userData = response.data;
       
-      // Lưu user và token vào localStorage
-      localStorage.setItem('user', JSON.stringify(userData))
-      localStorage.setItem('token', userData.token)
-      setUser(userData)
+      localStorage.setItem('user', JSON.stringify(userData));
+      localStorage.setItem('token', userData.token);
+      setUser(userData);
       
-      // Redirect theo role
-      const role = userData.roles[0]
-      if (role === 'ROLE_ADMIN') {
-        navigate('/admin')
-      } else if (role === 'ROLE_MENTOR') {
-        navigate('/mentor')
-      } else {
-        navigate('/learner')
-      }
+      // Redirect dựa vào role
+      const role = userData.roles[0];
+      if (role.includes('ADMIN')) navigate('/admin');
+      else if (role.includes('MENTOR')) navigate('/mentor');
+      else navigate('/learner');
       
-      toast.success('Đăng nhập thành công!')
-    } catch (error) {
-      toast.error(error.response?.data?.message || 'Đăng nhập thất bại')
-      throw error
+      toast.success('Đăng nhập thành công!');
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Đăng nhập thất bại');
+      throw error;
     }
-  }
+  };
   
-  // Register
-  const register = async (userData) => {
+  const register = async (userData: RegisterRequest) => {
     try {
-      await authService.register(userData)
-      toast.success('Đăng ký thành công! Vui lòng đăng nhập.')
-      navigate('/login')
-    } catch (error) {
-      toast.error(error.response?.data?.message || 'Đăng ký thất bại')
-      throw error
+      await authService.register(userData);
+      toast.success('Đăng ký thành công! Vui lòng đăng nhập.');
+      navigate('/login');
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Đăng ký thất bại');
+      throw error;
     }
-  }
+  };
   
-  // Logout
   const logout = () => {
-    localStorage.removeItem('user')
-    localStorage.removeItem('token')
-    setUser(null)
-    navigate('/login')
-    toast.info('Đã đăng xuất')
-  }
+    localStorage.removeItem('user');
+    localStorage.removeItem('token');
+    setUser(null);
+    navigate('/login');
+    toast.info('Đã đăng xuất');
+  };
   
-  // Check if user has specific role
-  const hasRole = (role) => {
-    return user?.roles?.includes(role)
-  }
+  const hasRole = (role: string) => {
+    return user?.roles?.some(r => r.includes(role)) || false;
+  };
   
   const value = {
     user,
@@ -445,1214 +615,688 @@ export const AuthProvider = ({ children }) => {
     logout,
     hasRole,
     isAuthenticated: !!user
-  }
+  };
   
-  if (loading) {
-    return <div>Loading...</div>
-  }
+  if (loading) return <div>Loading...</div>;
   
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
-}
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+};
+```
 
-// Custom hook để sử dụng AuthContext
+### 7.2. `hooks/useAuth.ts`
+
+```typescript
+import { useContext } from 'react';
+import { AuthContext } from '@/context/AuthContext';
+
 export const useAuth = () => {
-  const context = useContext(AuthContext)
+  const context = useContext(AuthContext);
   if (!context) {
-    throw new Error('useAuth must be used within AuthProvider')
+    throw new Error('useAuth must be used within AuthProvider');
   }
-  return context
-}
+  return context;
+};
 ```
 
----
+### 7.3. `hooks/useAudioRecorder.ts`
 
-## API Service Layer
+```typescript
+import { useState, useRef } from 'react';
+import RecordRTC from 'recordrtc';
 
-### 1. `api.js` - Axios Instance
-
-```javascript
-import axios from 'axios'
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api'
-
-const api = axios.create({
-  baseURL: API_URL,
-  headers: {
-    'Content-Type': 'application/json'
-  }
-})
-
-// Request Interceptor: Thêm JWT token vào mỗi request
-api.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('token')
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`
+export const useAudioRecorder = () => {
+  const [isRecording, setIsRecording] = useState(false);
+  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
+  const recorderRef = useRef<RecordRTC | null>(null);
+  
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      
+      recorderRef.current = new RecordRTC(stream, {
+        type: 'audio',
+        mimeType: 'audio/wav',
+        recorderType: RecordRTC.StereoAudioRecorder,
+        numberOfAudioChannels: 1,
+        desiredSampRate: 16000
+      });
+      
+      recorderRef.current.startRecording();
+      setIsRecording(true);
+    } catch (error) {
+      console.error('Error accessing microphone:', error);
+      throw error;
     }
-    return config
-  },
-  (error) => {
-    return Promise.reject(error)
-  }
-)
-
-// Response Interceptor: Xử lý lỗi 401 (Unauthorized)
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      // Token hết hạn hoặc không hợp lệ
-      localStorage.removeItem('token')
-      localStorage.removeItem('user')
-      window.location.href = '/login'
-    }
-    return Promise.reject(error)
-  }
-)
-
-export default api
-```
-
----
-
-### 2. `authService.js` - Authentication API Calls
-
-```javascript
-import api from './api'
-
-const authService = {
-  // Login
-  login: (credentials) => {
-    // credentials: { username: string, password: string }
-    return api.post('/auth/login', credentials)
-  },
+  };
   
-  // Register
-  register: (userData) => {
-    // userData: { username, email, password, fullName, phone, role: 'LEARNER' | 'MENTOR' }
-    return api.post('/auth/register', userData)
-  },
-  
-  // Get current user profile
-  getCurrentUser: () => {
-    return api.get('/users/me')
-  }
-}
-
-export default authService
-```
-
-**Request/Response Format (từ AuthController):**
-
-```javascript
-// POST /api/auth/login
-Request:
-{
-  "username": "user123",
-  "password": "password123"
-}
-
-Response (JwtResponse):
-{
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "id": 1,
-  "username": "user123",
-  "email": "user@example.com",
-  "fullName": "Full Name",
-  "roles": ["ROLE_LEARNER"]
-}
-
-// POST /api/auth/register
-Request:
-{
-  "username": "newuser",
-  "email": "newuser@example.com",
-  "password": "password123",
-  "fullName": "New User",
-  "phone": "0123456789"
-}
-
-Response (MessageResponse):
-{
-  "success": true,
-  "message": "Đăng ký thành công"
-}
-```
-
----
-
-### 3. `userService.js` - User API Calls
-
-```javascript
-import api from './api'
-
-const userService = {
-  // Get all users (Admin only)
-  getAllUsers: () => {
-    return api.get('/users')
-  },
-  
-  // Get user by ID
-  getUserById: (id) => {
-    return api.get(`/users/${id}`)
-  },
-  
-  // Update user profile
-  updateProfile: (id, userData) => {
-    return api.put(`/users/${id}`, userData)
-  },
-  
-  // Delete user (Admin only)
-  deleteUser: (id) => {
-    return api.delete(`/users/${id}`)
-  }
-}
-
-export default userService
-```
-
-### 4. `practiceSessionService.js` - Practice Session API Calls
-
-```javascript
-import api from './api'
-
-const practiceSessionService = {
-  // Tạo session mới
-  createSession: (sessionData) => {
-    // sessionData: { learnerId, mentorId?, type, scheduledAt, durationMinutes, topic?, notes? }
-    return api.post('/practice-sessions', sessionData)
-  },
-  
-  // Lấy tất cả sessions
-  getAllSessions: () => {
-    return api.get('/practice-sessions')
-  },
-  
-  // Lấy sessions của learner
-  getSessionsByLearner: (learnerId) => {
-    return api.get(`/practice-sessions/learner/${learnerId}`)
-  },
-  
-  // Lấy sessions của mentor
-  getSessionsByMentor: (mentorId) => {
-    return api.get(`/practice-sessions/mentor/${mentorId}`)
-  },
-  
-  // Lấy session theo ID
-  getSessionById: (id) => {
-    return api.get(`/practice-sessions/${id}`)
-  },
-  
-  // Cập nhật session status
-  updateSessionStatus: (id, status) => {
-    return api.patch(`/practice-sessions/${id}/status?status=${status}`)
-  },
-  
-  // Xóa session
-  deleteSession: (id) => {
-    return api.delete(`/practice-sessions/${id}`)
-  }
-}
-
-export default practiceSessionService
-```
-
-**PracticeSessionRequest Format (từ BE):**
-
-```javascript
-{
-  "learnerId": 1,
-  "mentorId": null,  // optional
-  "type": "MENTOR_LED",  // enum: MENTOR_LED | AI_ASSISTED
-  "scheduledAt": "2024-01-15T14:30:00",
-  "durationMinutes": 60,
-  "topic": "Pronunciation",  // optional
-  "notes": "Practice notes"   // optional
-}
-```
-
-**PracticeSessionResponse Format:**
-
-```javascript
-{
-  "id": 1,
-  "learnerId": 1,
-  "mentorId": 2,
-  "type": "MENTOR_LED",
-  "status": "PENDING",  // enum: PENDING | COMPLETED | CANCELLED
-  "scheduledAt": "2024-01-15T14:30:00",
-  "durationMinutes": 60,
-  "topic": "Pronunciation",
-  "notes": "Practice notes",
-  "createdAt": "2024-01-14T10:00:00",
-  "updatedAt": "2024-01-14T10:00:00"
-}
-```
-
-### 5. `mentorService.js` - Mentor API Calls
-
-```javascript
-import api from './api'
-
-const mentorService = {
-  // Lấy tất cả mentors
-  getAllMentors: () => {
-    return api.get('/mentors')
-  },
-  
-  // Lấy mentor theo ID
-  getMentorById: (id) => {
-    return api.get(`/mentors/${id}`)
-  },
-  
-  // Tạo mentor mới
-  createMentor: (mentorData) => {
-    return api.post('/mentors', mentorData)
-  },
-  
-  // Cập nhật mentor
-  updateMentor: (id, mentorData) => {
-    return api.put(`/mentors/${id}`, mentorData)
-  },
-  
-  // Xóa mentor
-  deleteMentor: (id) => {
-    return api.delete(`/mentors/${id}`)
-  },
-  
-  // Toggle availability
-  toggleAvailability: (id) => {
-    return api.patch(`/mentors/${id}/availability`)
-  }
-}
-
-export default mentorService
-```
-
-### 6. `learnerService.js` - Learner API Calls
-
-```javascript
-import api from './api'
-
-const learnerService = {
-  // Lấy tất cả learners
-  getAllLearners: () => {
-    return api.get('/learners')
-  },
-  
-  // Lấy learner theo ID
-  getLearnerById: (id) => {
-    return api.get(`/learners/${id}`)
-  },
-  
-  // Tạo learner mới
-  createLearner: (learnerData) => {
-    return api.post('/learners', learnerData)
-  },
-  
-  // Cập nhật learner
-  updateLearner: (id, learnerData) => {
-    return api.put(`/learners/${id}`, learnerData)
-  },
-  
-  // Xóa learner
-  deleteLearner: (id) => {
-    return api.delete(`/learners/${id}`)
-  },
-  
-  // Gán mentor cho learner
-  assignMentor: (learnerId, mentorId) => {
-    return api.post(`/learners/${learnerId}/assign-mentor/${mentorId}`)
-  }
-}
-
-export default learnerService
-```
-
-### 7. `packageService.js` - Package API Calls
-
-```javascript
-import api from './api'
-
-const packageService = {
-  // Lấy tất cả packages
-  getAllPackages: () => {
-    return api.get('/packages')
-  },
-  
-  // Lấy package theo ID
-  getPackageById: (id) => {
-    return api.get(`/packages/${id}`)
-  },
-  
-  // Tạo package mới
-  createPackage: (packageData) => {
-    return api.post('/packages', packageData)
-  },
-  
-  // Cập nhật package
-  updatePackage: (id, packageData) => {
-    return api.put(`/packages/${id}`, packageData)
-  },
-  
-  // Xóa package
-  deletePackage: (id) => {
-    return api.delete(`/packages/${id}`)
-  },
-  
-  // Cập nhật status
-  updateStatus: (id, isActive) => {
-    return api.patch(`/packages/${id}/status?active=${isActive}`)
-  }
-}
-
-export default packageService
-```
-
-**PackageResponse Format:**
-
-```javascript
-{
-  "id": 1,
-  "name": "Starter Package",
-  "description": "Perfect for beginners",
-  "price": 99.99,
-  "durationDays": 30,
-  "features": ["10 sessions", "Basic support", "Certificate"],
-  "isActive": true,
-  "createdAt": "2024-01-14T10:00:00",
-  "updatedAt": "2024-01-14T10:00:00"
-}
-```
-
----
-
-## Components
-
-### 1. `ProtectedRoute.jsx` - Route Bảo Vệ
-
-```jsx
-import React from 'react'
-import { Navigate } from 'react-router-dom'
-import { useAuth } from '../../context/AuthContext'
-import Loader from './Loader'
-
-const ProtectedRoute = ({ children, roles }) => {
-  const { user, isAuthenticated, loading } = useAuth()
-  
-  // Đang load dữ liệu → hiển thị loading
-  if (loading) {
-    return <Loader />
-  }
-  
-  // Chưa đăng nhập → redirect về login
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />
-  }
-  
-  // Kiểm tra role nếu có yêu cầu
-  if (roles && roles.length > 0) {
-    const hasRequiredRole = roles.some(role => user?.roles?.includes(role))
-    if (!hasRequiredRole) {
-      return <Navigate to="/" replace />
-    }
-  }
-  
-  return children
-}
-
-export default ProtectedRoute
-```
-
----
-
-### 2. `Header.jsx` - Navigation Bar
-
-```jsx
-import React from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { Navbar, Nav, Container, NavDropdown } from 'react-bootstrap'
-import { useAuth } from '../../context/AuthContext'
-
-const Header = () => {
-  const { user, isAuthenticated, logout } = useAuth()
-  const navigate = useNavigate()
-  
-  const handleLogout = () => {
-    logout()
-    navigate('/login')
-  }
-  
-  // Helper function: Check if user has specific role
-  const hasRole = (role) => {
-    return user?.roles?.includes(role)
-  }
-  
-  return (
-    <Navbar bg="dark" variant="dark" expand="lg" sticky="top">
-      <Container>
-        <Navbar.Brand as={Link} to="/">
-          🎓 AESP
-        </Navbar.Brand>
-        <Navbar.Toggle aria-controls="basic-navbar-nav" />
-        <Navbar.Collapse id="basic-navbar-nav">
-          <Nav className="ms-auto">
-            {!isAuthenticated ? (
-              <>
-                <Nav.Link as={Link} to="/">Trang chủ</Nav.Link>
-                <Nav.Link as={Link} to="/login">Đăng Nhập</Nav.Link>
-                <Nav.Link as={Link} to="/register">Đăng Ký</Nav.Link>
-              </>
-            ) : (
-              <>
-                {/* Learner navigation */}
-                {hasRole('ROLE_LEARNER') && (
-                  <>
-                    <Nav.Link as={Link} to="/learner">Dashboard</Nav.Link>
-                    <Nav.Link as={Link} to="/learner/packages">Gói học</Nav.Link>
-                    <Nav.Link as={Link} to="/learner/sessions">Luyện tập</Nav.Link>
-                    <Nav.Link as={Link} to="/learner/progress">Tiến độ</Nav.Link>
-                  </>
-                )}
-                
-                {/* Mentor navigation */}
-                {hasRole('ROLE_MENTOR') && (
-                  <>
-                    <Nav.Link as={Link} to="/mentor">Dashboard</Nav.Link>
-                    <Nav.Link as={Link} to="/mentor/learners">Học viên</Nav.Link>
-                    <Nav.Link as={Link} to="/mentor/sessions">Phiên họp</Nav.Link>
-                  </>
-                )}
-                
-                {/* Admin navigation */}
-                {hasRole('ROLE_ADMIN') && (
-                  <>
-                    <Nav.Link as={Link} to="/admin">Dashboard</Nav.Link>
-                    <Nav.Link as={Link} to="/admin/users">Người dùng</Nav.Link>
-                    <Nav.Link as={Link} to="/admin/packages">Gói học</Nav.Link>
-                  </>
-                )}
-                
-                {/* User dropdown */}
-                <NavDropdown title={user?.fullName || user?.username} id="user-dropdown">
-                  <NavDropdown.Item as={Link} to="/profile">Hồ sơ</NavDropdown.Item>
-                  <NavDropdown.Divider />
-                  <NavDropdown.Item onClick={handleLogout}>Đăng xuất</NavDropdown.Item>
-                </NavDropdown>
-              </>
-            )}
-          </Nav>
-        </Navbar.Collapse>
-      </Container>
-    </Navbar>
-  )
-              <>
-                <Nav.Link as={Link} to="/">Home</Nav.Link>
-                
-                {user.roles.includes('ROLE_LEARNER') && (
-                  <Nav.Link as={Link} to="/learner">Dashboard</Nav.Link>
-                )}
-                
-                {user.roles.includes('ROLE_MENTOR') && (
-                  <Nav.Link as={Link} to="/mentor">Dashboard</Nav.Link>
-                )}
-                
-                {user.roles.includes('ROLE_ADMIN') && (
-                  <Nav.Link as={Link} to="/admin">Admin</Nav.Link>
-                )}
-                
-                <NavDropdown title={user.username} id="user-dropdown">
-                  <NavDropdown.Item as={Link} to="/profile">
-                    Profile
-                  </NavDropdown.Item>
-                  <NavDropdown.Divider />
-                  <NavDropdown.Item onClick={handleLogout}>
-                    Logout
-                  </NavDropdown.Item>
-                </NavDropdown>
-              </>
-            )}
-          </Nav>
-        </Navbar.Collapse>
-      </Container>
-    </Navbar>
-  )
-}
-
-export default Header
-```
-
----
-
-### 3. `Loader.jsx` - Loading Spinner
-
-```jsx
-import React from 'react'
-import { Spinner } from 'react-bootstrap'
-
-const Loader = () => {
-  return (
-    <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '200px' }}>
-      <Spinner animation="border" role="status">
-        <span className="visually-hidden">Loading...</span>
-      </Spinner>
-    </div>
-  )
-}
-
-export default Loader
-```
-
----
-
-### 4. `PracticeSessionCard.jsx` - Hiển Thị Practice Session
-
-```jsx
-import React from 'react'
-import { Card, Badge, Button } from 'react-bootstrap'
-import { FaClock, FaUser, FaRobot } from 'react-icons/fa'
-
-const PracticeSessionCard = ({ session, onStatusUpdate }) => {
-  const getStatusVariant = (status) => {
-    switch (status) {
-      case 'SCHEDULED': return 'primary'
-      case 'COMPLETED': return 'success'
-      case 'CANCELLED': return 'danger'
-      default: return 'secondary'
-    }
-  }
-  
-  const getSessionIcon = (type) => {
-    return type === 'MENTOR_LED' ? <FaUser /> : <FaRobot />
-  }
-  
-  const formatDateTime = (dateTime) => {
-    return new Date(dateTime).toLocaleString('vi-VN')
-  }
-  
-  const handleComplete = () => {
-    onStatusUpdate(session.id, 'COMPLETED')
-  }
-  
-  const handleCancel = () => {
-    onStatusUpdate(session.id, 'CANCELLED')
-  }
-  
-  return (
-    <Card className="mb-3">
-      <Card.Body>
-        <div className="d-flex justify-content-between align-items-start">
-          <div>
-            <h6 className="d-flex align-items-center">
-              {getSessionIcon(session.sessionType)}
-              <span className="ms-2">{session.topic || 'Practice Session'}</span>
-            </h6>
-            <p className="text-muted mb-1">
-              <FaClock className="me-1" />
-              {formatDateTime(session.startTime)}
-            </p>
-            {session.mentorName && (
-              <p className="text-muted mb-1">
-                Mentor: {session.mentorName}
-              </p>
-            )}
-            <p className="text-muted mb-1">
-              Duration: {session.durationMinutes} minutes
-            </p>
-            {session.cost > 0 && (
-              <p className="text-muted mb-1">
-                Cost: ${session.cost}
-              </p>
-            )}
-          </div>
+  const stopRecording = (): Promise<Blob> => {
+    return new Promise((resolve) => {
+      if (recorderRef.current) {
+        recorderRef.current.stopRecording(() => {
+          const blob = recorderRef.current!.getBlob();
+          setAudioBlob(blob);
+          setIsRecording(false);
           
-          <div className="text-end">
-            <Badge bg={getStatusVariant(session.sessionStatus)} className="mb-2">
-              {session.sessionStatus}
-            </Badge>
-            
-            {session.sessionStatus === 'SCHEDULED' && (
-              <div>
-                <Button 
-                  size="sm" 
-                  variant="success" 
-                  className="me-1"
-                  onClick={handleComplete}
-                >
-                  Complete
-                </Button>
-                <Button 
-                  size="sm" 
-                  variant="outline-danger"
-                  onClick={handleCancel}
-                >
-                  Cancel
-                </Button>
+          // Stop all tracks
+          recorderRef.current!.getInternalRecorder().stream.getTracks().forEach(track => track.stop());
+          
+          resolve(blob);
+        });
+      }
+    });
+  };
+  
+  const resetRecording = () => {
+    setAudioBlob(null);
+  };
+  
+  return {
+    isRecording,
+    audioBlob,
+    startRecording,
+    stopRecording,
+    resetRecording
+  };
+};
+```
+
+---
+
+## 8. Components
+
+### 8.1. `components/common/ProtectedRoute.tsx`
+
+```typescript
+import React, { ReactNode } from 'react';
+import { Navigate } from 'react-router-dom';
+import { useAuth } from '@/hooks/useAuth';
+
+interface ProtectedRouteProps {
+  children: ReactNode;
+  roles?: string[];
+}
+
+export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, roles }) => {
+  const { user, isAuthenticated } = useAuth();
+  
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+  
+  if (roles && roles.length > 0) {
+    const hasRequiredRole = roles.some(role => 
+      user?.roles?.some(userRole => userRole.includes(role))
+    );
+    
+    if (!hasRequiredRole) {
+      return <Navigate to="/" replace />;
+    }
+  }
+  
+  return <>{children}</>;
+};
+```
+
+### 8.2. `components/ai/VoiceRecorder.tsx`
+
+```typescript
+import React, { useState } from 'react';
+import { useAudioRecorder } from '@/hooks/useAudioRecorder';
+import { pronunciationScoreService } from '@/services/pronunciationScoreService';
+import { toast } from 'react-toastify';
+import { FaMicrophone, FaStop, FaPaperPlane } from 'react-icons/fa';
+
+interface VoiceRecorderProps {
+  learnerId: number;
+  targetText: string;
+  onScoreReceived?: (score: any) => void;
+}
+
+export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ 
+  learnerId, 
+  targetText, 
+  onScoreReceived 
+}) => {
+  const { isRecording, audioBlob, startRecording, stopRecording, resetRecording } = useAudioRecorder();
+  const [isEvaluating, setIsEvaluating] = useState(false);
+  
+  const handleStartRecording = async () => {
+    try {
+      await startRecording();
+      toast.info('Bắt đầu ghi âm...');
+    } catch (error) {
+      toast.error('Không thể truy cập microphone');
+    }
+  };
+  
+  const handleStopRecording = async () => {
+    await stopRecording();
+    toast.success('Đã dừng ghi âm');
+  };
+  
+  const handleSubmit = async () => {
+    if (!audioBlob) return;
+    
+    setIsEvaluating(true);
+    try {
+      const response = await pronunciationScoreService.evaluatePronunciation(
+        learnerId,
+        audioBlob,
+        targetText
+      );
+      
+      toast.success('Đã đánh giá phát âm!');
+      onScoreReceived?.(response.data);
+      resetRecording();
+    } catch (error) {
+      toast.error('Lỗi khi đánh giá phát âm');
+    } finally {
+      setIsEvaluating(false);
+    }
+  };
+  
+  return (
+    <div className="bg-white rounded-lg shadow p-6">
+      <h3 className="text-lg font-semibold mb-4">Luyện phát âm</h3>
+      
+      <div className="mb-4 p-4 bg-gray-50 rounded">
+        <p className="text-sm text-gray-600 mb-2">Hãy đọc câu sau:</p>
+        <p className="text-lg font-medium">{targetText}</p>
+      </div>
+      
+      <div className="flex items-center gap-4">
+        {!isRecording && !audioBlob && (
+          <button
+            onClick={handleStartRecording}
+            className="flex items-center gap-2 px-6 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600"
+          >
+            <FaMicrophone /> Bắt đầu ghi
+          </button>
+        )}
+        
+        {isRecording && (
+          <button
+            onClick={handleStopRecording}
+            className="flex items-center gap-2 px-6 py-3 bg-gray-700 text-white rounded-lg hover:bg-gray-800 animate-pulse"
+          >
+            <FaStop /> Dừng ghi
+          </button>
+        )}
+        
+        {audioBlob && !isRecording && (
+          <>
+            <audio src={URL.createObjectURL(audioBlob)} controls className="flex-1" />
+            <button
+              onClick={handleSubmit}
+              disabled={isEvaluating}
+              className="flex items-center gap-2 px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50"
+            >
+              <FaPaperPlane />
+              {isEvaluating ? 'Đang đánh giá...' : 'Gửi đánh giá'}
+            </button>
+            <button
+              onClick={resetRecording}
+              className="px-4 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+            >
+              Ghi lại
+            </button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+};
+```
+
+### 8.3. `components/ai/ChatInterface.tsx`
+
+```typescript
+import React, { useState, useEffect, useRef } from 'react';
+import { aiConversationService } from '@/services/aiConversationService';
+import { AIMessage } from '@/types/ai.types';
+import { toast } from 'react-toastify';
+import { FaPaperPlane } from 'react-icons/fa';
+
+interface ChatInterfaceProps {
+  sessionId: number;
+  conversationId?: number;
+}
+
+export const ChatInterface: React.FC<ChatInterfaceProps> = ({ sessionId, conversationId }) => {
+  const [messages, setMessages] = useState<AIMessage[]>([]);
+  const [inputMessage, setInputMessage] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [currentConversationId, setCurrentConversationId] = useState<number | undefined>(conversationId);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  
+  useEffect(() => {
+    loadConversation();
+  }, [sessionId]);
+  
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+  
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+  
+  const loadConversation = async () => {
+    try {
+      const response = await aiConversationService.getConversationBySession(sessionId);
+      setCurrentConversationId(response.data.id);
+      setMessages(response.data.messages);
+    } catch (error) {
+      // Nếu chưa có conversation, tạo mới
+      try {
+        const createResponse = await aiConversationService.createConversation(sessionId);
+        setCurrentConversationId(createResponse.data.id);
+        setMessages([]);
+      } catch (createError) {
+        toast.error('Không thể tạo conversation');
+      }
+    }
+  };
+  
+  const handleSendMessage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!inputMessage.trim() || !currentConversationId) return;
+    
+    const userMessage: AIMessage = {
+      role: 'user',
+      content: inputMessage,
+      timestamp: new Date().toISOString()
+    };
+    
+    setMessages(prev => [...prev, userMessage]);
+    setInputMessage('');
+    setLoading(true);
+    
+    try {
+      const response = await aiConversationService.sendMessage(currentConversationId, inputMessage);
+      setMessages(prev => [...prev, response.data]);
+    } catch (error) {
+      toast.error('Lỗi khi gửi tin nhắn');
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  return (
+    <div className="flex flex-col h-[600px] bg-white rounded-lg shadow">
+      {/* Header */}
+      <div className="p-4 border-b">
+        <h3 className="text-lg font-semibold">AI Conversation</h3>
+      </div>
+      
+      {/* Messages */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        {messages.map((msg, idx) => (
+          <div
+            key={idx}
+            className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+          >
+            <div
+              className={`max-w-[70%] rounded-lg p-3 ${
+                msg.role === 'user'
+                  ? 'bg-blue-500 text-white'
+                  : 'bg-gray-100 text-gray-800'
+              }`}
+            >
+              <p className="whitespace-pre-wrap">{msg.content}</p>
+              <p className="text-xs mt-1 opacity-70">
+                {new Date(msg.timestamp).toLocaleTimeString()}
+              </p>
+            </div>
+          </div>
+        ))}
+        {loading && (
+          <div className="flex justify-start">
+            <div className="bg-gray-100 rounded-lg p-3">
+              <div className="flex gap-1">
+                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
               </div>
+            </div>
+          </div>
+        )}
+        <div ref={messagesEndRef} />
+      </div>
+      
+      {/* Input */}
+      <form onSubmit={handleSendMessage} className="p-4 border-t">
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={inputMessage}
+            onChange={(e) => setInputMessage(e.target.value)}
+            placeholder="Nhập tin nhắn..."
+            className="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            disabled={loading}
+          />
+          <button
+            type="submit"
+            disabled={loading || !inputMessage.trim()}
+            className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 flex items-center gap-2"
+          >
+            <FaPaperPlane /> Gửi
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+};
+```
+
+---
+
+## 9. Pages
+
+### 9.1. `pages/learner/AIPracticePage.tsx`
+
+```typescript
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '@/hooks/useAuth';
+import { conversationTopicService } from '@/services/conversationTopicService';
+import { practiceSessionService } from '@/services/practiceSessionService';
+import { ConversationTopic } from '@/types/ai.types';
+import { SessionType } from '@/types/session.types';
+import { ChatInterface } from '@/components/ai/ChatInterface';
+import { VoiceRecorder } from '@/components/ai/VoiceRecorder';
+import { toast } from 'react-toastify';
+
+export const AIPracticePage: React.FC = () => {
+  const { user } = useAuth();
+  const [topics, setTopics] = useState<ConversationTopic[]>([]);
+  const [selectedTopic, setSelectedTopic] = useState<ConversationTopic | null>(null);
+  const [sessionId, setSessionId] = useState<number | null>(null);
+  const [learnerId, setLearnerId] = useState<number | null>(null);
+  
+  useEffect(() => {
+    loadTopics();
+    // TODO: Fetch learner ID from user
+  }, []);
+  
+  const loadTopics = async () => {
+    try {
+      const response = await conversationTopicService.getActiveTopics();
+      setTopics(response.data);
+    } catch (error) {
+      toast.error('Không thể tải topics');
+    }
+  };
+  
+  const handleStartPractice = async (topic: ConversationTopic) => {
+    if (!learnerId) {
+      toast.error('Không tìm thấy learner ID');
+      return;
+    }
+    
+    try {
+      // Tạo practice session mới
+      const sessionResponse = await practiceSessionService.createSession({
+        learnerId: learnerId,
+        sessionType: SessionType.AI_ASSISTED,
+        startTime: new Date().toISOString(),
+        topic: topic.title
+      });
+      
+      setSessionId(sessionResponse.data.id);
+      setSelectedTopic(topic);
+      toast.success('Bắt đầu session luyện tập!');
+    } catch (error) {
+      toast.error('Không thể tạo session');
+    }
+  };
+  
+  return (
+    <div className="container mx-auto px-4 py-8">
+      <h1 className="text-3xl font-bold mb-8">AI Practice Session</h1>
+      
+      {!sessionId ? (
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {topics.map(topic => (
+            <div key={topic.id} className="bg-white rounded-lg shadow p-6">
+              <h3 className="text-xl font-semibold mb-2">{topic.title}</h3>
+              <p className="text-gray-600 mb-4">{topic.description}</p>
+              <div className="flex justify-between items-center">
+                <span className={`px-3 py-1 rounded text-sm ${
+                  topic.difficulty === 'BEGINNER' ? 'bg-green-100 text-green-800' :
+                  topic.difficulty === 'INTERMEDIATE' ? 'bg-yellow-100 text-yellow-800' :
+                  'bg-red-100 text-red-800'
+                }`}>
+                  {topic.difficulty}
+                </span>
+                <button
+                  onClick={() => handleStartPractice(topic)}
+                  className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                >
+                  Bắt đầu
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="grid lg:grid-cols-2 gap-6">
+          <div>
+            <ChatInterface sessionId={sessionId} />
+          </div>
+          <div>
+            {learnerId && (
+              <VoiceRecorder
+                learnerId={learnerId}
+                targetText="Hello, how are you today?"
+                onScoreReceived={(score) => {
+                  toast.success(`Score: ${score.overallScore}/100`);
+                }}
+              />
             )}
           </div>
         </div>
-      </Card.Body>
-    </Card>
-  )
-}
-
-export default PracticeSessionCard
+      )}
+    </div>
+  );
+};
 ```
 
 ---
 
-## Pages
+## 10. OpenAI Integration
 
-### 1. `LoginPage.jsx`
+### 10.1. Backend Implementation (Recommended)
 
-```jsx
-import React, { useState } from 'react'
-import { Container, Row, Col, Card, Form, Button } from 'react-bootstrap'
-import { Link } from 'react-router-dom'
-import { useAuth } from '../../context/AuthContext'
+**⚠️ LƯU Ý:** Để bảo mật API key, nên implement OpenAI integration ở **backend**.
 
-const LoginPage = () => {
-  const [credentials, setCredentials] = useState({
-    username: '',
-    password: ''
-  })
-  const [loading, setLoading] = useState(false)
-  const { login } = useAuth()
-  
-  const handleChange = (e) => {
-    setCredentials({
-      ...credentials,
-      [e.target.name]: e.target.value
-    })
-  }
-  
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    setLoading(true)
-    try {
-      await login(credentials)
-    } catch (error) {
-      // Error được xử lý trong AuthContext
-    } finally {
-      setLoading(false)
-    }
-  }
-  
-  return (
-    <Container className="mt-5">
-      <Row className="justify-content-center">
-        <Col md={6}>
-          <Card>
-            <Card.Body>
-              <h3 className="text-center mb-4">Đăng Nhập</h3>
-              <Form onSubmit={handleSubmit}>
-                <Form.Group className="mb-3">
-                  <Form.Label>Username</Form.Label>
-                  <Form.Control
-                    type="text"
-                    name="username"
-                    value={credentials.username}
-                    onChange={handleChange}
-                    required
-                  />
-                </Form.Group>
-                
-                <Form.Group className="mb-3">
-                  <Form.Label>Password</Form.Label>
-                  <Form.Control
-                    type="password"
-                    name="password"
-                    value={credentials.password}
-                    onChange={handleChange}
-                    required
-                  />
-                </Form.Group>
-                
-                <Button 
-                  type="submit" 
-                  variant="primary" 
-                  className="w-100"
-                  disabled={loading}
-                >
-                  {loading ? 'Đang đăng nhập...' : 'Đăng Nhập'}
-                </Button>
-              </Form>
-              
-              <div className="text-center mt-3">
-                <p>Chưa có tài khoản? <Link to="/register">Đăng ký ngay</Link></p>
-              </div>
-            </Card.Body>
-          </Card>
-        </Col>
-      </Row>
-    </Container>
-  )
-}
+**Backend Controller Example:**
 
-export default LoginPage
-```
-
----
-
-### 2. `RegisterPage.jsx`
-
-```jsx
-import React, { useState } from 'react'
-import { Container, Row, Col, Card, Form, Button } from 'react-bootstrap'
-import { Link } from 'react-router-dom'
-import { useAuth } from '../../context/AuthContext'
-
-const RegisterPage = () => {
-  const [formData, setFormData] = useState({
-    username: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
-    fullName: '',
-    phone: '',
-    role: 'LEARNER' // Default role
-  })
-  const [loading, setLoading] = useState(false)
-  const { register } = useAuth()
-  
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    })
-  }
-  
-  const handleSubmit = async (e) => {
-    e.preventDefault()
+```java
+@RestController
+@RequestMapping("/api/ai-conversations")
+public class AIConversationController {
     
-    // Validate password match
-    if (formData.password !== formData.confirmPassword) {
-      toast.error('Passwords không khớp')
-      return
-    }
+    @Autowired
+    private OpenAIService openAIService;
     
-    setLoading(true)
-    try {
-      const { confirmPassword, ...registerData } = formData
-      // Gửi role dưới dạng string: 'LEARNER' hoặc 'MENTOR'
-      await register(registerData)
-    } catch (error) {
-      // Error được xử lý trong AuthContext
-    } finally {
-      setLoading(false)
+    @PostMapping("/{id}/message")
+    public ResponseEntity<AIMessage> sendMessage(
+        @PathVariable Long id,
+        @RequestBody MessageRequest request
+    ) {
+        // 1. Lưu user message vào DB
+        // 2. Gọi OpenAI API
+        String aiResponse = openAIService.chat(request.getContent());
+        // 3. Lưu AI response vào DB
+        // 4. Return response
+        return ResponseEntity.ok(aiMessage);
     }
-  }
-  
-  return (
-    <Container className="mt-5">
-      <Row className="justify-content-center">
-        <Col md={8}>
-          <Card>
-            <Card.Body>
-              <h3 className="text-center mb-4">Đăng Ký</h3>
-              <Form onSubmit={handleSubmit}>
-                <Row>
-                  <Col md={6}>
-                    <Form.Group className="mb-3">
-                      <Form.Label>Username *</Form.Label>
-                      <Form.Control
-                        type="text"
-                        name="username"
-                        value={formData.username}
-                        onChange={handleChange}
-                        required
-                      />
-                    </Form.Group>
-                  </Col>
-                  <Col md={6}>
-                    <Form.Group className="mb-3">
-                      <Form.Label>Email *</Form.Label>
-                      <Form.Control
-                        type="email"
-                        name="email"
-                        value={formData.email}
-                        onChange={handleChange}
-                        required
-                      />
-                    </Form.Group>
-                  </Col>
-                </Row>
-                
-                <Row>
-                  <Col md={6}>
-                    <Form.Group className="mb-3">
-                      <Form.Label>Password *</Form.Label>
-                      <Form.Control
-                        type="password"
-                        name="password"
-                        value={formData.password}
-                        onChange={handleChange}
-                        required
-                        minLength={6}
-                      />
-                    </Form.Group>
-                  </Col>
-                  <Col md={6}>
-                    <Form.Group className="mb-3">
-                      <Form.Label>Confirm Password *</Form.Label>
-                      <Form.Control
-                        type="password"
-                        name="confirmPassword"
-                        value={formData.confirmPassword}
-                        onChange={handleChange}
-                        required
-                      />
-                    </Form.Group>
-                  </Col>
-                </Row>
-                
-                <Form.Group className="mb-3">
-                  <Form.Label>Full Name *</Form.Label>
-                  <Form.Control
-                    type="text"
-                    name="fullName"
-                    value={formData.fullName}
-                    onChange={handleChange}
-                    required
-                  />
-                </Form.Group>
-                
-                <Form.Group className="mb-3">
-                  <Form.Label>Phone</Form.Label>
-                  <Form.Control
-                    type="tel"
-                    name="phone"
-                    value={formData.phone}
-                    onChange={handleChange}
-                  />
-                </Form.Group>
-                
-                <Form.Group className="mb-3">
-                  <Form.Label>Bạn là:</Form.Label>
-                  <Form.Select 
-                    name="role" 
-                    value={formData.role}
-                    onChange={handleChange}
-                  >
-                    <option value="LEARNER">Learner (Học viên)</option>
-                    <option value="MENTOR">Mentor (Giảng viên)</option>
-                  </Form.Select>
-                </Form.Group>
-                
-                <Button 
-                  type="submit" 
-                  variant="primary" 
-                  className="w-100"
-                  disabled={loading}
-                >
-                  {loading ? 'Đang đăng ký...' : 'Đăng Ký'}
-                </Button>
-              </Form>
-              
-              <div className="text-center mt-3">
-                <p>Đã có tài khoản? <Link to="/login">Đăng nhập</Link></p>
-              </div>
-            </Card.Body>
-          </Card>
-        </Col>
-      </Row>
-    </Container>
-  )
 }
+```
 
-export default RegisterPage
+### 10.2. Frontend-Only Implementation (Development Only)
+
+Nếu muốn test nhanh ở frontend:
+
+```typescript
+// services/openaiService.ts
+import OpenAI from 'openai';
+
+const openai = new OpenAI({
+  apiKey: import.meta.env.VITE_OPENAI_API_KEY,
+  dangerouslyAllowBrowser: true // CHỈ CHO DEV!
+});
+
+export const openaiService = {
+  async chat(messages: Array<{ role: string; content: string }>) {
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4',
+      messages: messages as any,
+      temperature: 0.7,
+      max_tokens: 500
+    });
+    
+    return response.choices[0].message.content;
+  },
+  
+  async transcribeAudio(audioBlob: Blob) {
+    const file = new File([audioBlob], 'audio.wav', { type: 'audio/wav' });
+    
+    const response = await openai.audio.transcriptions.create({
+      file: file,
+      model: 'whisper-1',
+      language: 'en'
+    });
+    
+    return response.text;
+  },
+  
+  async textToSpeech(text: string) {
+    const response = await openai.audio.speech.create({
+      model: 'tts-1',
+      voice: 'alloy',
+      input: text
+    });
+    
+    return response.blob();
+  }
+};
 ```
 
 ---
 
-### 3. `LearnerDashboard.jsx`
+## 11. Audio Recording & TTS
 
-```jsx
-import React, { useEffect, useState } from 'react'
-import { Container, Row, Col, Card } from 'react-bootstrap'
-import { useAuth } from '../../context/AuthContext'
-import subscriptionService from '../../services/subscriptionService'
-import learningProgressService from '../../services/learningProgressService'
-import practiceSessionService from '../../services/practiceSessionService'
-import ProgressChart from '../../components/learner/ProgressChart'
-import SessionHistory from '../../components/learner/SessionHistory'
-import PracticeSessionCard from '../../components/learner/PracticeSessionCard'
+### 11.1. Web Speech API (Alternative)
 
-const LearnerDashboard = () => {
-  const { user } = useAuth()
-  const [stats, setStats] = useState({
-    activeSubscription: null,
-    totalSessions: 0,
-    averageScore: 0,
-    aiSessions: 0,
-    mentorSessions: 0
-  })
-  const [recentSessions, setRecentSessions] = useState([])
-  const [loading, setLoading] = useState(true)
+```typescript
+// utils/speechRecognition.ts
+export class SpeechRecognitionService {
+  private recognition: any;
   
-  useEffect(() => {
-    fetchDashboardData()
-  }, [])
-  
-  const fetchDashboardData = async () => {
-    try {
-      // Fetch subscription
-      const subResponse = await subscriptionService.getMySubscriptions()
-      const activeSub = subResponse.data.find(sub => sub.status === 'ACTIVE')
-      
-      // Fetch learning progress
-      const progressResponse = await learningProgressService.getMyProgress()
-      const lessons = progressResponse.data
-      
-      // Fetch practice sessions
-      const sessionsResponse = await practiceSessionService.getLearnerSessions(user.id)
-      const sessions = sessionsResponse.data
-      
-      const avgScore = lessons.length > 0
-        ? lessons.reduce((sum, s) => sum + s.overallScore, 0) / lessons.length
-        : 0
-      
-      const aiSessions = sessions.filter(s => s.sessionType === 'AI_ASSISTED').length
-      const mentorSessions = sessions.filter(s => s.sessionType === 'MENTOR_LED').length
-      
-      setStats({
-        activeSubscription: activeSub,
-        totalSessions: sessions.length,
-        averageScore: avgScore.toFixed(2),
-        aiSessions,
-        mentorSessions
-      })
-      
-      // Get 5 most recent sessions
-      setRecentSessions(sessions.slice(0, 5))
-    } catch (error) {
-      console.error('Error fetching dashboard data:', error)
-    } finally {
-      setLoading(false)
-    }
+  constructor() {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    this.recognition = new SpeechRecognition();
+    this.recognition.continuous = false;
+    this.recognition.lang = 'en-US';
+    this.recognition.interimResults = false;
   }
   
-  const handleSessionStatusUpdate = async (sessionId, status) => {
-    try {
-      await practiceSessionService.updateSessionStatus(sessionId, status)
-      fetchDashboardData() // Refresh data
-    } catch (error) {
-      console.error('Error updating session status:', error)
-    }
+  start(): Promise<string> {
+    return new Promise((resolve, reject) => {
+      this.recognition.onresult = (event: any) => {
+        const transcript = event.results[0][0].transcript;
+        resolve(transcript);
+      };
+      
+      this.recognition.onerror = (event: any) => {
+        reject(event.error);
+      };
+      
+      this.recognition.start();
+    });
   }
   
-  if (loading) return <Loader />
-  
-  return (
-    <Container className="mt-4">
-      <h2>Welcome back, {user.fullName}!</h2>
-      
-      <Row className="mt-4">
-        <Col md={3}>
-          <Card>
-            <Card.Body>
-              <h5>Active Package</h5>
-              <p>{stats.activeSubscription?.packageName || 'No active package'}</p>
-            </Card.Body>
-          </Card>
-        </Col>
-        
-        <Col md={3}>
-          <Card>
-            <Card.Body>
-              <h5>Total Sessions</h5>
-              <h3>{stats.totalSessions}</h3>
-              <small>AI: {stats.aiSessions} | Mentor: {stats.mentorSessions}</small>
-            </Card.Body>
-          </Card>
-        </Col>
-        
-        <Col md={3}>
-          <Card>
-            <Card.Body>
-              <h5>Average Score</h5>
-              <h3>{stats.averageScore}%</h3>
-            </Card.Body>
-          </Card>
-        </Col>
-        
-        <Col md={3}>
-          <Card>
-            <Card.Body>
-              <h5>This Week</h5>
-              <h3>5</h3>
-              <small>Sessions completed</small>
-            </Card.Body>
-          </Card>
-        </Col>
-      </Row>
-      
-      <Row className="mt-4">
-        <Col md={6}>
-          <ProgressChart />
-        </Col>
-        <Col md={6}>
-          <Card>
-            <Card.Header>
-              <h5>Recent Practice Sessions</h5>
-            </Card.Header>
-            <Card.Body>
-              {recentSessions.length > 0 ? (
-                recentSessions.map(session => (
-                  <PracticeSessionCard 
-                    key={session.id}
-                    session={session}
-                    onStatusUpdate={handleSessionStatusUpdate}
-                  />
-                ))
-              ) : (
-                <p>No practice sessions yet</p>
-              )}
-            </Card.Body>
-          </Card>
-        </Col>
-      </Row>
-    </Container>
-  )
+  stop() {
+    this.recognition.stop();
+  }
 }
 
-export default LearnerDashboard
+// Text-to-Speech
+export const speak = (text: string, lang: string = 'en-US') => {
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = lang;
+  utterance.rate = 0.9;
+  window.speechSynthesis.speak(utterance);
+};
 ```
 
 ---
 
-## Styling với Bootstrap
+## 12. Deployment
 
-### `index.css` - Global Styles
-
-```css
-:root {
-  --primary-color: #007bff;
-  --secondary-color: #6c757d;
-  --success-color: #28a745;
-  --danger-color: #dc3545;
-  --warning-color: #ffc107;
-}
-
-body {
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background-color: #f8f9fa;
-}
-
-.app {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-}
-
-.main-content {
-  flex: 1;
-  padding-bottom: 50px;
-}
-
-/* Custom card styles */
-.card {
-  border-radius: 10px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  margin-bottom: 20px;
-}
-
-/* Button customization */
-.btn {
-  border-radius: 5px;
-  padding: 10px 20px;
-}
-
-/* Dashboard stats cards */
-.stats-card {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  padding: 20px;
-  border-radius: 10px;
-}
-```
-
----
-
-## State Management
-
-### Khi Nào Cần Redux?
-- **Context API đủ dùng** cho app nhỏ/vừa (< 20 components)
-- **Redux** khi:
-  - App phức tạp (> 50 components)
-  - Nhiều levels nesting
-  - Cần time-travel debugging
-
-### Setup Redux Toolkit (Optional)
+### 12.1. Build Production
 
 ```bash
-npm install @reduxjs/toolkit react-redux
-```
-
----
-
-## Testing và Deployment
-
-### 1. Build Production
-
-```bash
-# Build app
 npm run build
-
-# Output: dist/ folder
+# Output: dist/
 ```
 
----
+### 12.2. Environment Variables cho Production
 
-### 2. Preview Build
-
-```bash
-npm run preview
+```env
+VITE_API_URL=https://api.your-domain.com/api
+VITE_APP_NAME=AESP
+VITE_ENV=production
+# KHÔNG có OPENAI_API_KEY - backend sẽ xử lý
 ```
 
----
+### 12.3. Deploy Options
 
-### 3. Deploy
-
-**Options:**
-- **Vercel**: Free hosting, tự động deploy từ GitHub
-- **Netlify**: Tương tự Vercel
-- **GitHub Pages**: Free cho static sites
-- **AWS S3 + CloudFront**: Production-grade
+- **Vercel**: `vercel --prod`
+- **Netlify**: Drag & drop `dist/` folder
+- **AWS S3 + CloudFront**: Upload `dist/` to S3 bucket
 
 ---
 
-## 📝 Checklist - Hoàn Thành Frontend
+## 📝 Checklist Implementation
 
-- [ ] Setup React project với Vite
-- [ ] Install dependencies (react-router-dom, axios, react-bootstrap)
-- [ ] Cấu hình `vite.config.js` với proxy
-- [ ] Tạo `.env` file với API URL
-- [ ] Implement `AuthContext` cho authentication
-- [ ] Tạo `api.js` và các service files (bao gồm practiceSessionService)
-- [ ] Implement `ProtectedRoute` component
-- [ ] Tạo `Header`, `Footer` components
-- [ ] Implement `LoginPage`, `RegisterPage`
-- [ ] Tạo dashboards cho Learner, Mentor, Admin (với practice sessions)
-- [ ] Implement components cho Practice Sessions
-- [ ] Test integration với Backend API
-- [ ] Build và deploy
+### Phase 1: Core Setup
+- [ ] Install dependencies
+- [ ] Setup environment variables
+- [ ] Configure TypeScript types
+- [ ] Implement API service layer
+- [ ] Create AuthContext
+
+### Phase 2: Basic Features
+- [ ] Login/Register pages
+- [ ] Protected routes
+- [ ] Learner Dashboard
+- [ ] Mentor Dashboard
+- [ ] Package listing
+
+### Phase 3: AI Features
+- [ ] Conversation topics
+- [ ] Chat interface với backend
+- [ ] Voice recording
+- [ ] Pronunciation evaluation
+- [ ] Practice session management
+
+### Phase 4: Polish
+- [ ] Error handling
+- [ ] Loading states
+- [ ] Responsive design
+- [ ] Toast notifications
+- [ ] Testing
+
+### Phase 5: Deployment
+- [ ] Build optimization
+- [ ] Environment setup
+- [ ] Deploy frontend
+- [ ] Connect to production backend
 
 ---
 
-## 🎯 Bước Tiếp Theo
-
-1. ✅ Hoàn thành Database
-2. ✅ Hoàn thành Backend
-3. ✅ Hoàn thành Frontend
-4. ➡️ **Integration Testing**: Test toàn bộ flow Login → Dashboard → API calls
-5. ➡️ **Deployment**: Deploy Backend (Heroku/Railway) + Frontend (Vercel/Netlify)
-
----
-
----
-
-**File:** `docs/huong-dan/06-FRONTEND.md`  
 **Tác giả:** AESP Development Team  
-**Cập nhật:** 2024-01-01
+**Cập nhật:** November 2025  
+**Version:** 2.0 (Updated with OpenAI Integration)
