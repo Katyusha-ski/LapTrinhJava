@@ -1,22 +1,24 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import path from "../../constants/path";
+import { authApi } from "../../api/auth.api";
+import { saveAuth } from "../../utils/auth";
 
 const Login: React.FC = () => {
-  const [email, setEmail] = useState("");
-  const [emailError, setEmailError] = useState("");
+  const [username, setUsername] = useState("");
+  const [usernameError, setUsernameError] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [passwordError, setPasswordError] = useState("");
   const [staySignedIn, setStaySignedIn] = useState(false);
 
-  // Validate Emailx
-  const validateEmail = (value: string) => {
-    const emailRegex = /^[a-zA-Z][a-zA-Z0-9._%+-]*@[a-zA-Z0-9.-]+\.com$/;
-    if (!value) return "Bạn chưa nhập email";
-    if (!emailRegex.test(value)) return "Email không hợp lệ";
+  // Validate Username
+  const validateUsername = (value: string) => {
+    if (!value) return "Bạn chưa nhập username";
+    if (value.length < 3) return "Username phải có ít nhất 3 ký tự";
+    if (!/^[a-zA-Z0-9._-]+$/.test(value)) return "Username chỉ chứa chữ, số, dấu chấm, gạch dưới hoặc gạch nối";
     return "";
   };
 
@@ -30,17 +32,17 @@ const Login: React.FC = () => {
 
   // Load email nếu đã lưu "Stay signed in"
   useEffect(() => {
-    const savedEmail = localStorage.getItem("savedEmail");
-    if (savedEmail) {
-      setEmail(savedEmail);
+    const savedUsername = localStorage.getItem("savedUsername");
+    if (savedUsername) {
+      setUsername(savedUsername);
       setStaySignedIn(true);
     }
   }, []);
 
-  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleUsernameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    setEmail(value);
-    setEmailError(validateEmail(value));
+    setUsername(value);
+    setUsernameError(validateUsername(value));
   };
 
   const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -53,24 +55,36 @@ const Login: React.FC = () => {
     setStaySignedIn(e.target.checked);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const navigate = useNavigate();
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const emailErr = validateEmail(email);
+    const trimmedUsername = username.trim();
+    const usernameErr = validateUsername(trimmedUsername);
     const passErr = validatePassword(password);
-    setEmailError(emailErr);
+    setUsernameError(usernameErr);
     setPasswordError(passErr);
 
-    if (!emailErr && !passErr) {
-      console.log("Login success:", { email, password, staySignedIn });
+    if (!usernameErr && !passErr) {
+      try {
+        const payload = { username: trimmedUsername, password };
+        const jwt = await authApi.login(payload);
+        // Lưu token
+        saveAuth(jwt as any);
 
-      if (staySignedIn) {
-        localStorage.setItem("savedEmail", email);
-      } else {
-        localStorage.removeItem("savedEmail");
-        sessionStorage.setItem("tempEmail", email);
+        if (staySignedIn) {
+          localStorage.setItem("savedUsername", trimmedUsername);
+        } else {
+          localStorage.removeItem("savedUsername");
+          sessionStorage.setItem("tempUsername", trimmedUsername);
+        }
+
+        // Điều hướng tới dashboard (hoặc trang chính)
+        navigate('/');
+      } catch (err: any) {
+        console.error(err);
+        alert(err?.message || 'Đăng nhập thất bại');
       }
-
-      alert("Login success!");
     }
   };
 
@@ -87,22 +101,22 @@ const Login: React.FC = () => {
         {/* Form */}
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 justify-between">
           <div className="space-y-6 ">
-            {/* Email */}
+            {/* Username */}
             <div>
               <label className="block text-sm font-medium mb-1">
-                Email Address
+                Username
               </label>
               <input
-                type="email"
-                placeholder="Email Address"
-                value={email}
-                onChange={handleEmailChange}
+                type="text"
+                placeholder="Username"
+                value={username}
+                onChange={handleUsernameChange}
                 className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring ${
-                  emailError ? "border-red-500" : "focus:border-blue-400"
+                  usernameError ? "border-red-500" : "focus:border-blue-400"
                 }`}
               />
-              {emailError && (
-                <p className="text-red-500 text-sm mt-1">{emailError}</p>
+              {usernameError && (
+                <p className="text-red-500 text-sm mt-1">{usernameError}</p>
               )}
             </div>
 

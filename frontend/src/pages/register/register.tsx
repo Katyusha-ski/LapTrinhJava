@@ -1,13 +1,21 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import path from "../../constants/path";
+import { authApi } from "../../api/auth.api";
+
+type RoleOption = 'LEARNER' | 'MENTOR' | 'ADMIN';
 
 const Register: React.FC = () => {
   const [email, setEmail] = useState("");
   const [emailError, setEmailError] = useState("");
   const [username, setUsername] = useState("");
   const [usernameError, setUsernameError] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [fullNameError, setFullNameError] = useState("");
+  const [phone, setPhone] = useState("");
+  const [phoneError, setPhoneError] = useState("");
+  const [role, setRole] = useState<RoleOption>('LEARNER');
   const [password, setPassword] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -27,6 +35,18 @@ const Register: React.FC = () => {
   const validateUsername = (value: string) => {
     if (!value) return "Bạn chưa nhập username";
     if (value.length < 3) return "Username phải có ít nhất 3 ký tự";
+    if (!/^[a-zA-Z0-9._-]+$/.test(value)) return "Username chỉ chứa chữ, số, dấu chấm, gạch dưới hoặc gạch nối";
+    return "";
+  };
+
+  const validateFullName = (value: string) => {
+    if (!value.trim()) return "Bạn chưa nhập họ tên";
+    return "";
+  };
+
+  const validatePhone = (value: string) => {
+    if (!value) return ""; // optional
+    if (!/^[0-9]{10,11}$/.test(value)) return "Số điện thoại phải có 10-11 chữ số";
     return "";
   };
 
@@ -49,20 +69,44 @@ const Register: React.FC = () => {
   };
 
   // Handlers
-  const handleSubmit = (e: React.FormEvent) => {
+  const navigate = useNavigate();
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const emailErr = validateEmail(email);
-    const usernameErr = validateUsername(username);
+    const trimmedUsername = username.trim();
+    const trimmedFullName = fullName.trim();
+    const trimmedPhone = phone.trim();
+    const usernameErr = validateUsername(trimmedUsername);
+    const fullNameErr = validateFullName(trimmedFullName);
+    const phoneErr = validatePhone(trimmedPhone);
     const passErr = validatePassword(password);
     const confirmErr = validateConfirmPassword(confirmPassword);
 
     setEmailError(emailErr);
     setUsernameError(usernameErr);
+    setFullNameError(fullNameErr);
+    setPhoneError(phoneErr);
     setPasswordError(passErr);
     setConfirmPasswordError(confirmErr);
 
-    if (!emailErr && !usernameErr && !passErr && !confirmErr) {
-      alert("Đăng ký thành công!");
+    if (!emailErr && !usernameErr && !fullNameErr && !phoneErr && !passErr && !confirmErr) {
+      try {
+        const payload = {
+          username: trimmedUsername,
+          email,
+          fullName: trimmedFullName,
+          phone: trimmedPhone || undefined,
+          password,
+          role,
+        };
+        await authApi.register(payload);
+        alert('Đăng ký thành công. Vui lòng đăng nhập.');
+        navigate(path.login);
+      } catch (err: any) {
+        console.error(err);
+        alert(err?.message || 'Đăng ký thất bại');
+      }
     }
   };
 
@@ -110,6 +154,60 @@ const Register: React.FC = () => {
             {usernameError && (
               <p className="text-red-500 text-sm mt-1">{usernameError}</p>
             )}
+          </div>
+
+          {/* Full Name */}
+          <div>
+            <label className="block text-sm font-medium mb-1">Họ tên</label>
+            <input
+              type="text"
+              placeholder="Họ và tên"
+              value={fullName}
+              onChange={(e) => {
+                setFullName(e.target.value);
+                setFullNameError(validateFullName(e.target.value));
+              }}
+              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring ${
+                fullNameError ? "border-red-500" : "focus:border-blue-400"
+              }`}
+            />
+            {fullNameError && (
+              <p className="text-red-500 text-sm mt-1">{fullNameError}</p>
+            )}
+          </div>
+
+          {/* Phone (optional) */}
+          <div>
+            <label className="block text-sm font-medium mb-1">Số điện thoại (tuỳ chọn)</label>
+            <input
+              type="tel"
+              placeholder="Ví dụ: 0912345678"
+              value={phone}
+              onChange={(e) => {
+                setPhone(e.target.value);
+                setPhoneError(validatePhone(e.target.value));
+              }}
+              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring ${
+                phoneError ? "border-red-500" : "focus:border-blue-400"
+              }`}
+            />
+            {phoneError && (
+              <p className="text-red-500 text-sm mt-1">{phoneError}</p>
+            )}
+          </div>
+
+          {/* Role */}
+          <div>
+            <label className="block text-sm font-medium mb-1">Vai trò</label>
+            <select
+              value={role}
+              onChange={(e) => setRole(e.target.value as RoleOption)}
+              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring focus:border-blue-400"
+            >
+              <option value="LEARNER">Học viên</option>
+              <option value="MENTOR">Mentor</option>
+              <option value="ADMIN">Admin</option>
+            </select>
           </div>
 
           {/* Password */}

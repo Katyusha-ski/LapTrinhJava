@@ -1,0 +1,2 @@
+// App routes entry
+export { };
