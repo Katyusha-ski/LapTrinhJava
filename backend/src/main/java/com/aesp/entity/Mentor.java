@@ -5,7 +5,11 @@ import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+
+import com.aesp.enums.EnglishLevel;
 
 @Entity
 @Table(name = "mentors")
@@ -60,6 +64,19 @@ public class Mentor {
     @OneToMany(mappedBy = "mentor", cascade = CascadeType.ALL)
     @Builder.Default
     private List<PracticeSession> practiceSessions = new ArrayList<>();
+
+    @ElementCollection(fetch = FetchType.LAZY)
+    @CollectionTable(name = "mentor_skills", joinColumns = @JoinColumn(name = "mentor_id"))
+    @Column(name = "skill")
+    @Builder.Default
+    private Set<String> skills = new HashSet<>();
+
+    @ElementCollection(fetch = FetchType.LAZY)
+    @CollectionTable(name = "mentor_supported_levels", joinColumns = @JoinColumn(name = "mentor_id"))
+    @Enumerated(EnumType.STRING)
+    @Column(name = "level")
+    @Builder.Default
+    private Set<EnglishLevel> supportedLevels = new HashSet<>();
     
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

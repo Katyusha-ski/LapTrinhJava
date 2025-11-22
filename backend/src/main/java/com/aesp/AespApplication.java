@@ -2,6 +2,9 @@ package com.aesp;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
+
+import com.aesp.config.OpenAiProperties;
 
 /**
  * Main Application Class for AESP (AI-Supported English Speaking Practice)
@@ -14,6 +17,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  * - @ComponentScan: Enables component scanning in com.aesp package
  */
 @SpringBootApplication
+@EnableConfigurationProperties(OpenAiProperties.class)
 public class AespApplication {
 
     public static void main(String[] args) {

@@ -12,6 +12,8 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
+import com.aesp.enums.EnglishLevel;
+
 @Repository
 public interface MentorRepository extends JpaRepository<Mentor, Long> {
     
@@ -59,6 +61,21 @@ public interface MentorRepository extends JpaRepository<Mentor, Long> {
     List<Mentor> findMentorsWithFilters(@Param("minRating") BigDecimal minRating,
                                        @Param("maxRate") BigDecimal maxRate,
                                        @Param("minExperience") Integer minExperience);
+
+            @Query("SELECT DISTINCT m FROM Mentor m " +
+                "LEFT JOIN m.skills s " +
+                "LEFT JOIN m.supportedLevels l " +
+                "WHERE (:skill IS NULL OR LOWER(s) = LOWER(:skill)) " +
+                "AND (:level IS NULL OR l = :level) " +
+                "AND (:minRating IS NULL OR m.rating >= :minRating) " +
+                "AND (:maxRate IS NULL OR m.hourlyRate <= :maxRate) " +
+                "AND (:onlyAvailable = false OR m.isAvailable = true) " +
+                "ORDER BY m.rating DESC, m.hourlyRate ASC")
+        List<Mentor> searchMentorsAdvanced(@Param("skill") String skill,
+                            @Param("level") EnglishLevel level,
+                            @Param("minRating") BigDecimal minRating,
+                            @Param("maxRate") BigDecimal maxRate,
+                            @Param("onlyAvailable") boolean onlyAvailable);
     
     // Statistics queries
     @Query("SELECT COUNT(m) FROM Mentor m WHERE m.isAvailable = true")

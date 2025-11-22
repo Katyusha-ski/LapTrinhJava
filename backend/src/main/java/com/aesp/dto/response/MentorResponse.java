@@ -5,6 +5,9 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.util.Set;
+
+import com.aesp.enums.EnglishLevel;
 
 @Data
 @NoArgsConstructor
@@ -20,4 +23,6 @@ public class MentorResponse {
     private BigDecimal rating;
     private Integer totalStudents;
     private Boolean isAvailable;
+    private Set<String> skills;
+    private Set<EnglishLevel> supportedLevels;
 }

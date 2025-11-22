@@ -12,8 +12,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
+
+import com.aesp.enums.EnglishLevel;
 
 @Service
 @RequiredArgsConstructor
@@ -184,16 +188,18 @@ public class MentorService {
         }
 
         Mentor mentor = Mentor.builder()
-                .user(user)
-                .bio(request.getBio())
-                .experienceYears(defaultInteger(request.getExperienceYears()))
-                .hourlyRate(defaultBigDecimal(request.getHourlyRate()))
-                .rating(defaultBigDecimal(request.getRating()))
-                .totalStudents(defaultInteger(request.getTotalStudents()))
-                .isAvailable(defaultBoolean(request.getIsAvailable()))
-                .build();
+            .user(user)
+            .bio(request.getBio())
+            .experienceYears(defaultInteger(request.getExperienceYears()))
+            .hourlyRate(defaultBigDecimal(request.getHourlyRate()))
+            .rating(defaultBigDecimal(request.getRating()))
+            .totalStudents(defaultInteger(request.getTotalStudents()))
+            .isAvailable(defaultBoolean(request.getIsAvailable()))
+            .skills(normalizeSkills(request.getSkills()))
+            .supportedLevels(normalizeLevels(request.getSupportedLevels()))
+            .build();
 
-        Mentor saved = mentorRepository.save(mentor);
+        Mentor saved = mentorRepository.save(Objects.requireNonNull(mentor));
         return toResponse(saved);
     }
 
@@ -220,15 +226,21 @@ public class MentorService {
         if (request.getIsAvailable() != null) {
             existing.setIsAvailable(request.getIsAvailable());
         }
+        if (request.getSkills() != null) {
+            existing.setSkills(normalizeSkills(request.getSkills()));
+        }
+        if (request.getSupportedLevels() != null) {
+            existing.setSupportedLevels(normalizeLevels(request.getSupportedLevels()));
+        }
 
-        Mentor saved = mentorRepository.save(existing);
+        Mentor saved = mentorRepository.save(Objects.requireNonNull(existing));
         return toResponse(saved);
     }
 
     @Transactional
     public void deleteMentor(Long id) {
         Mentor existing = getMentorEntityById(id);
-        mentorRepository.delete(existing);
+        mentorRepository.delete(Objects.requireNonNull(existing));
     }
 
     @Transactional
@@ -340,7 +352,45 @@ public class MentorService {
         response.setRating(mentor.getRating());
         response.setTotalStudents(mentor.getTotalStudents());
         response.setIsAvailable(mentor.getIsAvailable());
+        response.setSkills(mentor.getSkills() != null ? new HashSet<>(mentor.getSkills()) : Set.of());
+        response.setSupportedLevels(mentor.getSupportedLevels() != null ? new HashSet<>(mentor.getSupportedLevels()) : Set.of());
         return response;
+    }
+
+    public List<MentorResponse> searchAdvanced(String skill,
+                                               EnglishLevel level,
+                                               BigDecimal minRating,
+                                               BigDecimal maxRate,
+                                               boolean onlyAvailable) {
+        return mentorRepository.searchMentorsAdvanced(
+                        skill != null && !skill.isBlank() ? skill.trim() : null,
+                        level,
+                        minRating,
+                        maxRate,
+                        onlyAvailable)
+                .stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
+    private Set<String> normalizeSkills(Set<String> skills) {
+        if (skills == null || skills.isEmpty()) {
+            return new HashSet<>();
+        }
+        return skills.stream()
+                .filter(Objects::nonNull)
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .collect(HashSet::new,
+                        (set, value) -> set.add(value),
+                        (left, right) -> left.addAll(right));
+    }
+
+    private Set<EnglishLevel> normalizeLevels(Set<EnglishLevel> levels) {
+        if (levels == null || levels.isEmpty()) {
+            return new HashSet<>();
+        }
+        return new HashSet<>(levels);
     }
 }
 

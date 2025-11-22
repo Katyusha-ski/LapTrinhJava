@@ -79,8 +79,8 @@ const Login: React.FC = () => {
           sessionStorage.setItem("tempUsername", trimmedUsername);
         }
 
-        // Điều hướng tới dashboard (hoặc trang chính)
-        navigate('/');
+        // Điều hướng tới dashboard
+        navigate(path.dashboard);
       } catch (err: any) {
         console.error(err);
         alert(err?.message || 'Đăng nhập thất bại');
