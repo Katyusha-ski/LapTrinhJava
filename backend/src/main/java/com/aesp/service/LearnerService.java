@@ -53,6 +53,11 @@ public class LearnerService {
                 .orElseThrow(() -> new EntityNotFoundException("Learner with user id %d not found".formatted(userId)));
     }
 
+    public LearnerResponse getLearnerProfileByUserId(Long userId) {
+        Learner learner = getLearnerByUserId(userId);
+        return toResponse(learner);
+    }
+
     public List<Learner> getLearnersByMentor(Long mentorId) {
         Objects.requireNonNull(mentorId, "Mentor id must not be null");
         ensureMentorExists(mentorId);

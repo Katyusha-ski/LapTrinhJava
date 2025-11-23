@@ -29,11 +29,9 @@ public interface LearnerRepository extends JpaRepository<Learner, Long> {
     List<Learner> findByEnglishLevel(EnglishLevel level);
     
     // Find by scores
-    List<Learner> findByOverallScoreGreaterThanEqual(BigDecimal minScore);
-    List<Learner> findByOverallScoreBetween(BigDecimal minScore, BigDecimal maxScore);
-    List<Learner> findByPronunciationScoreGreaterThan(BigDecimal minScore);
-    List<Learner> findByGrammarScoreGreaterThan(BigDecimal minScore);
-    List<Learner> findByVocabularyScoreGreaterThan(BigDecimal minScore);
+    List<Learner> findByAveragePronunciationScoreGreaterThanEqual(BigDecimal minScore);
+    List<Learner> findByAveragePronunciationScoreBetween(BigDecimal minScore, BigDecimal maxScore);
+    List<Learner> findByAveragePronunciationScoreGreaterThan(BigDecimal minScore);
     
     // Find by practice data
     List<Learner> findByTotalPracticeHoursGreaterThanEqual(BigDecimal minHours);
@@ -52,10 +50,10 @@ public interface LearnerRepository extends JpaRepository<Learner, Long> {
     List<Learner> findByJoinedAtBetween(LocalDateTime startDate, LocalDateTime endDate);
     
     // Custom queries
-    @Query("SELECT l FROM Learner l WHERE l.overallScore > 0 ORDER BY l.overallScore DESC")
+    @Query("SELECT l FROM Learner l WHERE l.averagePronunciationScore > 0 ORDER BY l.averagePronunciationScore DESC")
     List<Learner> findTopLearnersByScore();
     
-    @Query("SELECT l FROM Learner l WHERE l.overallScore < :threshold ORDER BY l.overallScore ASC")
+    @Query("SELECT l FROM Learner l WHERE l.averagePronunciationScore < :threshold ORDER BY l.averagePronunciationScore ASC")
     List<Learner> findLearnersNeedingImprovement(@Param("threshold") BigDecimal threshold);
     
     @Query("SELECT l FROM Learner l WHERE l.updatedAt >= :cutoffDate ORDER BY l.updatedAt DESC")
@@ -66,11 +64,11 @@ public interface LearnerRepository extends JpaRepository<Learner, Long> {
     
     @Query("SELECT l FROM Learner l WHERE " +
            "(:level IS NULL OR l.englishLevel = :level) AND " +
-           "(:minScore IS NULL OR l.overallScore >= :minScore) AND " +
+           "(:minScore IS NULL OR l.averagePronunciationScore >= :minScore) AND " +
            "(:hasMentor IS NULL OR " +
            " (:hasMentor = true AND l.mentor IS NOT NULL) OR " +
            " (:hasMentor = false AND l.mentor IS NULL)) " +
-           "ORDER BY l.overallScore DESC")
+            "ORDER BY l.averagePronunciationScore DESC")
     List<Learner> findLearnersWithFilters(@Param("level") EnglishLevel level,
                                          @Param("minScore") BigDecimal minScore,
                                          @Param("hasMentor") Boolean hasMentor);
@@ -78,7 +76,7 @@ public interface LearnerRepository extends JpaRepository<Learner, Long> {
     // Statistics
     Long countByEnglishLevel(EnglishLevel level);
     
-    @Query("SELECT AVG(l.overallScore) FROM Learner l WHERE l.overallScore > 0")
+    @Query("SELECT AVG(l.averagePronunciationScore) FROM Learner l WHERE l.averagePronunciationScore > 0")
     Double getAverageOverallScore();
     
     @Query("SELECT AVG(l.totalPracticeHours) FROM Learner l WHERE l.totalPracticeHours > 0")

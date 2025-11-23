@@ -14,12 +14,16 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
+import com.aesp.service.ai.AiEvaluationService;
+import com.aesp.service.ai.PronunciationAnalysisResult;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
@@ -31,14 +35,23 @@ public class PronunciationScoreService {
     private final LearnerRepository learnerRepository;
     private final PracticeSessionRepository sessionRepository;
     private final ObjectMapper objectMapper = new ObjectMapper();
+    private final AiEvaluationService aiEvaluationService;
 
     @Transactional
     public PronunciationScoreResponse submitScore(PronunciationScoreRequest request) {
-        PracticeSession session = sessionRepository.findById(request.getSessionId())
-                .orElseThrow(() -> new ResourceNotFoundException("Session not found with id: " + request.getSessionId()));
-        
-        Learner learner = learnerRepository.findById(request.getLearnerId())
-                .orElseThrow(() -> new ResourceNotFoundException("Learner not found with id: " + request.getLearnerId()));
+        Long sessionId = Objects.requireNonNull(request.getSessionId(), "sessionId must not be null");
+        PracticeSession session = sessionRepository.findById(sessionId)
+            .orElseThrow(() -> new ResourceNotFoundException("Session not found with id: " + sessionId));
+
+        Long learnerId = Objects.requireNonNull(request.getLearnerId(), "learnerId must not be null");
+        Learner learner = learnerRepository.findById(learnerId)
+            .orElseThrow(() -> new ResourceNotFoundException("Learner not found with id: " + learnerId));
+
+        // Allow AI to enrich missing scores when available
+        if ((request.getAccuracyScore() == null || request.getFluencyScore() == null || request.getPronunciationScore() == null)
+                && aiEvaluationService.isEnabled()) {
+            aiEvaluationService.evaluatePronunciation(request).ifPresent(result -> applyAiResult(request, result));
+        }
 
         // Validate score ranges (0-100)
         validateScore(request.getAccuracyScore(), "Accuracy");
@@ -67,12 +80,33 @@ public class PronunciationScoreService {
                 .detailedFeedback(feedbackJson)
                 .build();
 
-        PronunciationScore saved = repository.save(score);
+        PronunciationScore saved = repository.save(Objects.requireNonNull(score));
 
         // Update learner's average pronunciation score
-        updateLearnerAverageScore(request.getLearnerId());
+        updateLearnerAverageScore(learnerId);
 
         return toResponse(saved);
+    }
+
+    private void applyAiResult(PronunciationScoreRequest request, PronunciationAnalysisResult result) {
+        if (result == null) {
+            return;
+        }
+        if (result.accuracyScore() != null) {
+            request.setAccuracyScore(result.accuracyScore());
+        }
+        if (result.fluencyScore() != null) {
+            request.setFluencyScore(result.fluencyScore());
+        }
+        if (result.pronunciationScore() != null) {
+            request.setPronunciationScore(result.pronunciationScore());
+        }
+        if (StringUtils.hasText(result.normalizedTranscript())) {
+            request.setTranscribedText(result.normalizedTranscript());
+        }
+        if (result.detailedFeedback() != null && !result.detailedFeedback().isEmpty()) {
+            request.setDetailedFeedback(result.detailedFeedback());
+        }
     }
 
     public List<PronunciationScoreResponse> getScoresByLearner(Long learnerId) {
@@ -88,8 +122,9 @@ public class PronunciationScoreService {
     }
 
     public PronunciationScoreResponse getScoreById(Long id) {
-        PronunciationScore score = repository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Pronunciation score not found with id: " + id));
+        Long scoreId = Objects.requireNonNull(id, "score id must not be null");
+        PronunciationScore score = repository.findById(scoreId)
+            .orElseThrow(() -> new ResourceNotFoundException("Pronunciation score not found with id: " + scoreId));
         return toResponse(score);
     }
 
@@ -100,11 +135,12 @@ public class PronunciationScoreService {
 
     @Transactional
     public void updateLearnerAverageScore(Long learnerId) {
-        BigDecimal averageScore = calculateAverageScore(learnerId);
-        Learner learner = learnerRepository.findById(learnerId)
-                .orElseThrow(() -> new ResourceNotFoundException("Learner not found with id: " + learnerId));
+        Long targetLearnerId = Objects.requireNonNull(learnerId, "learnerId must not be null");
+        BigDecimal averageScore = calculateAverageScore(targetLearnerId);
+        Learner learner = learnerRepository.findById(targetLearnerId)
+            .orElseThrow(() -> new ResourceNotFoundException("Learner not found with id: " + targetLearnerId));
         learner.setAveragePronunciationScore(averageScore);
-        learnerRepository.save(learner);
+        learnerRepository.save(Objects.requireNonNull(learner));
     }
 
     public Map<String, BigDecimal> getDetailedAverageScores(Long learnerId) {

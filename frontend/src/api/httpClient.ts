@@ -1,0 +1,52 @@
+// Simple HTTP client wrapper using fetch
+import { getToken, clearAuth } from '../utils/auth';
+
+export type RequestOptions = RequestInit & { query?: Record<string, string | number | boolean> };
+
+function buildUrl(path: string, query?: Record<string, string | number | boolean>) {
+  const base = import.meta.env.VITE_API_BASE_URL || window.location.origin;
+  const url = new URL(path, base);
+  if (query) {
+    Object.entries(query).forEach(([k, v]) => url.searchParams.set(k, String(v)));
+  }
+  return url.toString();
+}
+
+export async function httpClient<T = any>(path: string, options: RequestOptions = {}): Promise<T> {
+  const { query, headers = {}, body, ...fetchOptions } = options;
+  const url = buildUrl(path, query);
+
+  const token = getToken();
+  const authHeader = token ? { Authorization: `Bearer ${token}` } : {};
+
+  // If body is FormData, don't set Content-Type (browser will set multipart boundary)
+  const isFormData = typeof body !== 'string' && body instanceof FormData;
+
+  const defaultHeaders: Record<string, string> = isFormData
+    ? { ...(headers as Record<string, string>), ...authHeader }
+    : { 'Content-Type': 'application/json', ...(headers as Record<string, string>), ...authHeader };
+
+  const res = await fetch(url, {
+    ...fetchOptions,
+    body: body as BodyInit,
+    headers: defaultHeaders,
+    credentials: 'include',
+  });
+
+  if (res.status === 401) {
+    // Unauthorized: clear local auth and surface error
+    clearAuth();
+    throw new Error('Unauthorized');
+  }
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(text || res.statusText);
+  }
+
+  const contentType = res.headers.get('content-type') || '';
+  if (contentType.includes('application/json')) {
+    return res.json();
+  }
+  return (await res.text()) as unknown as T;
+}

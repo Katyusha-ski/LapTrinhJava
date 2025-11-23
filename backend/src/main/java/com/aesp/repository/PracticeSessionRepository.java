@@ -75,7 +75,11 @@ public interface PracticeSessionRepository extends JpaRepository<PracticeSession
     );
 
        // Topic search
-       List<PracticeSession> findByTopicContainingIgnoreCase(String keyword);
+          List<PracticeSession> findByTopic_NameContainingIgnoreCase(String keyword);
+
+          default List<PracticeSession> findByTopicContainingIgnoreCase(String keyword) {
+                 return findByTopic_NameContainingIgnoreCase(keyword);
+          }
     
        List<PracticeSession> findByTopicIsNotNull();
 

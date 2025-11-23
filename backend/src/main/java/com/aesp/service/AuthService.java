@@ -67,7 +67,7 @@ public class AuthService {
         String username = request.getUsername().trim();
         String password = request.getPassword();
         
-        User user = userRepository.findByUsername(username)
+        User user = userRepository.findWithRolesByUsername(username)
                 .orElse(null); // Không throw ngay, check password trước
         
         // Security: Check password ngay cả khi user không tồn tại
@@ -101,7 +101,7 @@ public class AuthService {
     }
 
     public UserResponse me(String username) {
-        User user = userRepository.findByUsername(username)
+        User user = userRepository.findWithRolesByUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException("User không tồn tại"));
         return toUserResponse(user);
     }

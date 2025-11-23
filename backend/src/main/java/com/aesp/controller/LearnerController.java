@@ -42,6 +42,11 @@ public class LearnerController {
         return ResponseEntity.ok(learnerService.getLearnerById(id));
     }
 
+    @GetMapping("/by-user/{userId}")
+    public ResponseEntity<LearnerResponse> getLearnerByUserId(@PathVariable Long userId) {
+        return ResponseEntity.ok(learnerService.getLearnerProfileByUserId(userId));
+    }
+
     /** UPDATE */
     @PutMapping("/{id}")
     public ResponseEntity<LearnerResponse> updateLearner(
