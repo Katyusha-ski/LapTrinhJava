@@ -41,6 +41,11 @@ public class ConversationTopicService {
         return toResponse(topic);
     }
 
+    public ConversationTopic getTopicEntityById(Long id) {
+        return repository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Topic not found with id: " + id));
+    }
+
     public List<ConversationTopicResponse> getTopicsByLevel(EnglishLevel level) {
         return repository.findByLevelAndIsActiveTrue(level).stream()
                 .map(this::toResponse)

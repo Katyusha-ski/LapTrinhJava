@@ -75,6 +75,8 @@ coverage/
 .env.development.local
 .env.test.local
 .env.production.local
+backend/.env
+frontend/.env
 
 # Logs
 npm-debug.log*
@@ -168,8 +170,12 @@ Temporary Items
 *.ndf
 
 # ========================================
-# Other
+# Application Specific
 # ========================================
+
+backend/uploads/
+!backend/uploads/.gitkeep
+frontend/uploads/
 
 # Backup files
 *.bak

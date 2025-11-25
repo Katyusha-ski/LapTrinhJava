@@ -87,6 +87,11 @@ public class PracticeSessionService {
         return toResponse(session);
     }
 
+    public PracticeSession getSessionEntityById(Long id) {
+        return sessionRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Session not found with id: " + id));
+    }
+
     public List<PracticeSessionResponse> getSessionsByLearner(Long learnerId) {
         return sessionRepository.findByLearnerId(learnerId).stream()
                 .map(this::toResponse)

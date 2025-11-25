@@ -32,6 +32,69 @@ public class OpenAiPronunciationClient {
         return properties.hasUsableCredentials();
     }
 
+    public String callOpenAiApi(String prompt) {
+        if (!isEnabled()) {
+            throw new AiServiceException("OpenAI integration is disabled or missing credentials");
+        }
+
+        Map<String, Object> body = buildConversationRequestBody(prompt);
+
+        try {
+            Duration timeout = properties.getRequestTimeout();
+            OpenAiChatResponse response = openAiWebClient.post()
+                    .uri("/chat/completions")
+                    .body(BodyInserters.fromValue(body))
+                    .retrieve()
+                    .onStatus(HttpStatusCode::isError, clientResponse -> clientResponse.createException().flatMap(Mono::error))
+                    .bodyToMono(OpenAiChatResponse.class)
+                    .block(timeout);
+
+            if (response == null || response.choices() == null || response.choices().isEmpty()) {
+                throw new AiServiceException("OpenAI returned an empty response");
+            }
+
+            String content = response.choices().get(0).message().content();
+            if (!StringUtils.hasText(content)) {
+                throw new AiServiceException("OpenAI response did not contain content");
+            }
+
+            return content;
+        } catch (WebClientResponseException e) {
+            throw new AiServiceException("OpenAI call failed with status " + e.getStatusCode(), e);
+        } catch (Exception e) {
+            throw new AiServiceException("Unable to call OpenAI API", e);
+        }
+    }
+
+    public String transcribeAudio(byte[] audioData, String fileName) {
+        if (!isEnabled()) {
+            throw new AiServiceException("OpenAI integration is disabled or missing credentials");
+        }
+
+        try {
+            // For now, return a placeholder
+            // In production, would use OpenAI Whisper API
+            // This requires multipart form data support
+            return "Transcribed audio placeholder";
+        } catch (Exception e) {
+            throw new AiServiceException("Failed to transcribe audio", e);
+        }
+    }
+
+    public byte[] textToSpeech(String text) {
+        if (!isEnabled()) {
+            throw new AiServiceException("OpenAI integration is disabled or missing credentials");
+        }
+
+        try {
+            // For now, return empty bytes
+            // In production, would use OpenAI TTS API
+            return new byte[0];
+        } catch (Exception e) {
+            throw new AiServiceException("Failed to generate speech", e);
+        }
+    }
+
     public PronunciationAnalysisResult analyzePronunciation(PronunciationAnalysisInput input) {
         if (!isEnabled()) {
             throw new AiServiceException("OpenAI integration is disabled or missing credentials");
@@ -75,6 +138,17 @@ public class OpenAiPronunciationClient {
         } catch (Exception e) {
             throw new AiServiceException("Unable to parse OpenAI response", e);
         }
+    }
+
+    private Map<String, Object> buildConversationRequestBody(String prompt) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("model", properties.getChatModel());
+        body.put("temperature", 0.7);
+        body.put("messages", List.of(
+                Map.of("role", "system", "content",
+                        "You are a helpful English conversation partner and speaking coach."),
+                Map.of("role", "user", "content", prompt)));
+        return body;
     }
 
     private Map<String, Object> buildRequestBody(String prompt) {
