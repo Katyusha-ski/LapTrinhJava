@@ -1,30 +1,26 @@
 package com.aesp.service.ai;
 
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.hc.client5.http.classic.HttpClient;
-import org.apache.hc.client5.http.classic.methods.HttpPost;
-import org.apache.hc.client5.http.impl.classic.HttpClients;
-import org.apache.hc.core5.http.ContentType;
-import org.apache.hc.core5.http.io.entity.StringEntity;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
+import org.springframework.web.client.RestTemplate;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.core.type.TypeReference;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class OpenAiPronunciationClient {
 
     @Value("${groq.api.key}")
@@ -34,6 +30,12 @@ public class OpenAiPronunciationClient {
     private String huggingfaceApiKey;
 
     private final ObjectMapper objectMapper;
+    private final RestTemplate restTemplate;
+
+    public OpenAiPronunciationClient(ObjectMapper objectMapper, RestTemplate restTemplate) {
+        this.objectMapper = objectMapper;
+        this.restTemplate = restTemplate;
+    }
 
     // Groq API endpoints
     private static final String GROQ_API_BASE = "https://api.groq.com/openai/v1";
@@ -84,29 +86,24 @@ public class OpenAiPronunciationClient {
         }
 
         try {
-            HttpClient httpClient = HttpClients.createDefault();
-            HttpPost httpPost = new HttpPost(HF_WHISPER_MODEL);
-            httpPost.setHeader("Authorization", "Bearer " + huggingfaceApiKey);
-            httpPost.setEntity(new org.apache.hc.core5.http.io.entity.ByteArrayEntity(
-                    audioData, 
-                    ContentType.create("audio/wav")
-            ));
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+            headers.set("Authorization", "Bearer " + huggingfaceApiKey);
 
-            return httpClient.execute(httpPost, response -> {
-                int statusCode = response.getCode();
-                if (statusCode != 200) {
-                    throw new AiServiceException("Hugging Face Whisper API returned status " + statusCode);
-                }
-                
-                String responseBody = new String(response.getEntity().getContent().readAllBytes(), StandardCharsets.UTF_8);
-                JsonNode resultNode = objectMapper.readTree(responseBody);
-                
-                if (resultNode.has("text")) {
-                    return resultNode.get("text").asText("");
-                }
-                return "";
-            });
-        } catch (IOException e) {
+            HttpEntity<byte[]> request = new HttpEntity<>(audioData, headers);
+            ResponseEntity<String> response = restTemplate.postForEntity(HF_WHISPER_MODEL, request, String.class);
+            
+            if (!response.getStatusCode().is2xxSuccessful()) {
+                throw new AiServiceException("Hugging Face Whisper API returned status " + response.getStatusCode());
+            }
+            
+            JsonNode resultNode = objectMapper.readTree(response.getBody());
+            
+            if (resultNode.has("text")) {
+                return resultNode.get("text").asText("");
+            }
+            return "";
+        } catch (Exception e) {
             log.error("Failed to transcribe audio with Hugging Face", e);
             throw new AiServiceException("Failed to transcribe audio", e);
         }
@@ -121,25 +118,23 @@ public class OpenAiPronunciationClient {
         }
 
         try {
-            HttpClient httpClient = HttpClients.createDefault();
-            HttpPost httpPost = new HttpPost(HF_TTS_MODEL);
-            httpPost.setHeader("Authorization", "Bearer " + huggingfaceApiKey);
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.set("Authorization", "Bearer " + huggingfaceApiKey);
 
             Map<String, Object> requestBody = new HashMap<>();
             requestBody.put("inputs", text);
             String jsonBody = objectMapper.writeValueAsString(requestBody);
             
-            httpPost.setEntity(new StringEntity(jsonBody, ContentType.APPLICATION_JSON));
-
-            return httpClient.execute(httpPost, response -> {
-                int statusCode = response.getCode();
-                if (statusCode != 200) {
-                    throw new AiServiceException("Hugging Face TTS API returned status " + statusCode);
-                }
-                
-                return response.getEntity().getContent().readAllBytes();
-            });
-        } catch (IOException e) {
+            HttpEntity<String> request = new HttpEntity<>(jsonBody, headers);
+            ResponseEntity<byte[]> response = restTemplate.postForEntity(HF_TTS_MODEL, request, byte[].class);
+            
+            if (!response.getStatusCode().is2xxSuccessful()) {
+                throw new AiServiceException("Hugging Face TTS API returned status " + response.getStatusCode());
+            }
+            
+            return response.getBody();
+        } catch (Exception e) {
             log.error("Failed to generate speech with Hugging Face", e);
             throw new AiServiceException("Failed to generate speech", e);
         }
@@ -185,23 +180,26 @@ public class OpenAiPronunciationClient {
     /**
      * Call Groq API via HTTP
      */
-    private String callGroqApi(String endpoint, Map<String, Object> requestBody) throws IOException {
-        HttpClient httpClient = HttpClients.createDefault();
-        HttpPost httpPost = new HttpPost(endpoint);
-        httpPost.setHeader("Authorization", "Bearer " + groqApiKey);
-        httpPost.setHeader("Content-Type", "application/json");
+    private String callGroqApi(String endpoint, Map<String, Object> requestBody) {
+        try {
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.set("Authorization", "Bearer " + groqApiKey);
 
-        String jsonBody = objectMapper.writeValueAsString(requestBody);
-        httpPost.setEntity(new StringEntity(jsonBody, ContentType.APPLICATION_JSON));
-
-        return httpClient.execute(httpPost, response -> {
-            int statusCode = response.getCode();
-            if (statusCode != 200) {
-                log.error("Groq API error: Status {}", statusCode);
-                throw new AiServiceException("Groq API returned status " + statusCode);
+            String jsonBody = objectMapper.writeValueAsString(requestBody);
+            HttpEntity<String> request = new HttpEntity<>(jsonBody, headers);
+            
+            ResponseEntity<String> response = restTemplate.postForEntity(endpoint, request, String.class);
+            
+            if (!response.getStatusCode().is2xxSuccessful()) {
+                log.error("Groq API error: Status {}", response.getStatusCode());
+                throw new AiServiceException("Groq API returned status " + response.getStatusCode());
             }
-            return new String(response.getEntity().getContent().readAllBytes(), StandardCharsets.UTF_8);
-        });
+            return response.getBody();
+        } catch (Exception e) {
+            log.error("Groq API call failed", e);
+            throw new AiServiceException("Failed to call Groq API", e);
+        }
     }
 
     /**
