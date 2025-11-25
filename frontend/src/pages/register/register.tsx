@@ -3,10 +3,14 @@ import { Link, useNavigate } from "react-router-dom";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import path from "../../constants/path";
 import { authApi } from "../../api/auth.api";
+import { useAuth } from "../../context/AuthContext";
 
 type RoleOption = 'LEARNER' | 'MENTOR' | 'ADMIN';
 
 const Register: React.FC = () => {
+  const navigate = useNavigate();
+  const { setAuth } = useAuth();
+  
   const [email, setEmail] = useState("");
   const [emailError, setEmailError] = useState("");
   const [username, setUsername] = useState("");
@@ -69,8 +73,6 @@ const Register: React.FC = () => {
   };
 
   // Handlers
-  const navigate = useNavigate();
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const emailErr = validateEmail(email);
@@ -101,8 +103,16 @@ const Register: React.FC = () => {
           role,
         };
         await authApi.register(payload);
-        alert('Đăng ký thành công. Vui lòng đăng nhập.');
-        navigate(path.login);
+        
+        // Auto-login after successful registration
+        const loginPayload = { username: trimmedUsername, password };
+        const jwt = await authApi.login(loginPayload);
+        setAuth(jwt as any);
+        
+        // Redirect to dashboard - delay slightly to ensure state update
+        setTimeout(() => {
+          navigate(path.dashboard);
+        }, 100);
       } catch (err: any) {
         console.error(err);
         alert(err?.message || 'Đăng ký thất bại');

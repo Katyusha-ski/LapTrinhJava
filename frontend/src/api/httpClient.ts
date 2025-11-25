@@ -4,10 +4,14 @@ import { getToken, clearAuth } from '../utils/auth';
 export type RequestOptions = RequestInit & { query?: Record<string, string | number | boolean> };
 
 function buildUrl(path: string, query?: Record<string, string | number | boolean>) {
-  const base = import.meta.env.VITE_API_BASE_URL || window.location.origin;
+  const base = (import.meta as any).env.VITE_API_URL || window.location.origin;
   const url = new URL(path, base);
   if (query) {
-    Object.entries(query).forEach(([k, v]) => url.searchParams.set(k, String(v)));
+    Object.entries(query).forEach(([k, v]) => {
+      if (v !== undefined) {
+        url.searchParams.set(k, String(v));
+      }
+    });
   }
   return url.toString();
 }
@@ -22,14 +26,19 @@ export async function httpClient<T = any>(path: string, options: RequestOptions 
   // If body is FormData, don't set Content-Type (browser will set multipart boundary)
   const isFormData = typeof body !== 'string' && body instanceof FormData;
 
-  const defaultHeaders: Record<string, string> = isFormData
+  const defaultHeaders: Record<string, string | undefined> = isFormData
     ? { ...(headers as Record<string, string>), ...authHeader }
     : { 'Content-Type': 'application/json', ...(headers as Record<string, string>), ...authHeader };
+
+  // Filter out undefined values
+  const finalHeaders = Object.fromEntries(
+    Object.entries(defaultHeaders).filter(([, v]) => v !== undefined)
+  ) as Record<string, string>;
 
   const res = await fetch(url, {
     ...fetchOptions,
     body: body as BodyInit,
-    headers: defaultHeaders,
+    headers: finalHeaders,
     credentials: 'include',
   });
 

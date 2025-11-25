@@ -53,11 +53,16 @@ public class AuthService {
                 .emailVerified(false)
                 .build();
 
-        Role role = resolveOrCreateRole(request.getRole());
+        // Use provided role or default to LEARNER
+        UserRole roleType = request.getRole() != null ? request.getRole() : UserRole.LEARNER;
+        Role role = resolveOrCreateRole(roleType);
         user.getRoles().add(role);
 
         userRepository.save(user);
-        return MessageResponse.builder().message("Đăng ký thành công").build();
+        return MessageResponse.builder()
+                .success(true)
+                .message("Đăng ký thành công")
+                .build();
     }
 
     public JwtResponse login(@Valid LoginRequest request) {

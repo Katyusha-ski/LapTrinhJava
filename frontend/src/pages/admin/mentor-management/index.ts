@@ -1,1 +1,2 @@
-export { default } from "./mentor-management.tsx";
+export { default } from './mentor-management';
+export { MentorList } from './mentor-list';

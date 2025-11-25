@@ -37,7 +37,10 @@ public class SecurityConfig {
             .sessionManagement(session -> session
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // Không dùng session
             .authorizeHttpRequests(auth -> auth
+                .requestMatchers("/", "/index.html").permitAll() // Root & index
                 .requestMatchers("/api/auth/**").permitAll() // Cho phép truy cập login/register
+                .requestMatchers("/api/health").permitAll() // Health check endpoint
+                .requestMatchers("/api/").permitAll() // Root endpoint
                 .anyRequest().authenticated() // Các endpoint khác phải authenticate
             )
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class); // Thêm JWT filter
