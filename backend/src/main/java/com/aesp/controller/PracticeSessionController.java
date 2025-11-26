@@ -16,7 +16,6 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/practice-sessions")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")
 public class PracticeSessionController {
 
     private final PracticeSessionService practiceSessionService;

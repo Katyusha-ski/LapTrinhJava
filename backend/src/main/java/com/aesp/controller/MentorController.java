@@ -18,7 +18,6 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/mentors")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*", maxAge = 3600)
 public class MentorController {
 
     private final MentorService mentorService;

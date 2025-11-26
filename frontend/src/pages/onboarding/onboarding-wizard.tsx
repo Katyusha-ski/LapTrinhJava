@@ -1,6 +1,9 @@
 import type { ReactNode } from "react";
 import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { learnerApi } from "../../api/learner.api";
+import { getAuth } from "../../utils/auth";
+import { toast } from "react-toastify";
 
 type AgeOption = {
   id: string;
@@ -109,11 +112,32 @@ const OnboardingWizard: React.FC = () => {
   };
 
   const handleFinish = async () => {
-    const payload = { age, level, goals, profession, savedAt: new Date().toISOString() };
     setIsSaving(true);
     try {
+      const auth = getAuth();
+      if (!auth || !auth.id) {
+        toast.error("Không tìm thấy thông tin người dùng. Vui lòng đăng nhập lại.");
+        return;
+      }
+
+      // Save onboarding profile to localStorage for reference
+      const payload = { age, level, goals, profession, savedAt: new Date().toISOString() };
       localStorage.setItem("aesp_onboarding_profile", JSON.stringify(payload));
-      navigate("/");
+
+      // Create learner profile on backend
+      const learnerData = {
+        userId: auth.id,
+        englishLevel: level,
+        learningGoals: goals.join(", "),
+      };
+
+      await learnerApi.create(learnerData);
+      toast.success("Onboarding hoàn tất! Bạn có thể chọn mentor ngay bây giờ.");
+      navigate("/mentor-selection");
+    } catch (err: any) {
+      const errorMsg = err?.message || "Không thể hoàn tất onboarding. Vui lòng thử lại.";
+      toast.error(errorMsg);
+      console.error("Onboarding error:", err);
     } finally {
       setIsSaving(false);
     }

@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { mentorApi } from "../../../api/mentor.api";
 import { learnerApi, type LearnerProfile } from "../../../api/learner.api";
 import type { Mentor } from "../../../types/mentor";
@@ -21,6 +22,7 @@ const DEFAULT_FILTERS: FilterState = {
 };
 
 const MentorSelection: React.FC = () => {
+  const navigate = useNavigate();
   const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
   const [mentors, setMentors] = useState<Mentor[]>([]);
   const [loading, setLoading] = useState(false);
@@ -66,7 +68,9 @@ const MentorSelection: React.FC = () => {
         const profile = await learnerApi.getByUserId(userId);
         setLearnerProfile(profile);
       } catch (err: any) {
-        setError(err?.message ?? "Không thể tải thông tin học viên");
+        // Nếu learner profile chưa tồn tại, có thể user chưa hoàn thành onboarding
+        // Cho phép xem mentor nhưng không thể chọn
+        console.warn("Learner profile not found, user may need to complete onboarding");
       }
     };
 
@@ -92,7 +96,11 @@ const MentorSelection: React.FC = () => {
   };
 
   const handleSelectMentor = async (mentorId: number) => {
-    if (!learnerProfile?.id) {
+    if (!learnerProfile) {
+      setError("Vui lòng hoàn thành hồ sơ học viên trước khi chọn mentor. Quay lại trang Onboarding để tiếp tục.");
+      return;
+    }
+    if (!learnerProfile.id) {
       setError("Không tìm thấy hồ sơ học viên để gán mentor.");
       return;
     }
@@ -217,6 +225,26 @@ const MentorSelection: React.FC = () => {
           </div>
         )}
 
+        {!learnerProfile && (
+          <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 p-6">
+            <div className="flex items-start gap-4">
+              <div>
+                <h3 className="font-semibold text-amber-800">⚠️ Hoàn thành Onboarding trước</h3>
+                <p className="mt-2 text-sm text-amber-700">
+                  Bạn chưa hoàn thành hồ sơ học viên. Vui lòng hoàn thành Onboarding để xác định trình độ tiếng Anh và mục tiêu học tập của bạn.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => navigate("/onboarding")}
+                  className="mt-3 rounded-lg bg-amber-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-amber-700"
+                >
+                  Đi tới Onboarding
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         <section className="grid gap-6 md:grid-cols-2">
           {mentors.length === 0 && !loading ? (
             <div className="md:col-span-2 rounded-3xl border border-dashed border-gray-300 bg-white p-10 text-center">
@@ -293,12 +321,15 @@ const MentorSelection: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => handleSelectMentor(mentor.id)}
-                      disabled={isSelected || loading}
+                      disabled={isSelected || loading || !learnerProfile}
                       className={`rounded-xl px-5 py-2 text-sm font-semibold transition ${
                         isSelected
                           ? "bg-emerald-500 text-white hover:bg-emerald-500 disabled:cursor-not-allowed"
-                          : "bg-blue-500 text-white hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-60"
+                          : !learnerProfile
+                            ? "bg-gray-400 text-white cursor-not-allowed opacity-60"
+                            : "bg-blue-500 text-white hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-60"
                       }`}
+                      title={!learnerProfile ? "Hoàn thành hồ sơ trước khi chọn mentor" : ""}
                     >
                       {isSelected ? "Đã chọn" : "Chọn mentor"}
                     </button>

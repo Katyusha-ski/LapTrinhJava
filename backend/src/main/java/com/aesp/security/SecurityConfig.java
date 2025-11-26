@@ -41,6 +41,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/auth/**").permitAll() // Cho phép truy cập login/register
                 .requestMatchers("/api/health").permitAll() // Health check endpoint
                 .requestMatchers("/api/").permitAll() // Root endpoint
+                .requestMatchers("POST", "/api/learners").permitAll() // Allow learner profile creation after onboarding
                 .anyRequest().authenticated() // Các endpoint khác phải authenticate
             )
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class); // Thêm JWT filter

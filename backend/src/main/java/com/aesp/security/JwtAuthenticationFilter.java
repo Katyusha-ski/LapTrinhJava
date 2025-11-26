@@ -37,16 +37,21 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 // Lấy username từ token
                 String username = jwtService.getUsernameFromToken(jwt);
                 
-                // Load user details
-                UserDetails userDetails = userDetailsService.loadUserByUsername(username);
-                
-                // Tạo Authentication object
-                UsernamePasswordAuthenticationToken authentication =
-                    new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
-                authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                
-                // Set vào SecurityContext
-                SecurityContextHolder.getContext().setAuthentication(authentication);
+                try {
+                    // Load user details
+                    UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+                    
+                    // Tạo Authentication object
+                    UsernamePasswordAuthenticationToken authentication =
+                        new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+                    authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    
+                    // Set vào SecurityContext
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
+                } catch (org.springframework.security.core.userdetails.UsernameNotFoundException ex) {
+                    // User in token not found in database - log and continue without authentication
+                    logger.warn("User with username from token not found in database: " + username);
+                }
             }
         } catch (Exception ex) {
             logger.error("Could not set user authentication in security context", ex);
