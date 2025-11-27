@@ -260,7 +260,7 @@ export default function LearnerProfile() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="page-gradient">
         <NavigationBar user={user} onLogout={handleLogout} />
         <div className="flex min-h-[40vh] items-center justify-center px-4">
           <div className="text-center">
@@ -273,7 +273,7 @@ export default function LearnerProfile() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="page-gradient">
       <NavigationBar user={user} onLogout={handleLogout} />
 
       <div className="mx-auto max-w-4xl px-4 pb-10 pt-8">
@@ -301,7 +301,7 @@ export default function LearnerProfile() {
         )}
 
         {/* Onboarding Summary */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+        <div className="glass-card rounded-2xl p-6 mb-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <h2 className="text-lg font-semibold text-gray-900">Thông tin ban đầu</h2>
@@ -380,19 +380,19 @@ export default function LearnerProfile() {
           </div>
 
           <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
-            <div className="rounded-lg border border-gray-100 bg-gray-50 p-4">
+            <div className="glass-card rounded-xl p-4">
               <p className="text-xs font-semibold uppercase text-gray-500">Độ tuổi</p>
               <p className="mt-1 text-sm text-gray-800">
                 {AGE_LABELS[onboarding?.age ?? ""] ?? "Chưa cập nhật"}
               </p>
             </div>
-            <div className="rounded-lg border border-gray-100 bg-gray-50 p-4">
+            <div className="glass-card rounded-xl p-4">
               <p className="text-xs font-semibold uppercase text-gray-500">Công việc</p>
               <p className="mt-1 text-sm text-gray-800">
                 {PROFESSION_LABELS[onboarding?.profession ?? ""] ?? "Chưa cập nhật"}
               </p>
             </div>
-            <div className="rounded-lg border border-gray-100 bg-gray-50 p-4 md:col-span-2">
+            <div className="glass-card rounded-xl p-4 md:col-span-2">
               <p className="text-xs font-semibold uppercase text-gray-500">Cập nhật lần cuối</p>
               <p className="mt-1 text-sm text-gray-800">
                 {onboarding?.savedAt

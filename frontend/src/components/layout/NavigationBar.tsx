@@ -31,7 +31,7 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ user, onLogout }) => {
   };
 
   return (
-    <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/70 backdrop-blur">
+    <header className="sticky top-0 z-50 border-transparent bg-gradient-to-r from-white/90 via-sky-50/80 to-indigo-50/80 backdrop-blur-xl shadow-sm">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
         <div className="flex items-center gap-4">
           <button
@@ -39,8 +39,8 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ user, onLogout }) => {
             onClick={() => handleNavigate("/dashboard")}
             className="flex items-center gap-2 focus:outline-none"
           >
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-600 text-white font-bold">V</div>
-            <span className="font-semibold text-blue-600">VoiceUp</span>
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 via-indigo-500 to-sky-500 text-white font-bold shadow-md">V</div>
+            <span className="font-semibold bg-gradient-to-r from-blue-600 via-indigo-500 to-sky-500 bg-clip-text text-transparent">VoiceUp</span>
           </button>
         </div>
 
@@ -53,7 +53,7 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ user, onLogout }) => {
                 key={item.path}
                 onClick={() => handleNavigate(item.path)}
                 className={`transition ${
-                  isActive ? "text-blue-600" : "hover:text-blue-600"
+                  isActive ? "text-blue-600" : "text-slate-600 hover:text-blue-500"
                 }`}
               >
                 {item.label}
@@ -69,12 +69,12 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ user, onLogout }) => {
           <div className="relative">
             <button
               onClick={() => setMenuOpen((prev) => !prev)}
-              className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-500 text-white font-medium shadow"
+              className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 via-indigo-500 to-sky-500 text-white font-medium shadow-lg"
             >
               {user?.fullName?.charAt(0) || "U"}
             </button>
             {menuOpen && (
-              <div className="absolute right-0 mt-2 w-40 rounded-lg border border-slate-200 bg-white py-2 shadow-lg">
+              <div className="absolute right-0 mt-2 w-44 rounded-xl border border-slate-200/60 bg-white/90 py-2 shadow-xl backdrop-blur">
                 {canViewLearnerProfile && (
                   <button
                     onClick={() => handleNavigate("/learner/profile")}

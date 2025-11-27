@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { NavigationBar } from "../../components/layout";
+import { learnerApi } from "../../api/learner.api";
 import { getAuth, clearAuth } from "../../utils/auth";
 import type { JwtResponse } from "../../types/jwt";
 
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState<JwtResponse | null>(null);
+  const [learnerMetrics, setLearnerMetrics] = useState<{ currentStreak: number; averagePronunciationScore: number | null } | null>(null);
 
   useEffect(() => {
     const auth = getAuth();
@@ -15,6 +17,43 @@ const Dashboard: React.FC = () => {
     }
   }, []);
 
+  useEffect(() => {
+    let isMounted = true;
+    const loadLearnerMetrics = async () => {
+      if (!user?.id || !user.roles?.includes("LEARNER")) {
+        if (isMounted) {
+          setLearnerMetrics(null);
+        }
+        return;
+      }
+
+      try {
+        const profile = await learnerApi.getByUserId(user.id);
+        if (isMounted) {
+          if (profile) {
+            setLearnerMetrics({
+              currentStreak: profile.currentStreak ?? 0,
+              averagePronunciationScore: profile.averagePronunciationScore ?? null,
+            });
+          } else {
+            setLearnerMetrics({ currentStreak: 0, averagePronunciationScore: null });
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load learner metrics", err);
+        if (isMounted) {
+          setLearnerMetrics({ currentStreak: 0, averagePronunciationScore: null });
+        }
+      }
+    };
+
+    void loadLearnerMetrics();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [user?.id, user?.roles]);
+
   const handleLogout = () => {
     clearAuth();
     setUser(null);
@@ -22,9 +61,12 @@ const Dashboard: React.FC = () => {
   };
 
   const isLearner = user?.roles?.includes("LEARNER");
+  const dayStreak = learnerMetrics?.currentStreak ?? 0;
+  const averageScore = learnerMetrics?.averagePronunciationScore;
+  const averageScoreDisplay = averageScore != null ? `${averageScore.toFixed(1)}%` : "--";
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="page-gradient">
       <NavigationBar user={user} onLogout={handleLogout} />
 
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
@@ -40,9 +82,9 @@ const Dashboard: React.FC = () => {
         {isLearner && (
           <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-4">
             {[
-              { title: 'Day Streak', value: '12', icon: '🔥' },
+              { title: 'Day Streak', value: dayStreak.toString(), icon: '🔥' },
               { title: 'Sessions This Week', value: '8', icon: '🗓️' },
-              { title: 'Average Score', value: '87', icon: '⭐' },
+              { title: 'Average Score', value: averageScoreDisplay, icon: '⭐' },
               { title: 'Leaderboard Rank', value: '#24', icon: '🏆' },
             ].map((s) => (
               <div key={s.title} className="rounded-xl bg-white p-4 shadow-sm border border-slate-200">
