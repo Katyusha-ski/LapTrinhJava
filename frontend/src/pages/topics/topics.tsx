@@ -78,7 +78,7 @@ export default function TopicsPage() {
 
   const handleLogout = () => {
     clearAuth();
-    navigate("/login");
+    navigate("/landing");
   };
 
   const pageShell = (content: ReactNode) => (

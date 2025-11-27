@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { sessionApi } from "../../api/session.api";
 import { learnerApi } from "../../api/learner.api";
-import { authApi } from "../../api/auth.api";
+import { NavigationBar } from "../../components/layout";
+import { useAuth } from "../../context/AuthContext";
 
 interface Session {
   id: number;
@@ -20,6 +21,7 @@ interface Session {
 
 export default function SessionsPage() {
   const navigate = useNavigate();
+  const { user, clearAuth } = useAuth();
   const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -30,17 +32,17 @@ export default function SessionsPage() {
     notes: "",
   });
 
-  useEffect(() => {
-    loadSessions();
-  }, []);
+  const handleLogout = useCallback(() => {
+    clearAuth();
+    navigate("/landing", { replace: true });
+  }, [clearAuth, navigate]);
 
-  const loadSessions = async () => {
+  const loadSessions = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
-      const user = authApi.getLocalUser();
-      if (!user) {
-        navigate("/login");
+      if (!user?.id) {
+        handleLogout();
         return;
       }
 
@@ -60,15 +62,18 @@ export default function SessionsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user?.id, handleLogout]);
+
+  useEffect(() => {
+    void loadSessions();
+  }, [loadSessions]);
 
   const handleCreateSession = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       setError(null);
-      const user = authApi.getLocalUser();
-      if (!user) {
-        navigate("/login");
+      if (!user?.id) {
+        handleLogout();
         return;
       }
 
@@ -147,18 +152,23 @@ export default function SessionsPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-          <p>Đang tải danh sách buổi học...</p>
+      <div className="page-gradient">
+        <NavigationBar user={user} onLogout={handleLogout} />
+        <div className="flex min-h-[60vh] items-center justify-center px-4">
+          <div className="text-center">
+            <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-b-2 border-blue-500"></div>
+            <p>Đang tải danh sách buổi học...</p>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
-      <div className="max-w-6xl mx-auto">
+    <div className="page-gradient">
+      <NavigationBar user={user} onLogout={handleLogout} />
+
+      <div className="max-w-6xl mx-auto py-8 px-4">
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Buổi học luyện tập</h1>

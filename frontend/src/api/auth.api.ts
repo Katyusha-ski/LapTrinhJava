@@ -7,7 +7,7 @@ export type RegisterPayload = {
   email: string;
   fullName: string;
   phone?: string;
-  role: 'LEARNER' | 'MENTOR' | 'ADMIN';
+  role?: 'LEARNER' | 'MENTOR' | 'ADMIN';
 };
 
 export interface User {

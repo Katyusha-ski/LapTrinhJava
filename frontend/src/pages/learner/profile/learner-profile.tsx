@@ -187,7 +187,7 @@ export default function LearnerProfile() {
 
   const handleLogout = () => {
     clearAuth();
-    navigate("/login", { replace: true });
+    navigate("/landing", { replace: true });
   };
 
   const handleChange = (

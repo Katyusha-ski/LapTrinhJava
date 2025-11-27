@@ -2,7 +2,9 @@ import { Navigate, Route, Routes, useNavigate, useLocation } from "react-router-
 import Login from "./pages/login/login";
 import Register from "./pages/register/register";
 import LandingPage from "./pages/landing/landing-page";
-import Dashboard from "./pages/dashboard/dashboard";
+import { LearnerDashboard } from "./pages/learner/dashboard";
+import { MentorDashboard } from "./pages/mentor/dashboard";
+import { AdminDashboard } from "./pages/admin/dashboard";
 import SplashScreen from "./pages/splash/splash-screen";
 import OnboardingWizard from "./pages/onboarding/onboarding-wizard";
 import MentorSelection from "./pages/learner/mentor-selection/mentor-selection";
@@ -38,6 +40,20 @@ function App() {
 		return element;
 	};
 
+	const RoleDashboardRedirect: FC = () => {
+		if (!token) {
+			return <Navigate to="/login" replace />;
+		}
+		const roles = user?.roles || [];
+		if (roles.includes('ADMIN')) {
+			return <Navigate to="/admin" replace />;
+		}
+		if (roles.includes('MENTOR')) {
+			return <Navigate to="/mentor" replace />;
+		}
+		return <Navigate to="/learner" replace />;
+	};
+
 	// Auto-redirect when token changes: redirect to role-based landing (/admin,/mentor,/learner)
 	useEffect(() => {
 		if (!isLoading && token && (location.pathname === '/login' || location.pathname === '/register' || location.pathname === '/')) {
@@ -65,13 +81,13 @@ function App() {
 			<Route path="/register" element={token ? <Navigate to="/dashboard" replace /> : <Register />} />
 
 			{/* Protected Routes */}
-			<Route path="/dashboard" element={token ? <Dashboard /> : <Navigate to="/login" replace />} />
+			<Route path="/dashboard" element={token ? <RoleDashboardRedirect /> : <Navigate to="/login" replace />} />
 			<Route path="/onboarding" element={token ? <OnboardingWizard /> : <Navigate to="/login" replace />} />
 
 			{/* Role landing routes */}
-			<Route path="/learner" element={<ProtectedRoute requiredRoles={["LEARNER"]} element={<Dashboard />} />} />
-			<Route path="/mentor" element={<ProtectedRoute requiredRoles={["MENTOR"]} element={<Dashboard />} />} />
-			<Route path="/admin" element={<ProtectedRoute requiredRoles={["ADMIN"]} element={<Dashboard />} />} />
+			<Route path="/learner" element={<ProtectedRoute requiredRoles={["LEARNER"]} element={<LearnerDashboard />} />} />
+			<Route path="/mentor" element={<ProtectedRoute requiredRoles={["MENTOR"]} element={<MentorDashboard />} />} />
+			<Route path="/admin" element={<ProtectedRoute requiredRoles={["ADMIN"]} element={<AdminDashboard />} />} />
 
 			{/* Learner Routes */}
 			<Route path="/mentor-selection" element={<ProtectedRoute requiredRoles={["LEARNER"]} element={<MentorSelection />} />} />

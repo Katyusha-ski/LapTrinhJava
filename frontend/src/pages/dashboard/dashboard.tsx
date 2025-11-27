@@ -57,7 +57,7 @@ const Dashboard: React.FC = () => {
   const handleLogout = () => {
     clearAuth();
     setUser(null);
-    navigate("/login");
+    navigate("/landing");
   };
 
   const isLearner = user?.roles?.includes("LEARNER");

@@ -5,8 +5,6 @@ import path from "../../constants/path";
 import { authApi } from "../../api/auth.api";
 import { useAuth } from "../../context/AuthContext";
 
-type RoleOption = 'LEARNER' | 'MENTOR' | 'ADMIN';
-
 const Register: React.FC = () => {
   const navigate = useNavigate();
   const { setAuth } = useAuth();
@@ -19,7 +17,6 @@ const Register: React.FC = () => {
   const [fullNameError, setFullNameError] = useState("");
   const [phone, setPhone] = useState("");
   const [phoneError, setPhoneError] = useState("");
-  const [role, setRole] = useState<RoleOption>('LEARNER');
   const [password, setPassword] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -100,7 +97,6 @@ const Register: React.FC = () => {
           fullName: trimmedFullName,
           phone: trimmedPhone || undefined,
           password,
-          role,
         };
         await authApi.register(payload);
         
@@ -204,20 +200,6 @@ const Register: React.FC = () => {
             {phoneError && (
               <p className="text-red-500 text-sm mt-1">{phoneError}</p>
             )}
-          </div>
-
-          {/* Role */}
-          <div>
-            <label className="block text-sm font-medium mb-1">Vai trò</label>
-            <select
-              value={role}
-              onChange={(e) => setRole(e.target.value as RoleOption)}
-              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring focus:border-blue-400"
-            >
-              <option value="LEARNER">Học viên</option>
-              <option value="MENTOR">Mentor</option>
-              <option value="ADMIN">Admin</option>
-            </select>
           </div>
 
           {/* Password */}

@@ -80,9 +80,14 @@ const MentorSelection: React.FC = () => {
       }
     };
 
-    fetchProfile();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    void fetchProfile();
   }, [userId]);
+
+  const handleLogout = () => {
+    clearAuth();
+    setUser(null);
+    navigate("/landing");
+  };
 
   useEffect(() => {
     if (userId) {
@@ -122,12 +127,6 @@ const MentorSelection: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleLogout = () => {
-    clearAuth();
-    setUser(null);
-    navigate("/login");
   };
 
   const uniqueSkills = useMemo(() => {
