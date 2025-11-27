@@ -15,9 +15,14 @@ export interface LearnerProfile {
   createdAt?: string | null;
 }
 
-export interface UpdateLearnerRequest {
-  englishLevel?: string;
-  learningGoals?: string;
+export interface LearnerMutationRequest {
+  userId: number;
+  mentorId?: number | null;
+  englishLevel?: string | null;
+  learningGoals?: string | null;
+  currentStreak?: number | null;
+  totalPracticeHours?: number | null;
+  averagePronunciationScore?: number | null;
 }
 
 export const learnerApi = {
@@ -32,13 +37,13 @@ export const learnerApi = {
   getByUserId: (userId: number) => 
     httpClient<LearnerProfile>(`/api/learners/by-user/${userId}`),
   
-  create: (data: UpdateLearnerRequest) =>
+  create: (data: LearnerMutationRequest) =>
     httpClient<LearnerProfile>("/api/learners", { 
       method: "POST", 
       body: JSON.stringify(data) 
     }),
   
-  update: (id: number, data: UpdateLearnerRequest) =>
+  update: (id: number, data: LearnerMutationRequest) =>
     httpClient<LearnerProfile>(`/api/learners/${id}`, { 
       method: "PUT", 
       body: JSON.stringify(data) 

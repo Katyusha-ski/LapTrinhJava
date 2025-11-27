@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { NavigationBar } from "../../components/layout";
 import { getAuth, clearAuth } from "../../utils/auth";
 import type { JwtResponse } from "../../types/jwt";
 
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState<JwtResponse | null>(null);
-  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     const auth = getAuth();
@@ -17,195 +17,165 @@ const Dashboard: React.FC = () => {
 
   const handleLogout = () => {
     clearAuth();
+    setUser(null);
     navigate("/login");
   };
 
-  const isAdmin = user?.roles?.includes("ROLE_ADMIN");
-  const isMentor = user?.roles?.includes("ROLE_MENTOR");
-  const isLearner = user?.roles?.includes("ROLE_LEARNER");
-
-  const learnerMenus = [
-    { label: "Hồ sơ cá nhân", icon: "👤", color: "from-blue-500 to-cyan-500", path: "/learner/profile" },
-    { label: "Chọn mentor", icon: "👨‍🏫", color: "from-emerald-500 to-teal-500", path: "/learner/mentor-selection" },
-    { label: "Buổi học", icon: "📅", color: "from-amber-500 to-orange-500", path: "/sessions" },
-    { label: "Chủ đề luyện tập", icon: "📚", color: "from-violet-500 to-purple-500", path: "/topics" },
-    { label: "Hội thoại AI", icon: "💬", color: "from-pink-500 to-rose-500", path: "/conversation" },
-    { label: "Luyện phát âm", icon: "🎤", color: "from-indigo-500 to-blue-500", path: "/pronunciation" },
-  ];
-
-  const adminMenus = [
-    { label: "Quản lý mentor", icon: "⚙️", color: "from-purple-500 to-pink-500", path: "/admin/mentor-management" },
-    { label: "Quản lý học viên", icon: "👥", color: "from-blue-500 to-indigo-500", path: "/admin/learner-management" },
-    { label: "Quản lý chủ đề", icon: "📚", color: "from-cyan-500 to-blue-500", path: "/topics" },
-  ];
-
-  const mentorMenus = [
-    { label: "Buổi học của tôi", icon: "📅", color: "from-amber-500 to-yellow-500", path: "/sessions" },
-    { label: "Chủ đề luyện tập", icon: "📚", color: "from-violet-500 to-purple-500", path: "/topics" },
-  ];
-
-  const MenuCard = ({ label, icon, color, path }: typeof learnerMenus[0]) => (
-    <button
-      onClick={() => navigate(path)}
-      className={`group relative overflow-hidden rounded-2xl bg-gradient-to-br ${color} p-6 shadow-lg transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 cursor-pointer`}
-    >
-      <div className="absolute inset-0 bg-black opacity-0 transition-opacity duration-300 group-hover:opacity-5" />
-      <div className="relative flex flex-col items-center justify-center h-full text-white">
-        <div className="mb-3 text-4xl">{icon}</div>
-        <h3 className="text-center font-semibold text-sm sm:text-base">{label}</h3>
-      </div>
-    </button>
-  );
+  const isLearner = user?.roles?.includes("LEARNER");
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-      {/* Header */}
-      <header className="border-b border-slate-700 bg-slate-900/50 backdrop-blur-sm sticky top-0 z-50">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-lg bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold">
-              A
-            </div>
-            <h1 className="text-xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-              AESP Platform
-            </h1>
-          </div>
+    <div className="min-h-screen bg-slate-50">
+      <NavigationBar user={user} onLogout={handleLogout} />
 
-          <div className="flex items-center gap-4">
-            <div className="hidden sm:block text-right">
-              <p className="text-sm font-semibold text-white">{user?.fullName || "User"}</p>
-              <p className="text-xs text-slate-400">{user?.email}</p>
-            </div>
-            <div className="relative">
-              <button
-                onClick={() => setMenuOpen(!menuOpen)}
-                className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-sm font-semibold text-white hover:shadow-lg transition-all"
-              >
-                {user?.fullName?.charAt(0) || "U"}
-              </button>
-              {menuOpen && (
-                <div className="absolute right-0 mt-2 w-48 rounded-xl bg-slate-800 shadow-xl py-2 z-10 border border-slate-700">
-                  <button
-                    onClick={handleLogout}
-                    className="w-full px-4 py-2 text-left text-sm text-red-400 hover:bg-slate-700/50 transition-colors"
-                  >
-                    Đăng xuất
-                  </button>
-                </div>
-              )}
-            </div>
+      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        {/* Welcome */}
+        <div className="mb-6 flex items-center justify-between">
+          <div>
+            <h2 className="text-3xl font-bold text-slate-800">Welcome back, {user?.fullName || 'User'} <span className="inline-block">👋</span></h2>
+            <p className="text-slate-500 mt-1">You're making great progress. Keep it up!</p>
           </div>
         </div>
-      </header>
 
-      {/* Main Content */}
-      <main className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-        {/* Welcome Section */}
-        <div className="mb-12">
-          <h2 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-            Xin chào, {user?.fullName || "User"}! 👋
-          </h2>
-          <p className="mt-2 text-slate-400">Chào mừng bạn quay trở lại. Hãy chọn một tính năng để bắt đầu.</p>
-        </div>
-
-        {/* Learner Features */}
+        {/* Stats Row */}
         {isLearner && (
-          <div className="mb-12">
-            <div className="mb-6 flex items-center gap-3">
-              <div className="h-1 w-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full" />
-              <h3 className="text-xl font-bold text-white">Tính năng học viên</h3>
-            </div>
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-              {learnerMenus.map((menu) => (
-                <MenuCard key={menu.path} {...menu} />
-              ))}
-            </div>
+          <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-4">
+            {[
+              { title: 'Day Streak', value: '12', icon: '🔥' },
+              { title: 'Sessions This Week', value: '8', icon: '🗓️' },
+              { title: 'Average Score', value: '87', icon: '⭐' },
+              { title: 'Leaderboard Rank', value: '#24', icon: '🏆' },
+            ].map((s) => (
+              <div key={s.title} className="rounded-xl bg-white p-4 shadow-sm border border-slate-200">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs text-slate-400">{s.title}</p>
+                    <p className="mt-1 text-xl font-bold text-slate-800">{s.value}</p>
+                  </div>
+                  <div className="text-2xl">{s.icon}</div>
+                </div>
+              </div>
+            ))}
           </div>
         )}
 
-        {/* Admin Features */}
-        {isAdmin && (
-          <div className="mb-12">
-            <div className="mb-6 flex items-center gap-3">
-              <div className="h-1 w-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full" />
-              <h3 className="text-xl font-bold text-white">Tính năng quản trị</h3>
-            </div>
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-              {adminMenus.map((menu) => (
-                <MenuCard key={menu.path} {...menu} />
-              ))}
-            </div>
-          </div>
-        )}
+        {/* Main Columns */}
+        {isLearner && (
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+            {/* Left Column - main content */}
+            <div className="lg:col-span-2 space-y-6">
+              {/* Continue Session Card */}
+              <div className="rounded-xl bg-white p-6 shadow-sm border border-slate-200">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-slate-500">Continue Learning</p>
+                    <h3 className="text-lg font-semibold text-slate-800">Meeting & Presentations</h3>
+                    <p className="text-sm text-slate-400 mt-1">Lesson 3 of 8 • 38% Complete</p>
+                  </div>
+                  <button className="rounded-md bg-blue-600 px-4 py-2 text-white font-semibold">Continue Session</button>
+                </div>
+                <div className="mt-4 h-2 w-full rounded-full bg-slate-100 overflow-hidden">
+                  <div className="h-2 bg-blue-600" style={{ width: '38%' }} />
+                </div>
+              </div>
 
-        {/* Mentor Features */}
-        {isMentor && (
-          <div className="mb-12">
-            <div className="mb-6 flex items-center gap-3">
-              <div className="h-1 w-8 bg-gradient-to-r from-amber-500 to-orange-500 rounded-full" />
-              <h3 className="text-xl font-bold text-white">Tính năng mentor</h3>
-            </div>
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-              {mentorMenus.map((menu) => (
-                <MenuCard key={menu.path} {...menu} />
-              ))}
-            </div>
-          </div>
-        )}
+              {/* Recommended Practice */}
+              <div className="rounded-xl bg-white p-6 shadow-sm border border-slate-200">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-lg font-semibold text-slate-800">Recommended Practice</h4>
+                  <button className="text-sm text-blue-600">See More</button>
+                </div>
+                <div className="mt-4 space-y-3">
+                  {[
+                    { title: 'Travel: At the Airport', level: 'Intermediate', time: '15 min' },
+                    { title: 'Daily Life: Shopping & Bargaining', level: 'Beginner', time: '12 min' },
+                    { title: "Healthcare: Doctor's Appointment", level: 'Advanced', time: '20 min' },
+                  ].map((p) => (
+                    <div key={p.title} className="flex items-center justify-between rounded-lg p-3 border border-slate-100">
+                      <div className="flex items-center gap-3">
+                        <div className="h-9 w-9 rounded-full bg-slate-100 flex items-center justify-center">▶️</div>
+                        <div>
+                          <p className="font-semibold text-slate-800">{p.title}</p>
+                          <p className="text-xs text-slate-400">{p.level} • {p.time}</p>
+                        </div>
+                      </div>
+                      <button className="text-sm bg-blue-600 text-white px-3 py-1 rounded-md">Start</button>
+                    </div>
+                  ))}
+                </div>
+              </div>
 
-        {/* Quick Links */}
-        <div className="mb-12">
-          <div className="mb-6 flex items-center gap-3">
-            <div className="h-1 w-8 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full" />
-            <h3 className="text-xl font-bold text-white">Liên kết nhanh</h3>
-          </div>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <button
-              onClick={() => navigate("/landing")}
-              className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-500 p-6 shadow-lg transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 cursor-pointer text-white text-left"
-            >
-              <div className="absolute inset-0 bg-black opacity-0 transition-opacity duration-300 group-hover:opacity-5" />
-              <h3 className="relative font-semibold text-lg">Trang chủ</h3>
-              <p className="relative mt-2 text-sm text-blue-100">Xem trang chủ của ứng dụng</p>
-            </button>
-            <button
-              onClick={() => navigate("/onboarding")}
-              className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-500 p-6 shadow-lg transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 cursor-pointer text-white text-left"
-            >
-              <div className="absolute inset-0 bg-black opacity-0 transition-opacity duration-300 group-hover:opacity-5" />
-              <h3 className="relative font-semibold text-lg">Hoàn thiện hộ sơ</h3>
-              <p className="relative mt-2 text-sm text-emerald-100">Cập nhật thông tin mục tiêu</p>
-            </button>
-          </div>
-        </div>
-
-        {/* User Info Card */}
-        <div className="rounded-2xl bg-slate-800/50 backdrop-blur border border-slate-700 p-6 shadow-lg">
-          <h3 className="font-semibold text-white mb-6">Thông tin tài khoản</h3>
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-            <div className="p-4 rounded-xl bg-slate-900/50 border border-slate-700">
-              <p className="text-xs font-medium text-slate-400 uppercase tracking-wide">Tên người dùng</p>
-              <p className="mt-2 font-semibold text-white text-lg">{user?.username}</p>
-            </div>
-            <div className="p-4 rounded-xl bg-slate-900/50 border border-slate-700">
-              <p className="text-xs font-medium text-slate-400 uppercase tracking-wide">Email</p>
-              <p className="mt-2 font-semibold text-white text-lg break-all">{user?.email}</p>
-            </div>
-            <div className="p-4 rounded-xl bg-slate-900/50 border border-slate-700">
-              <p className="text-xs font-medium text-slate-400 uppercase tracking-wide">Vai trò</p>
-              <div className="mt-2 flex gap-2 flex-wrap">
-                {user?.roles?.map((role) => (
-                  <span
-                    key={role}
-                    className="inline-block rounded-full bg-gradient-to-r from-blue-500/30 to-purple-500/30 border border-blue-400/50 px-3 py-1 text-xs font-semibold text-blue-300"
-                  >
-                    {role === "ROLE_ADMIN" ? "Quản trị" : role === "ROLE_MENTOR" ? "Mentor" : "Học viên"}
-                  </span>
-                ))}
+              {/* Recent Sessions */}
+              <div className="rounded-xl bg-white p-6 shadow-sm border border-slate-200">
+                <h4 className="text-lg font-semibold text-slate-800">Recent Sessions</h4>
+                <div className="mt-4 space-y-3">
+                  {[{ title: 'Job Interview Practice', time: '2 hours ago • 18 min', score: 92 }, { title: 'Business Email Writing', time: 'Yesterday • 15 min', score: 88 }, { title: 'Casual Conversation', time: '2 days ago • 20 min', score: 85 }].map((s) => (
+                    <div key={s.title} className="flex items-center justify-between rounded-lg p-3 border border-slate-100">
+                      <div>
+                        <p className="font-semibold text-slate-800">{s.title}</p>
+                        <p className="text-xs text-slate-400">{s.time}</p>
+                      </div>
+                      <div className="text-sm font-semibold text-slate-700">{s.score}</div>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
+
+            {/* Right Sidebar */}
+            <aside className="space-y-6">
+              {/* Quick Actions */}
+              <div className="rounded-xl bg-white p-4 shadow-sm border border-slate-200">
+                <h5 className="text-sm font-semibold text-slate-800">Quick Actions</h5>
+                <div className="mt-3 divide-y divide-slate-100">
+                  {[
+                    { label: 'Start Solo Practice', icon: '🎧' },
+                    { label: 'Join Group Room', icon: '👥' },
+                    { label: 'Book a Mentor', icon: '📅' },
+                  ].map((a) => (
+                    <button key={a.label} className="w-full flex items-center gap-3 py-3 text-sm text-slate-700 hover:bg-slate-50 rounded-md">
+                      <span className="text-lg">{a.icon}</span>
+                      <span>{a.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Learning Path */}
+              <div className="rounded-xl bg-white p-4 shadow-sm border border-slate-200">
+                <h5 className="text-sm font-semibold text-slate-800">Learning Path</h5>
+                <div className="mt-3 space-y-4">
+                  {[{ title: 'Business English', pct: 42 }, { title: 'Travel Conversations', pct: 75 }, { title: 'Job Interview Prep', pct: 28 }].map((lp) => (
+                    <div key={lp.title}>
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm text-slate-700">{lp.title}</p>
+                        <p className="text-xs text-slate-500">{lp.pct}%</p>
+                      </div>
+                      <div className="mt-2 h-2 w-full rounded-full bg-slate-100">
+                        <div className="h-2 bg-blue-600 rounded-full" style={{ width: `${lp.pct}%` }} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Leaderboard */}
+              <div className="rounded-xl bg-white p-4 shadow-sm border border-slate-200">
+                <h5 className="text-sm font-semibold text-slate-800">Leaderboard</h5>
+                <div className="mt-3 space-y-2">
+                  {[{ name: 'Alex Chen', pts: 1250 }, { name: 'Maria Silva', pts: 1180 }, { name: 'John Kim', pts: 1150 }, { name: 'You', pts: 890 }].map((l, idx) => (
+                    <div key={l.name} className="flex items-center justify-between text-sm text-slate-700">
+                      <div className="flex items-center gap-3">
+                        <div className="h-8 w-8 rounded-full bg-slate-100 flex items-center justify-center text-xs font-semibold">{idx + 1}</div>
+                        <div>{l.name}</div>
+                      </div>
+                      <div className="text-slate-500">{l.pts}pts</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </aside>
           </div>
-        </div>
+        )}
       </main>
     </div>
   );

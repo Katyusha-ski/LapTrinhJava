@@ -5,7 +5,9 @@ import { learnerApi, type LearnerProfile } from "../../../api/learner.api";
 import type { Mentor } from "../../../types/mentor";
 import type { EnglishLevel } from "../../../types/shared";
 import { ENGLISH_LEVEL_OPTIONS } from "../../../types/shared";
-import { getAuth } from "../../../utils/auth";
+import type { JwtResponse } from "../../../types/jwt";
+import { clearAuth, getAuth } from "../../../utils/auth";
+import { NavigationBar } from "../../../components/layout";
 
 interface FilterState {
   skill: string;
@@ -23,6 +25,7 @@ const DEFAULT_FILTERS: FilterState = {
 
 const MentorSelection: React.FC = () => {
   const navigate = useNavigate();
+  const [user, setUser] = useState<JwtResponse | null>(() => getAuth());
   const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
   const [mentors, setMentors] = useState<Mentor[]>([]);
   const [loading, setLoading] = useState(false);
@@ -31,8 +34,11 @@ const MentorSelection: React.FC = () => {
   const [learnerProfile, setLearnerProfile] = useState<LearnerProfile | null>(null);
   const [selectedMentorId, setSelectedMentorId] = useState<number | null>(null);
 
-  const auth = getAuth();
-  const userId = auth?.id;
+  const userId = user?.id;
+
+  useEffect(() => {
+    setUser(getAuth());
+  }, []);
 
   const buildSearchParams = (onlyAvailable = true) => {
     const params: Record<string, unknown> = { onlyAvailable };
@@ -118,6 +124,12 @@ const MentorSelection: React.FC = () => {
     }
   };
 
+  const handleLogout = () => {
+    clearAuth();
+    setUser(null);
+    navigate("/login");
+  };
+
   const uniqueSkills = useMemo(() => {
     const set = new Set<string>();
     mentors.forEach((mentor) => mentor.skills?.forEach((skill) => set.add(skill)));
@@ -125,8 +137,10 @@ const MentorSelection: React.FC = () => {
   }, [mentors]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-tr from-blue-50 via-white to-blue-100 p-6">
-      <div className="mx-auto max-w-5xl">
+    <div className="min-h-screen bg-gradient-to-tr from-blue-50 via-white to-blue-100">
+      <NavigationBar user={user} onLogout={handleLogout} />
+
+      <main className="mx-auto max-w-5xl px-6 pb-10 pt-8">
         <header className="mb-8 text-center">
           <h1 className="text-3xl font-bold text-gray-900">Chọn Mentor Đồng Hành</h1>
           <p className="mt-2 text-sm text-gray-600">
@@ -339,7 +353,7 @@ const MentorSelection: React.FC = () => {
             })
           )}
         </section>
-      </div>
+      </main>
     </div>
   );
 };

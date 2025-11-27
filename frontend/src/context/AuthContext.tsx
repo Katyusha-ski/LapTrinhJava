@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, type ReactNode, useEffect } from 'react';
 import type { JwtResponse } from '../types/jwt';
-import { getAuth, saveAuth as saveAuthUtil, clearAuth as clearAuthUtil } from '../utils/auth';
+import { getAuth, saveAuth as saveAuthUtil, clearAuth as clearAuthUtil, normalizeAuth } from '../utils/auth';
 
 interface AuthContextType {
   token: string | null;
@@ -32,10 +32,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const handleSetAuth = (jwt: JwtResponse) => {
     console.log('🔐 AuthContext.setAuth called:', jwt);
-    saveAuthUtil(jwt);
-    setToken(jwt.token);
-    setUser(jwt);
-    console.log('🔐 AuthContext state updated - token:', jwt.token);
+    const normalizedJwt = normalizeAuth(jwt);
+    saveAuthUtil(normalizedJwt);
+    setToken(normalizedJwt.token);
+    setUser(normalizedJwt);
+    console.log('🔐 AuthContext state updated - token:', normalizedJwt.token);
   };
 
   const handleClearAuth = () => {

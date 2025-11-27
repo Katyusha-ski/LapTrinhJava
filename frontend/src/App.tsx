@@ -18,34 +18,40 @@ import { SessionList } from "./pages/sessions/session-list";
 import { TopicList } from "./pages/topics/topic-list";
 import { PackageList } from "./pages/packages/package-list";
 import { useAuth } from "./context/AuthContext";
-import { useEffect, useState } from "react";
+import type { FC, ReactElement } from "react";
+import { useEffect } from "react";
 
 function App() {
 	const { token, isLoading, user } = useAuth();
 	const navigate = useNavigate();
 	const location = useLocation();
-	const [onboardingProfile, setOnboardingProfile] = useState<any>(null);
-	
+
 	console.log('🚀 App rendering - token:', token, 'isLoading:', isLoading, 'location:', location.pathname);
 
-	// Auto-redirect when token changes
+	// Small helper component to restrict routes by role
+	const ProtectedRoute: FC<{ element: ReactElement; requiredRoles?: string[] }> = ({ element, requiredRoles }) => {
+		if (!token) return <Navigate to="/login" replace />;
+		if (requiredRoles && requiredRoles.length > 0) {
+			const hasRole = user?.roles?.some((r) => requiredRoles.includes(r));
+			if (!hasRole) return <Navigate to="/dashboard" replace />;
+		}
+		return element;
+	};
+
+	// Auto-redirect when token changes: redirect to role-based landing (/admin,/mentor,/learner)
 	useEffect(() => {
-		if (!isLoading && token && (location.pathname === '/login' || location.pathname === '/register')) {
-			console.log('🚀 Token detected, checking onboarding status');
-			
-			// Check if onboarding profile exists in localStorage
-			const onboarding = localStorage.getItem("aesp_onboarding_profile");
-			if (onboarding) {
-				const profile = JSON.parse(onboarding);
-				setOnboardingProfile(profile);
-				console.log('✅ Onboarding profile found, redirecting to mentor selection');
-				navigate('/mentor-selection', { replace: true });
+		if (!isLoading && token && (location.pathname === '/login' || location.pathname === '/register' || location.pathname === '/')) {
+			console.log('🚀 Token detected, redirecting based on roles');
+			const roles = user?.roles || [];
+			if (roles.includes('ADMIN')) {
+				navigate('/admin', { replace: true });
+			} else if (roles.includes('MENTOR')) {
+				navigate('/mentor', { replace: true });
 			} else {
-				console.log('⚠️ No onboarding profile, redirecting to onboarding');
-				navigate('/onboarding', { replace: true });
+				navigate('/learner', { replace: true });
 			}
 		}
-	}, [token, isLoading, location.pathname, navigate]);
+	}, [token, isLoading, location.pathname, navigate, user]);
 
 	if (isLoading) {
 		return <SplashScreen />;
@@ -62,19 +68,25 @@ function App() {
 			<Route path="/dashboard" element={token ? <Dashboard /> : <Navigate to="/login" replace />} />
 			<Route path="/onboarding" element={token ? <OnboardingWizard /> : <Navigate to="/login" replace />} />
 
+			{/* Role landing routes */}
+			<Route path="/learner" element={<ProtectedRoute requiredRoles={["LEARNER"]} element={<Dashboard />} />} />
+			<Route path="/mentor" element={<ProtectedRoute requiredRoles={["MENTOR"]} element={<Dashboard />} />} />
+			<Route path="/admin" element={<ProtectedRoute requiredRoles={["ADMIN"]} element={<Dashboard />} />} />
+
 			{/* Learner Routes */}
-			<Route path="/mentor-selection" element={token ? <MentorSelection /> : <Navigate to="/login" replace />} />
-			<Route path="/learner/mentor-selection" element={token ? <MentorSelection /> : <Navigate to="/login" replace />} />
-			<Route path="/learner/profile" element={token ? <LearnerProfile /> : <Navigate to="/login" replace />} />
+			<Route path="/mentor-selection" element={<ProtectedRoute requiredRoles={["LEARNER"]} element={<MentorSelection />} />} />
+			<Route path="/learner/mentor-selection" element={<ProtectedRoute requiredRoles={["LEARNER"]} element={<MentorSelection />} />} />
+			<Route path="/learner/profile" element={<ProtectedRoute requiredRoles={["LEARNER"]} element={<LearnerProfile />} />} />
 
 			{/* Admin Routes */}
-			<Route path="/admin/mentor-management" element={token ? <AdminMentorManagement /> : <Navigate to="/login" replace />} />
-			<Route path="/admin/mentors" element={token ? <MentorList /> : <Navigate to="/login" replace />} />
-			<Route path="/admin/learners" element={token ? <LearnerList /> : <Navigate to="/login" replace />} />
+			<Route path="/admin/mentor-management" element={<ProtectedRoute requiredRoles={["ADMIN"]} element={<AdminMentorManagement />} />} />
+			<Route path="/admin/mentors" element={<ProtectedRoute requiredRoles={["ADMIN"]} element={<MentorList />} />} />
+			<Route path="/admin/learners" element={<ProtectedRoute requiredRoles={["ADMIN"]} element={<LearnerList />} />} />
 
 			{/* Shared Routes */}
 			<Route path="/sessions" element={token ? <Sessions /> : <Navigate to="/login" replace />} />
 			<Route path="/sessions/all" element={token ? <SessionList /> : <Navigate to="/login" replace />} />
+			<Route path="/learn" element={token ? <Topics /> : <Navigate to="/login" replace />} />
 			<Route path="/topics" element={token ? <Topics /> : <Navigate to="/login" replace />} />
 			<Route path="/topics/all" element={token ? <TopicList /> : <Navigate to="/login" replace />} />
 			<Route path="/packages" element={token ? <PackageList /> : <Navigate to="/login" replace />} />
@@ -82,8 +94,38 @@ function App() {
 			<Route path="/pronunciation" element={token ? <Pronunciation /> : <Navigate to="/login" replace />} />
 
 			{/* Default Routes */}
-			<Route path="/" element={<Navigate to={token ? "/dashboard" : "/landing"} replace />} />
-			<Route path="*" element={<Navigate to={token ? "/dashboard" : "/landing"} replace />} />
+			<Route
+				path="/"
+				element={
+					token ? (
+						user?.roles?.includes('ADMIN') ? (
+							<Navigate to={'/admin'} replace />
+						) : user?.roles?.includes('MENTOR') ? (
+							<Navigate to={'/mentor'} replace />
+						) : (
+							<Navigate to={'/learner'} replace />
+						)
+					) : (
+						<Navigate to={'/landing'} replace />
+					)
+				}
+			/>
+			<Route
+				path="*"
+				element={
+						token ? (
+						user?.roles?.includes('ADMIN') ? (
+							<Navigate to={'/admin'} replace />
+						) : user?.roles?.includes('MENTOR') ? (
+							<Navigate to={'/mentor'} replace />
+						) : (
+							<Navigate to={'/learner'} replace />
+						)
+					) : (
+						<Navigate to={'/landing'} replace />
+					)
+				}
+			/>
 		</Routes>
 	);
 }

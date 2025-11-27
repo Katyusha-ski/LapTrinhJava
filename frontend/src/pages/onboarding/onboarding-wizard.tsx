@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { learnerApi } from "../../api/learner.api";
+import { learnerApi, type LearnerMutationRequest } from "../../api/learner.api";
 import { getAuth } from "../../utils/auth";
 import { toast } from "react-toastify";
 
@@ -51,7 +51,7 @@ const goalOptions: GoalOption[] = [
   { id: "family", label: "Gia đình & bạn bè", emoji: "👨‍👩‍👧" },
   { id: "travel", label: "Du lịch", emoji: "✈️" },
   { id: "partner", label: "Giao tiếp với đối tác", emoji: "💬" },
-  { id: "brain", label: "Rèn luyện trí não", emoji: "🧠" },
+  { id: "brain", label: "Rèn luyện trí não", emoji: "🧠" }, 
   { id: "study", label: "Học tập", emoji: "🎓" },
 ];
 
@@ -69,6 +69,15 @@ const professionOptions: ProfessionOption[] = [
 ];
 
 const steps: Step[] = ["age", "level", "goals", "profession", "summary"];
+
+const levelToProfileLevel: Record<LevelOption["id"], string> = {
+  A1: "BEGINNER",
+  A2: "BEGINNER",
+  B1: "INTERMEDIATE",
+  B2: "INTERMEDIATE",
+  C1: "ADVANCED",
+  C2: "ADVANCED",
+};
 
 const OnboardingWizard: React.FC = () => {
   const navigate = useNavigate();
@@ -124,14 +133,39 @@ const OnboardingWizard: React.FC = () => {
       const payload = { age, level, goals, profession, savedAt: new Date().toISOString() };
       localStorage.setItem("aesp_onboarding_profile", JSON.stringify(payload));
 
-      // Create learner profile on backend
-      const learnerData = {
+      // Prepare learner data for persistence
+      const normalizedLevel = level ? levelToProfileLevel[level] ?? level : undefined;
+      const goalDescriptions = goals
+        .map((goalId) => goalOptions.find((g) => g.id === goalId)?.label)
+        .filter((label): label is string => Boolean(label));
+
+      const learnerData: LearnerMutationRequest = {
         userId: auth.id,
-        englishLevel: level,
-        learningGoals: goals.join(", "),
+        englishLevel: normalizedLevel,
+        learningGoals: goalDescriptions.join(", "),
       };
 
-      await learnerApi.create(learnerData);
+      let existingProfile: Awaited<ReturnType<typeof learnerApi.getByUserId>> | null = null;
+      try {
+        existingProfile = await learnerApi.getByUserId(auth.id);
+      } catch (fetchErr: any) {
+        const message = fetchErr?.message ?? "";
+        const status: number | undefined = typeof fetchErr?.status === "number" ? fetchErr.status : undefined;
+        const normalized = message.toLowerCase();
+        const isNotFound = status === 404 || normalized.includes("404") || normalized.includes("not found");
+        // Backend can return 404 or empty body; treat as no profile yet
+        if (!isNotFound) {
+          console.warn("Learner profile lookup failed (continuing to create):", fetchErr);
+        }
+        existingProfile = null;
+      }
+
+      if (existingProfile?.id) {
+        await learnerApi.update(existingProfile.id, learnerData);
+      } else {
+        await learnerApi.create(learnerData);
+      }
+
       toast.success("Onboarding hoàn tất! Bạn có thể chọn mentor ngay bây giờ.");
       navigate("/mentor-selection");
     } catch (err: any) {

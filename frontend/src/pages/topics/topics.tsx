@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { topicApi, type Topic } from "../../api/topic.api";
-import { authApi } from "../../api/auth.api";
 
 export default function TopicsPage() {
   const navigate = useNavigate();
@@ -20,11 +19,6 @@ export default function TopicsPage() {
     try {
       setLoading(true);
       setError(null);
-      const user = authApi.getLocalUser();
-      if (!user) {
-        navigate("/login");
-        return;
-      }
 
       let data: Topic[] = [];
 
@@ -94,7 +88,7 @@ export default function TopicsPage() {
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Chủ đề luyện tập</h1>
+          <h1 className="text-3xl font-bold text-gray-900">Chủ đề luyện nói</h1>
           <button
             onClick={() => navigate("/dashboard")}
             className="text-gray-500 hover:text-gray-700"

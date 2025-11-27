@@ -6,7 +6,17 @@ import path from 'path'
 export default defineConfig({
   plugins: [react()],
   server: {
-    port: 3000
+    port: 3000,
+    proxy: {
+      // Proxy API calls to backend during development
+      // This ensures requests to /api/* are forwarded to localhost:8080
+      '/api': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+        secure: false,
+        // rewrite: (path) => path.replace(/^\/api/, '/api'), // not needed since paths match
+      },
+    },
   },
   css: {
     devSourcemap: true

@@ -1,2 +1,2 @@
 // Layout components entry
-export { };
+export { default as NavigationBar } from "./NavigationBar";
