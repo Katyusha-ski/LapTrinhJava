@@ -9,7 +9,9 @@ export interface PracticeSession {
   status: 'SCHEDULED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
   notes?: string | null;
   topic?: string | null;
+  topicName?: string | null;
   duration?: number | null;
+  durationMinutes?: number | null;
 }
 
 // Backend uses /api/practice-sessions
