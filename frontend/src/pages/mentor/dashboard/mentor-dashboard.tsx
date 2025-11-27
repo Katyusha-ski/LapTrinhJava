@@ -109,22 +109,27 @@ const MentorDashboard: React.FC = () => {
   }, [clearAuth, navigate]);
 
   useEffect(() => {
-    if (!user?.id) return;
+    const userId = user?.id;
+    if (!userId) return;
 
     const loadDashboard = async () => {
       try {
         setLoading(true);
         setError(null);
-        const mentor = await mentorApi.getByUserId(user.id);
+        const mentor = await mentorApi.getByUserId(userId);
         setMentorProfile(mentor);
+
+        const mentorId = mentor?.id;
+        const sessionPromise = mentorId != null ? sessionApi.getMentorSessions(mentorId) : Promise.resolve([]);
 
         const [learnerPayload, sessionPayload] = await Promise.all([
           learnerApi.getAll(0, 500),
-          mentor?.id ? sessionApi.getMentorSessions(mentor.id) : Promise.resolve([]),
+          sessionPromise,
         ]);
 
+        const mentorIdSafe = mentor?.id;
         const learnersAll = normalizePayload<LearnerProfile>(learnerPayload);
-        const learners = mentor?.id ? learnersAll.filter((item) => item.mentorId === mentor.id) : [];
+        const learners = mentorIdSafe != null ? learnersAll.filter((item) => item.mentorId === mentorIdSafe) : [];
         setAssignedLearners(learners);
 
         const mentorSessions = normalizePayload<PracticeSession>(sessionPayload);
@@ -137,22 +142,21 @@ const MentorDashboard: React.FC = () => {
           );
 
           const learnerMap = new Map(learners.map((l) => [l.id, l]));
-          const normalizedFeedback: FeedbackEntry[] = feedbackResponses
-            .map((response, idx) => {
-              const records = normalizePayload<PronunciationScore>(response);
-              if (!records.length) return null;
-              const latest = records[0];
-              const previous = records[1];
-              const score = latest.scorePercentage ?? 0;
-              const delta = previous ? score - (previous.scorePercentage ?? 0) : 0;
-              return {
-                learnerName: learnerMap.get(topLearnerIds[idx])?.fullName ?? "Learner",
-                score,
-                delta,
-                createdAt: latest.createdAt ?? null,
-              };
-            })
-            .filter((item): item is FeedbackEntry => Boolean(item));
+          const normalizedFeedback: FeedbackEntry[] = [];
+          feedbackResponses.forEach((response, idx) => {
+            const records = normalizePayload<PronunciationScore>(response);
+            if (!records.length) return;
+            const latest = records[0];
+            const previous = records[1];
+            const score = latest.scorePercentage ?? 0;
+            const delta = previous ? score - (previous.scorePercentage ?? 0) : 0;
+            normalizedFeedback.push({
+              learnerName: learnerMap.get(topLearnerIds[idx])?.fullName ?? "Learner",
+              score,
+              delta,
+              createdAt: latest.createdAt ?? null,
+            });
+          });
           setFeedback(normalizedFeedback);
         } else {
           setFeedback([]);
