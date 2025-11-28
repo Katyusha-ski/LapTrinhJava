@@ -174,16 +174,13 @@ INSERT INTO roles (name, description) VALUES
 -- INSERT USERS
 INSERT INTO users (username, email, password_hash, full_name, phone, is_active) VALUES
 -- admin user
-('admin', 'admin@aesp.com', '$2a$10$N9qo8uLOickgx2ZMRZoMye7I6ZqF7DWDaJhYcgikibHv1HYf6kT5.', 'System Admin', '0123456789', TRUE),
 
--- Mentor users  
-('mentor1', 'mentor1@aesp.com', '$2a$10$N9qo8uLOickgx2ZMRZoMye7I6ZqF7DWDaJhYcgikibHv1HYf6kT5.', 'Sarah Johnson', '0123456790', TRUE),
-('mentor2', 'mentor2@aesp.com', '$2a$10$N9qo8uLOickgx2ZMRZoMye7I6ZqF7DWDaJhYcgikibHv1HYf6kT5.', 'David Wilson', '0123456791', TRUE),
-
--- Learner users
-('learner1', 'learner1@aesp.com', '$2a$10$N9qo8uLOickgx2ZMRZoMye7I6ZqF7DWDaJhYcgikibHv1HYf6kT5.', 'Nguyễn Văn An', '0123456792', TRUE),
-('learner2', 'learner2@aesp.com', '$2a$10$N9qo8uLOickgx2ZMRZoMye7I6ZqF7DWDaJhYcgikibHv1HYf6kT5.', 'Trần Thị Bình', '0123456793', TRUE),
-('learner3', 'learner3@aesp.com', '$2a$10$N9qo8uLOickgx2ZMRZoMye7I6ZqF7DWDaJhYcgikibHv1HYf6kT5.', 'Lê Minh Cường', '0123456794', TRUE);
+('admin', 'admin@aesp.com', '$2y$10$krxBfAc3EZjPIxPVdbnvAuxsgu7gtjLcWPHTJurUv.S0MBs6wUDgO', 'System Admin', '0123456789', TRUE),
+('mentor1', 'mentor1@aesp.com', '$2y$10$krxBfAc3EZjPIxPVdbnvAuxsgu7gtjLcWPHTJurUv.S0MBs6wUDgO', 'Sarah Johnson', '0123456790', TRUE),
+('mentor2', 'mentor2@aesp.com', '$2y$10$krxBfAc3EZjPIxPVdbnvAuxsgu7gtjLcWPHTJurUv.S0MBs6wUDgO', 'David Wilson', '0123456791', TRUE),
+('learner1', 'learner1@aesp.com', '$2y$10$krxBfAc3EZjPIxPVdbnvAuxsgu7gtjLcWPHTJurUv.S0MBs6wUDgO', 'Nguyễn Văn An', '0123456792', TRUE),
+('learner2', 'learner2@aesp.com', '$2y$10$krxBfAc3EZjPIxPVdbnvAuxsgu7gtjLcWPHTJurUv.S0MBs6wUDgO', 'Trần Thị Bình', '0123456793', TRUE),
+('learner3', 'learner3@aesp.com', '$2y$10$krxBfAc3EZjPIxPVdbnvAuxsgu7gtjLcWPHTJurUv.S0MBs6wUDgO', 'Lê Minh Cường', '0123456794', TRUE);
 
 
 

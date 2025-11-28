@@ -70,15 +70,6 @@ const professionOptions: ProfessionOption[] = [
 
 const steps: Step[] = ["age", "level", "goals", "profession", "summary"];
 
-const levelToProfileLevel: Record<LevelOption["id"], string> = {
-  A1: "BEGINNER",
-  A2: "BEGINNER",
-  B1: "INTERMEDIATE",
-  B2: "INTERMEDIATE",
-  C1: "ADVANCED",
-  C2: "ADVANCED",
-};
-
 const OnboardingWizard: React.FC = () => {
   const navigate = useNavigate();
   const [step, setStep] = useState<Step>("age");
@@ -134,7 +125,8 @@ const OnboardingWizard: React.FC = () => {
       localStorage.setItem("aesp_onboarding_profile", JSON.stringify(payload));
 
       // Prepare learner data for persistence
-      const normalizedLevel = level ? levelToProfileLevel[level] ?? level : undefined;
+      // Sửa lại để gửi đúng giá trị enum cho englishLevel
+      const normalizedLevel = level ?? undefined;
       const goalDescriptions = goals
         .map((goalId) => goalOptions.find((g) => g.id === goalId)?.label)
         .filter((label): label is string => Boolean(label));
