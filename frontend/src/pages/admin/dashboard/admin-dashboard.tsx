@@ -31,7 +31,7 @@ const AdminDashboard: React.FC = () => {
     {
       title: "Conversation Topics",
       description: "Curate and publish new speaking practice topics.",
-      action: () => navigate("/topics/all"),
+      action: () => navigate("/admin/topic-management"),
     },
   ];
 

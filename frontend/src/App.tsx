@@ -16,6 +16,7 @@ import { Conversation } from "./pages/conversation";
 import { Pronunciation } from "./pages/pronunciation";
 import { MentorList } from "./pages/admin/mentor-management/mentor-list";
 import { LearnerList } from "./pages/admin/learner-management/learner-list";
+import TopicManagement from "./pages/admin/topic-management";
 import { SessionList } from "./pages/sessions/session-list";
 import { TopicList } from "./pages/topics/topic-list";
 import { PackageList } from "./pages/packages/package-list";
@@ -98,6 +99,7 @@ function App() {
 			<Route path="/admin/mentor-management" element={<ProtectedRoute requiredRoles={["ADMIN"]} element={<AdminMentorManagement />} />} />
 			<Route path="/admin/mentors" element={<ProtectedRoute requiredRoles={["ADMIN"]} element={<MentorList />} />} />
 			<Route path="/admin/learners" element={<ProtectedRoute requiredRoles={["ADMIN"]} element={<LearnerList />} />} />
+			<Route path="/admin/topic-management" element={<ProtectedRoute requiredRoles={["ADMIN"]} element={<TopicManagement />} />} />
 
 			{/* Shared Routes */}
 			<Route path="/sessions" element={token ? <Sessions /> : <Navigate to="/login" replace />} />
