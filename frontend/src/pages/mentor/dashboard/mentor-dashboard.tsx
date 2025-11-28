@@ -102,6 +102,7 @@ const MentorDashboard: React.FC = () => {
   const [feedback, setFeedback] = useState<FeedbackEntry[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [missingProfile, setMissingProfile] = useState(false);
 
   const handleLogout = useCallback(() => {
     clearAuth();
@@ -116,7 +117,19 @@ const MentorDashboard: React.FC = () => {
       try {
         setLoading(true);
         setError(null);
-        const mentor = await mentorApi.getByUserId(userId);
+        setMissingProfile(false);
+        let mentor: Mentor | null = null;
+        try {
+          mentor = await mentorApi.getByUserId(userId);
+        } catch (apiErr) {
+          const status = (apiErr as { status?: number })?.status;
+          if (status === 404) {
+            setMissingProfile(true);
+            mentor = null;
+          } else {
+            throw apiErr;
+          }
+        }
         setMentorProfile(mentor);
 
         const mentorId = mentor?.id;
@@ -348,6 +361,11 @@ const MentorDashboard: React.FC = () => {
           )}
         </header>
 
+        {missingProfile && (
+          <p className="mb-4 rounded-lg bg-amber-50 px-4 py-2 text-sm text-amber-700">
+            Không tìm thấy hồ sơ mentor cho tài khoản này. Vui lòng liên hệ quản trị viên để được cấp quyền.
+          </p>
+        )}
         {error && <p className="mb-4 rounded-lg bg-rose-50 px-4 py-2 text-sm text-rose-600">{error}</p>}
 
         <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">

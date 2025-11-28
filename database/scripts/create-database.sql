@@ -82,6 +82,9 @@ CREATE TABLE learners (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (mentor_id) REFERENCES mentors(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+ALTER TABLE learners
+ADD COLUMN age_range VARCHAR(20),
+ADD COLUMN profession VARCHAR(100);
 
 CREATE TABLE subscriptions (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -314,3 +317,36 @@ INSERT INTO pronunciation_scores (session_id, learner_id, text_to_read, transcri
 (2, 2, 'I would like to schedule a meeting for tomorrow.', 'I would like to schedule a meeting for tomorrow.', 92.00, 90.00, 91.00,
  JSON_OBJECT('strengths', JSON_ARRAY('Professional tone', 'Good fluency'), 'improvements', JSON_ARRAY('Stress on "schedule"')));
 
+-- Bổ sung bảng mentor_reviews để lưu trữ phản hồi chi tiết từ học viên về mentor
+
+CREATE TABLE mentor_reviews (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    session_id BIGINT NOT NULL,
+    learner_id BIGINT NOT NULL,
+    mentor_id BIGINT NOT NULL,
+    rating DECIMAL(2,1) NOT NULL, -- Điểm đánh giá (ví dụ: 4.5/5.0)
+    review_text TEXT,             -- Nội dung nhận xét chi tiết
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    
+    -- Đảm bảo mỗi học viên chỉ đánh giá 1 lần cho 1 phiên học
+    UNIQUE KEY unique_session_review (session_id, learner_id), 
+    
+    -- Khóa ngoại liên kết với các bảng hiện có
+    FOREIGN KEY (session_id) REFERENCES practice_sessions(id) ON DELETE CASCADE,
+    FOREIGN KEY (learner_id) REFERENCES learners(id) ON DELETE CASCADE,
+    FOREIGN KEY (mentor_id) REFERENCES mentors(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Tạo index để truy vấn nhanh chóng theo mentor và learner
+CREATE INDEX idx_review_mentor ON mentor_reviews(mentor_id);
+CREATE INDEX idx_review_learner ON mentor_reviews(learner_id);
+
+-- DỮ LIỆU MẪU: Chèn nhận xét cho các phiên học có Mentor đã hoàn thành (session_id 1 và 2)
+
+-- Learner 1 (Nguyễn Văn An) đánh giá Mentor 1 (Sarah Johnson) sau Session 1
+INSERT INTO mentor_reviews (session_id, learner_id, mentor_id, rating, review_text) VALUES
+(1, 1, 1, 5.0, 'Mentor rất nhiệt tình, sửa lỗi phát âm kỹ và dễ hiểu. Buổi học Daily Greetings hiệu quả.'),
+
+-- Learner 2 (Trần Thị Bình) đánh giá Mentor 1 (Sarah Johnson) sau Session 2
+(2, 2, 1, 4.5, 'Bài luyện phỏng vấn công việc rất tốt, mentor đưa ra nhiều tình huống thực tế. Có thể cải thiện thêm về tốc độ nói.');

@@ -26,4 +26,8 @@ public class LearnerRequest {
     private BigDecimal totalPracticeHours = BigDecimal.ZERO;
 
     private BigDecimal averagePronunciationScore = BigDecimal.ZERO;
+
+    private String ageRange;
+
+    private String profession;
 }

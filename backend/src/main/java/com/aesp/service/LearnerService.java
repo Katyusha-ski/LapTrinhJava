@@ -118,6 +118,8 @@ public class LearnerService {
                 .mentor(mentor)
                 .englishLevel(request.getEnglishLevel() != null ? request.getEnglishLevel() : EnglishLevel.A1)
                 .learningGoals(request.getLearningGoals())
+            .ageRange(request.getAgeRange())
+            .profession(request.getProfession())
                 .currentStreak(request.getCurrentStreak() != null ? request.getCurrentStreak() : 0)
                 .totalPracticeHours(request.getTotalPracticeHours() != null ? request.getTotalPracticeHours() : BigDecimal.ZERO)
                 .averagePronunciationScore(request.getAveragePronunciationScore() != null ? request.getAveragePronunciationScore() : BigDecimal.ZERO)
@@ -137,6 +139,12 @@ public class LearnerService {
         }
         if (request.getLearningGoals() != null) {
             existing.setLearningGoals(request.getLearningGoals());
+        }
+        if (request.getAgeRange() != null) {
+            existing.setAgeRange(request.getAgeRange());
+        }
+        if (request.getProfession() != null) {
+            existing.setProfession(request.getProfession());
         }
         if (request.getCurrentStreak() != null) {
             existing.setCurrentStreak(request.getCurrentStreak());
@@ -271,6 +279,8 @@ public class LearnerService {
         response.setTotalPracticeHours(learner.getTotalPracticeHours());
         response.setAveragePronunciationScore(learner.getAveragePronunciationScore());
         response.setCreatedAt(learner.getJoinedAt());
+        response.setAgeRange(learner.getAgeRange());
+        response.setProfession(learner.getProfession());
         return response;
     }
 }

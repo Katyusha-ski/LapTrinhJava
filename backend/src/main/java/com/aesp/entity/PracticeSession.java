@@ -4,8 +4,11 @@ import com.aesp.enums.SessionStatus;
 import com.aesp.enums.SessionType;
 import jakarta.persistence.*;
 import lombok.*;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "practice_sessions")
@@ -14,7 +17,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@ToString(exclude = {"learner", "mentor"})
+@ToString(exclude = {"learner", "mentor", "mentorReviews"})
 @EqualsAndHashCode(of = "id")
 public class PracticeSession {
     
@@ -61,6 +64,10 @@ public class PracticeSession {
     
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+    @OneToMany(mappedBy = "session", cascade = CascadeType.ALL)
+    @Builder.Default
+    private List<MentorReview> mentorReviews = new ArrayList<>();
     
     @PrePersist
     protected void onCreate() {
