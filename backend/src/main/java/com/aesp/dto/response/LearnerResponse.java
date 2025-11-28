@@ -23,4 +23,6 @@ public class LearnerResponse {
     private BigDecimal totalPracticeHours;
     private BigDecimal averagePronunciationScore;
     private LocalDateTime createdAt;
+    private String ageRange;
+    private String profession;
 }
