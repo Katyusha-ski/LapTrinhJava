@@ -5,6 +5,10 @@ import type { JwtResponse } from "../../types/jwt";
 interface NavigationBarProps {
   user?: JwtResponse | null;
   onLogout: () => void;
+  /**
+   * If provided, replaces the nav items with this title (useful for admin pages)
+   */
+  headerTitle?: string;
 }
 
 const NAV_ITEMS = [
@@ -14,7 +18,7 @@ const NAV_ITEMS = [
   { label: "Analytics", path: "/analytics" },
 ];
 
-const NavigationBar: React.FC<NavigationBarProps> = ({ user, onLogout }) => {
+const NavigationBar: React.FC<NavigationBarProps> = ({ user, onLogout, headerTitle }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -45,26 +49,47 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ user, onLogout }) => {
         </div>
 
         <nav className="hidden gap-6 text-sm font-semibold text-slate-700 md:flex">
-          {NAV_ITEMS.map((item) => {
-            const isActive =
-              location.pathname === item.path || location.pathname.startsWith(`${item.path}/`);
-            return (
-              <button
-                key={item.path}
-                onClick={() => handleNavigate(item.path)}
-                className={`transition ${
-                  isActive ? "text-blue-600" : "text-slate-600 hover:text-blue-500"
-                }`}
+          {headerTitle ? (
+            <div className="flex items-center gap-4">
+              <div
+                className="text-base md:text-lg font-bold md:block md:ml-4 bg-gradient-to-r from-blue-600 via-indigo-500 to-purple-600 bg-clip-text text-transparent transition-colors duration-300"
+                aria-label={headerTitle}
               >
-                {item.label}
-              </button>
-            );
-          })}
+                {headerTitle}
+              </div>
+            </div>
+          ) : (
+            NAV_ITEMS.map((item) => {
+              const isActive =
+                location.pathname === item.path || location.pathname.startsWith(`${item.path}/`);
+              return (
+                <button
+                  key={item.path}
+                  onClick={() => handleNavigate(item.path)}
+                  className={`transition ${
+                    isActive ? "text-blue-600" : "text-slate-600 hover:text-blue-500"
+                  }`}
+                >
+                  {item.label}
+                </button>
+              );
+            })
+          )}
         </nav>
 
         <div className="flex items-center gap-3">
           <div className="hidden text-right sm:block">
             <p className="text-sm font-semibold text-slate-800">{user?.fullName || "User"}</p>
+            {headerTitle && (
+              <div className="mt-1">
+                <button
+                  onClick={handleLogout}
+                  className="rounded-md bg-rose-50 px-3 py-1 text-sm font-medium text-rose-600 hover:bg-rose-100"
+                >
+                  Logout
+                </button>
+              </div>
+            )}
           </div>
           <div className="relative">
             <button

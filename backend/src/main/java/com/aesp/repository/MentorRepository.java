@@ -86,4 +86,5 @@ public interface MentorRepository extends JpaRepository<Mentor, Long> {
     
     @Query("SELECT AVG(m.hourlyRate) FROM Mentor m WHERE m.hourlyRate > 0")
     BigDecimal getAverageHourlyRate();
+    
 }

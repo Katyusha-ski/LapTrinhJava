@@ -4,7 +4,12 @@ import { getToken, clearAuth } from '../utils/auth';
 export type RequestOptions = RequestInit & { query?: Record<string, string | number | boolean> };
 
 function buildUrl(path: string, query?: Record<string, string | number | boolean>) {
-  const base = (import.meta as any).env.VITE_API_URL || window.location.origin;
+  // Prefer explicit VITE_API_URL; fall back to backend localhost in dev when running Vite
+  const viteApi = (import.meta as any).env.VITE_API_URL;
+  const defaultBackendForDev = window.location.hostname === 'localhost' && (window.location.port === '5173' || window.location.port === '5174')
+    ? 'http://localhost:8080'
+    : window.location.origin;
+  const base = viteApi || defaultBackendForDev;
   const url = new URL(path, base);
   if (query) {
     Object.entries(query).forEach(([k, v]) => {

@@ -19,6 +19,7 @@ import java.util.List;
 public class LearnerController {
 
     private final LearnerService learnerService;
+    private final com.aesp.service.UserService userService;
 
     /** CREATE */
     @PostMapping
@@ -70,5 +71,20 @@ public class LearnerController {
             @PathVariable Long mentorId) {
 
         return ResponseEntity.ok(learnerService.assignMentor(id, mentorId));
+    }
+
+    @PatchMapping("/{id}/status")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> setLearnerUserStatus(@PathVariable Long id, @RequestBody java.util.Map<String, Boolean> body) {
+        Boolean active = body.get("active");
+        if (active == null) {
+            return ResponseEntity.badRequest().build();
+        }
+        LearnerResponse learner = learnerService.getLearnerById(id);
+        if (learner.getUserId() == null) {
+            return ResponseEntity.status(org.springframework.http.HttpStatus.BAD_REQUEST).body(new MessageResponse(false, "Learner không có user liên kết"));
+        }
+        userService.setActive(learner.getUserId(), active);
+        return ResponseEntity.ok(new MessageResponse(true, "Cập nhật trạng thái tài khoản thành công"));
     }
 }

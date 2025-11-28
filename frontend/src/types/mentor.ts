@@ -11,6 +11,7 @@ export interface Mentor {
   rating?: number | null;
   totalStudents?: number | null;
   isAvailable: boolean;
+  isActive?: boolean;
   skills: string[];
   supportedLevels: EnglishLevel[];
 }

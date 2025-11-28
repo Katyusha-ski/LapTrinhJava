@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import { Table, Button, Modal, Form, Input, Select, Tag, Popconfirm, Spin, Typography } from "antd";
+import { userApi } from "../../../api/user.api";
 import { DeleteOutlined } from "@ant-design/icons";
 import { learnerApi, type LearnerProfile, type LearnerMutationRequest } from "../../../api/learner.api";
 const { Option } = Select;
@@ -135,6 +136,41 @@ const LearnerManagement: React.FC = () => {
       render: (_: any, learner: LearnerProfile) => (
         <>
           <Button type="primary" size="small" onClick={() => handleEdit(learner)} style={{ marginRight: 8 }}>Edit</Button>
+          {learner.isActive ? (
+            <Popconfirm
+              title="Bạn có chắc chắn muốn vô hiệu hóa tài khoản user này?"
+              onConfirm={async () => {
+                try {
+                  await userApi.setActive(learner.userId, false);
+                  toast.success('Tài khoản đã bị vô hiệu hóa');
+                  loadLearners();
+                } catch (err) {
+                  toast.error('Không thể thay đổi trạng thái tài khoản');
+                }
+              }}
+              okText="Vô hiệu hóa"
+              cancelText="Hủy"
+            >
+              <Button danger size="small" style={{ marginRight: 8 }}>Disable Account</Button>
+            </Popconfirm>
+          ) : (
+            <Popconfirm
+              title="Bạn có chắc chắn muốn kích hoạt tài khoản user này?"
+              onConfirm={async () => {
+                try {
+                  await userApi.setActive(learner.userId, true);
+                  toast.success('Tài khoản đã được kích hoạt');
+                  loadLearners();
+                } catch (err) {
+                  toast.error('Không thể thay đổi trạng thái tài khoản');
+                }
+              }}
+              okText="Kích hoạt"
+              cancelText="Hủy"
+            >
+              <Button type="primary" size="small" style={{ marginRight: 8, background: '#52c41a', borderColor: '#52c41a', color: '#fff' }}>Enable</Button>
+            </Popconfirm>
+          )}
           <Popconfirm
             title="Bạn có chắc chắn muốn xóa learner này?"
             onConfirm={() => handleDelete(learner.id)}

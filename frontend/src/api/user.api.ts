@@ -25,5 +25,11 @@ export const userApi = {
       body: JSON.stringify(data),
     });
   },
+  setActive: async (userId: number, active: boolean) =>
+    httpClient<User>(`/api/users/${userId}/status`, {
+      method: "PATCH",
+      body: JSON.stringify({ active }),
+    }),
+  getById: async (id: number) => httpClient<User>(`/api/users/${id}`, { method: "GET" }),
   // Có thể bổ sung các hàm khác nếu cần
 };

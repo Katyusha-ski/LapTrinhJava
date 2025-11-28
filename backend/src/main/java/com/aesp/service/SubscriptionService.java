@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -150,6 +151,82 @@ public class SubscriptionService {
             .orElseThrow(() -> new ResourceNotFoundException("Subscription not found with id: " + id));
         
         return toResponse(subscription);
+    }
+
+    /**
+     * Admin: list subscriptions with optional filters
+     */
+    public List<SubscriptionResponse> adminListSubscriptions(Long learnerId, Long packageId, SubscriptionStatus status) {
+        List<Subscription> subscriptions;
+
+        if (learnerId != null) {
+            if (packageId != null && status != null) {
+                Optional<Subscription> opt = subscriptionRepository.findByLearnerWithPackageAndStatus(learnerId, packageId, status);
+                subscriptions = opt.map(List::of).orElse(List.of());
+            } else if (packageId != null) {
+                subscriptions = subscriptionRepository.findByPackageEntity_Id(packageId);
+            } else if (status != null) {
+                subscriptions = subscriptionRepository.findByStatus(status);
+            } else {
+                subscriptions = subscriptionRepository.findSubscriptionHistoryByLearner(learnerId);
+            }
+        } else if (packageId != null) {
+            if (status != null) {
+                subscriptions = subscriptionRepository.findByStatus(status).stream()
+                    .filter(s -> s.getPackageEntity().getId().equals(packageId))
+                    .toList();
+            } else {
+                subscriptions = subscriptionRepository.findByPackageEntity_Id(packageId);
+            }
+        } else if (status != null) {
+            subscriptions = subscriptionRepository.findByStatus(status);
+        } else {
+            subscriptions = subscriptionRepository.findAll();
+        }
+
+        return subscriptions.stream().map(this::toResponse).collect(Collectors.toList());
+    }
+
+    /**
+     * Admin: update payment/status of a subscription
+     * Note: no schema changes; we only update the existing `status` and paymentDate if necessary.
+     */
+    @Transactional
+    public SubscriptionResponse adminUpdatePaymentStatus(Long subscriptionId, SubscriptionStatus newStatus) {
+        Subscription subscription = subscriptionRepository.findById(subscriptionId)
+            .orElseThrow(() -> new ResourceNotFoundException("Subscription not found with id: " + subscriptionId));
+
+        SubscriptionStatus old = subscription.getStatus();
+
+        // If activating this subscription, enforce business rule: only one active subscription per learner
+        if (newStatus == SubscriptionStatus.ACTIVE) {
+            Long learnerId = subscription.getLearner().getId();
+            List<Subscription> activeSubscriptions = subscriptionRepository.findByLearnerIdAndStatus(learnerId, SubscriptionStatus.ACTIVE);
+            for (Subscription s : activeSubscriptions) {
+                if (!s.getId().equals(subscriptionId)) {
+                    s.setStatus(SubscriptionStatus.CANCELLED);
+                    subscriptionRepository.save(s);
+                }
+            }
+
+            subscription.setStatus(SubscriptionStatus.ACTIVE);
+            if (subscription.getPaymentDate() == null) {
+                subscription.setPaymentDate(LocalDateTime.now());
+            }
+        } else {
+            subscription.setStatus(newStatus);
+        }
+
+        Subscription saved = subscriptionRepository.save(subscription);
+
+        // Log the status change for lightweight audit (structured log)
+        // (Do not throw if logging fails)
+        try {
+            org.slf4j.LoggerFactory.getLogger(SubscriptionService.class)
+                .info("Admin changed subscription status: subscriptionId={}, from={}, to={}", subscriptionId, old, newStatus);
+        } catch (Exception ignored) {}
+
+        return toResponse(saved);
     }
     
     /**

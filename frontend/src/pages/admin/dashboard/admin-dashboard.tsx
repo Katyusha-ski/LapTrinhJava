@@ -1,6 +1,7 @@
 import React, { useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { NavigationBar } from "../../../components/layout";
+import { httpClient } from "../../../api/httpClient";
 import { useAuth } from "../../../context/AuthContext";
 
 const AdminDashboard: React.FC = () => {
@@ -24,8 +25,8 @@ const AdminDashboard: React.FC = () => {
       action: () => navigate("/admin/learners"),
     },
     {
-      title: "Packages",
-      description: "Configure learning packages and pricing tiers.",
+      title: "Purchase Management",
+      description: "View learner purchases and manage payment statuses.",
       action: () => navigate("/packages"),
     },
     {
@@ -50,9 +51,34 @@ const AdminDashboard: React.FC = () => {
     },
   ];
 
+  const [metrics, setMetrics] = React.useState<{ activeLearners: number; certifiedMentors: number; sessionsBooked30d: number } | null>(null);
+  const [metricsLoading, setMetricsLoading] = React.useState(false);
+
+  const loadMetrics = React.useCallback(async () => {
+    setMetricsLoading(true);
+    try {
+      const res = await httpClient('/api/admin/metrics', { method: 'GET' });
+      // Expecting shape: { activeLearners, certifiedMentors, sessionsBooked30d }
+      setMetrics({
+        activeLearners: Number(res.activeLearners ?? 0),
+        certifiedMentors: Number(res.certifiedMentors ?? 0),
+        sessionsBooked30d: Number(res.sessionsBooked30d ?? res.sessionsBooked ?? 0),
+      });
+    } catch (err) {
+      console.error('Failed to load admin metrics', err);
+      setMetrics(null);
+    } finally {
+      setMetricsLoading(false);
+    }
+  }, []);
+
+  React.useEffect(() => {
+    void loadMetrics();
+  }, [loadMetrics]);
+
   return (
     <div className="page-gradient">
-      <NavigationBar user={user} onLogout={handleLogout} />
+      <NavigationBar user={user} onLogout={handleLogout} headerTitle="ADMIN DASHBOARD" />
 
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         <div className="mb-8 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -81,18 +107,32 @@ const AdminDashboard: React.FC = () => {
             </section>
 
             <section className="glass-card rounded-2xl p-6">
-              <h2 className="text-lg font-semibold text-slate-800">Platform metrics</h2>
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-semibold text-slate-800">Platform metrics</h2>
+                <button
+                  onClick={() => void loadMetrics()}
+                  className="ml-2 inline-flex items-center rounded-md bg-slate-100 px-3 py-1 text-sm font-medium text-slate-700 hover:bg-slate-200"
+                >
+                  Refresh
+                </button>
+              </div>
               <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
-                {[
-                  { label: "Active learners", value: "1,248" },
-                  { label: "Certified mentors", value: "82" },
-                  { label: "Sessions booked (30d)", value: "3,476" },
-                ].map((metric) => (
-                  <div key={metric.label} className="rounded-xl border border-slate-200/50 bg-white/90 p-4 shadow-sm">
-                    <p className="text-xs uppercase tracking-wide text-slate-400">{metric.label}</p>
-                    <p className="mt-2 text-2xl font-semibold text-slate-800">{metric.value}</p>
-                  </div>
-                ))}
+                {(() => {
+                  const active = metrics ? metrics.activeLearners : 0;
+                  const certified = metrics ? metrics.certifiedMentors : 0;
+                  const sessions = metrics ? metrics.sessionsBooked30d : 0;
+                  const items = [
+                    { label: 'Active learners', value: metricsLoading ? '...' : active.toLocaleString() },
+                    { label: 'Certified mentors', value: metricsLoading ? '...' : certified.toLocaleString() },
+                    { label: 'Sessions booked (30d)', value: metricsLoading ? '...' : sessions.toLocaleString() },
+                  ];
+                  return items.map((metric) => (
+                    <div key={metric.label} className="rounded-xl border border-slate-200/50 bg-white/90 p-4 shadow-sm">
+                      <p className="text-xs uppercase tracking-wide text-slate-400">{metric.label}</p>
+                      <p className="mt-2 text-2xl font-semibold text-slate-800">{metric.value}</p>
+                    </div>
+                  ));
+                })()}
               </div>
             </section>
           </div>

@@ -22,7 +22,10 @@ export interface User {
 // Backend currently exposes POST /api/auth/login and POST /api/auth/register
 export const authApi = {
   login: (payload: LoginPayload) => httpClient('/api/auth/login', { method: 'POST', body: JSON.stringify(payload) }),
-  register: (payload: RegisterPayload) => httpClient('/api/auth/register', { method: 'POST', body: JSON.stringify(payload) }),
+  register: (payload: RegisterPayload) => {
+    const bodyPayload = { ...payload, role: payload.role ?? 'LEARNER' };
+    return httpClient('/api/auth/register', { method: 'POST', body: JSON.stringify(bodyPayload) });
+  },
   
   getLocalUser: (): User | null => {
     const userData = localStorage.getItem('user');

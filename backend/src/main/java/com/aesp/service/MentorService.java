@@ -352,6 +352,7 @@ public class MentorService {
         response.setRating(mentor.getRating());
         response.setTotalStudents(mentor.getTotalStudents());
         response.setIsAvailable(mentor.getIsAvailable());
+        response.setIsActive(mentor.getUser() != null ? mentor.getUser().getIsActive() : null);
         response.setSkills(mentor.getSkills() != null ? new HashSet<>(mentor.getSkills()) : Set.of());
         response.setSupportedLevels(mentor.getSupportedLevels() != null ? new HashSet<>(mentor.getSupportedLevels()) : Set.of());
         return response;

@@ -14,6 +14,10 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.util.List;
 import java.util.Objects;
@@ -22,6 +26,8 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class UserService {
+
+    private static final Logger log = LoggerFactory.getLogger(UserService.class);
 
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
@@ -85,7 +91,16 @@ public class UserService {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User không tồn tại"));
         user.setIsActive(active);
-        return toResponse(Objects.requireNonNull(userRepository.save(user)));
+        User saved = userRepository.save(user);
+        // Audit log: record who changed the status if available
+        try {
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            String actor = auth != null && auth.getName() != null ? auth.getName() : "SYSTEM";
+            log.info("User account status changed: userId={} active={} by={}", saved.getId(), active, actor);
+        } catch (Exception e) {
+            log.warn("Failed to log audit for user status change", e);
+        }
+        return toResponse(Objects.requireNonNull(saved));
     }
 
     @Transactional

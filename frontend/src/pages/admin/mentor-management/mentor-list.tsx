@@ -2,6 +2,9 @@ import { useState, useEffect } from 'react';
 import type { Mentor } from '../../../types/mentor';
 import { useNavigate } from 'react-router-dom';
 import { mentorApi } from '../../../api/mentor.api';
+import { userApi } from '../../../api/user.api';
+import { Popconfirm } from 'antd';
+import { toast } from 'react-toastify';
 
 export const MentorList = () => {
   const navigate = useNavigate();
@@ -10,6 +13,17 @@ export const MentorList = () => {
   const [error, setError] = useState('');
   const [page] = useState(1);
   const [deleteId, setDeleteId] = useState<number | null>(null);
+  const [editId, setEditId] = useState<number | null>(null);
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [editValues, setEditValues] = useState<{
+    yearsExperience?: number | null;
+    hourlyRate?: number | null;
+    isAvailable?: boolean;
+    skills?: string;
+    bio?: string;
+  }>({ yearsExperience: 0, hourlyRate: 0, isAvailable: true, skills: '', bio: '' });
+  const [viewMentor, setViewMentor] = useState<Mentor | null>(null);
+  const [isMentorViewOpen, setIsMentorViewOpen] = useState(false);
 
   const pageSize = 10;
 
@@ -40,6 +54,52 @@ export const MentorList = () => {
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete mentor');
     }
+  };
+
+  const openEdit = (mentor: Mentor) => {
+    setEditId(mentor.id ?? null);
+    setEditValues({
+      yearsExperience: mentor.experienceYears ?? 0,
+      hourlyRate: mentor.hourlyRate ?? 0,
+      isAvailable: mentor.isAvailable ?? true,
+      skills: mentor.skills?.join(', ') ?? '',
+      bio: mentor.bio ?? '',
+    });
+    setIsEditOpen(true);
+  };
+
+  const handleEditSubmit = async () => {
+    if (!editId) return;
+    try {
+      await mentorApi.update(editId, {
+        yearsExperience: editValues.yearsExperience ?? undefined,
+        hourlyRate: editValues.hourlyRate ?? undefined,
+        availability: editValues.isAvailable,
+        qualifications: editValues.skills,
+        bio: editValues.bio,
+      });
+      toast.success('Cập nhật mentor thành công');
+      setIsEditOpen(false);
+      setEditId(null);
+      loadMentors();
+    } catch (err) {
+      toast.error('Không thể cập nhật mentor');
+    }
+  };
+
+  const toggleUserActive = async (userId: number, active: boolean) => {
+    try {
+      await userApi.setActive(userId, active);
+      toast.success('Cập nhật trạng thái tài khoản thành công');
+      loadMentors();
+    } catch (err) {
+      toast.error('Không thể cập nhật trạng thái tài khoản');
+    }
+  };
+
+  const openMentorView = (mentor: Mentor) => {
+    setViewMentor(mentor);
+    setIsMentorViewOpen(true);
   };
 
   return (
@@ -81,7 +141,7 @@ export const MentorList = () => {
                 {mentors.map((mentor) => (
                   <tr key={mentor.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 text-sm">{mentor.fullName}</td>
-                    <td className="px-6 py-4 text-sm text-gray-600">{mentor.skills.join(', ')}</td>
+                    <td className="px-6 py-4 text-sm text-gray-600 truncate max-w-xs">{mentor.skills.join(', ')}</td>
                     <td className="px-6 py-4 text-sm">{'⭐'.repeat(Math.round(mentor.rating || 0))}</td>
                     <td className="px-6 py-4 text-sm">
                       <span className={`px-2 py-1 rounded text-white text-xs ${mentor.isAvailable ? 'bg-green-600' : 'bg-gray-400'}`}>
@@ -89,7 +149,28 @@ export const MentorList = () => {
                       </span>
                     </td>
                     <td className="px-6 py-4 text-sm space-x-2">
-                      <button onClick={() => setDeleteId(mentor.id)} className="text-red-600 hover:text-red-900">
+                      <button onClick={() => openMentorView(mentor)} className="bg-yellow-400 text-black px-3 py-1 rounded-lg border border-yellow-400 hover:bg-yellow-500">View</button>
+                      <button onClick={() => openEdit(mentor)} className="text-blue-600 hover:text-blue-900 border border-gray-300 px-3 py-1 rounded-lg">Edit</button>
+                      {mentor.isActive ? (
+                        <Popconfirm
+                          title="Bạn có chắc chắn muốn vô hiệu hóa tài khoản này?"
+                          onConfirm={() => toggleUserActive(mentor.userId, false)}
+                          okText="Vô hiệu hóa"
+                          cancelText="Hủy"
+                        >
+                          <button className="bg-white text-red-600 px-3 py-1 rounded-lg border border-gray-300 hover:bg-gray-50">Disable</button>
+                        </Popconfirm>
+                      ) : (
+                        <Popconfirm
+                          title="Bạn có chắc chắn muốn kích hoạt tài khoản này?"
+                          onConfirm={() => toggleUserActive(mentor.userId, true)}
+                          okText="Kích hoạt"
+                          cancelText="Hủy"
+                        >
+                          <button className="bg-green-600 text-white px-3 py-1 rounded-lg border border-green-600">Enable</button>
+                        </Popconfirm>
+                      )}
+                      <button onClick={() => setDeleteId(mentor.id)} className="bg-red-600 text-white px-3 py-1 rounded-lg border border-red-600 hover:bg-red-700">
                         Delete
                       </button>
                     </td>
@@ -115,6 +196,76 @@ export const MentorList = () => {
                 >
                   Delete
                 </button>
+              </div>
+            </div>
+          </div>
+        )}
+        {isEditOpen && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+            <div className="bg-white rounded-lg p-6 max-w-lg w-full mx-4">
+              <h3 className="text-lg font-semibold mb-4">Edit Mentor</h3>
+              <div className="grid grid-cols-1 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Years Experience</label>
+                  <input
+                    type="number"
+                    value={editValues.yearsExperience ?? 0}
+                    onChange={e => setEditValues({ ...editValues, yearsExperience: Number(e.target.value) })}
+                    className="w-full border rounded px-3 py-2"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Hourly Rate</label>
+                  <input
+                    type="number"
+                    value={editValues.hourlyRate ?? 0}
+                    onChange={e => setEditValues({ ...editValues, hourlyRate: Number(e.target.value) })}
+                    className="w-full border rounded px-3 py-2"
+                  />
+                </div>
+                <div>
+                  <label className="inline-flex items-center">
+                    <input type="checkbox" checked={!!editValues.isAvailable} onChange={e => setEditValues({ ...editValues, isAvailable: e.target.checked })} className="mr-2" />
+                    Available
+                  </label>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Skills (comma separated)</label>
+                  <input
+                    type="text"
+                    value={editValues.skills ?? ''}
+                    onChange={e => setEditValues({ ...editValues, skills: e.target.value })}
+                    className="w-full border rounded px-3 py-2"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Bio</label>
+                  <textarea value={editValues.bio ?? ''} onChange={e => setEditValues({ ...editValues, bio: e.target.value })} className="w-full border rounded px-3 py-2 h-24" />
+                </div>
+              </div>
+              <div className="mt-6 flex gap-4 justify-end">
+                <button onClick={() => { setIsEditOpen(false); setEditId(null); }} className="px-4 py-2 border border-gray-300 rounded-lg">Cancel</button>
+                <button onClick={() => handleEditSubmit()} className="px-4 py-2 bg-blue-600 text-white rounded-lg border border-blue-600">Save</button>
+              </div>
+            </div>
+          </div>
+        )}
+        {isMentorViewOpen && viewMentor && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+            <div className="bg-white rounded-lg p-6 max-w-lg w-full mx-4">
+              <h3 className="text-lg font-semibold mb-4">Mentor Details</h3>
+              <div className="grid grid-cols-1 gap-2">
+                <div><strong>Full Name:</strong> {viewMentor.fullName}</div>
+                <div><strong>User ID:</strong> {viewMentor.userId ?? '-'}</div>
+                <div><strong>Available:</strong> {viewMentor.isAvailable ? 'Yes' : 'No'}</div>
+                <div><strong>Experience Years:</strong> {viewMentor.experienceYears ?? '-'}</div>
+                <div><strong>Hourly Rate:</strong> {viewMentor.hourlyRate ?? '-'}</div>
+                <div><strong>Rating:</strong> {viewMentor.rating ?? '-'}</div>
+                <div><strong>Skills:</strong> {viewMentor.skills?.join(', ') ?? '-'}</div>
+                <div><strong>Bio:</strong> {viewMentor.bio ?? '-'}</div>
+              </div>
+              <div className="mt-6 flex gap-4 justify-end">
+                <button onClick={() => { setIsMentorViewOpen(false); setViewMentor(null); }} className="px-4 py-2 border border-gray-300 rounded-lg">Close</button>
               </div>
             </div>
           </div>

@@ -194,6 +194,9 @@ public interface PracticeSessionRepository extends JpaRepository<PracticeSession
            "ORDER BY MONTH(ps.startTime)")
     List<Object[]> calculateMonthlyRevenue(@Param("year") Integer year);
 
+       // Count sessions starting after a given time (used for recent sessions/statistics)
+       Long countByStartTimeAfter(java.time.LocalDateTime start);
+
        // History & sorting
        List<PracticeSession> findByLearnerIdOrderByStartTimeDesc(Long learnerId);
     

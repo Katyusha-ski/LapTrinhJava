@@ -3,6 +3,7 @@ import { httpClient } from "./httpClient";
 export interface LearnerProfile {
   id: number;
   userId: number;
+  isActive?: boolean | null;
   mentorId?: number | null;
   name?: string | null;
   fullName?: string | null;

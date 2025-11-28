@@ -12,6 +12,8 @@ const MentorManagement: React.FC = () => {
 	const [error, setError] = useState<string | null>(null);
 	const [isModalOpen, setIsModalOpen] = useState(false);
 	const [editingMentor, setEditingMentor] = useState<Mentor | null>(null);
+	const [viewMentor, setViewMentor] = useState<Mentor | null>(null);
+	const [isViewOpen, setIsViewOpen] = useState(false);
 	const [formValues, setFormValues] = useState({
 		fullName: "",
 		username: "",
@@ -85,6 +87,11 @@ const MentorManagement: React.FC = () => {
 			isAvailable: mentor.isAvailable ?? true,
 		});
 		setIsModalOpen(true);
+	};
+
+	const handleView = (mentor: Mentor) => {
+		setViewMentor(mentor);
+		setIsViewOpen(true);
 	};
 
 	const handleDelete = async (id: number) => {
@@ -184,15 +191,51 @@ const MentorManagement: React.FC = () => {
 			render: (_: any, mentor: Mentor) => (
 				<>
 					<Button type="primary" size="small" onClick={() => handleEdit(mentor)} style={{ marginRight: 8 }}>Edit</Button>
+							<Button onClick={() => handleView(mentor)} size="small" style={{ marginRight: 8, background: '#f6c23e', borderColor: '#f6c23e', color: '#000' }}>View</Button>
+					{mentor.isActive ? (
+						<Popconfirm
+							title="Bạn có chắc chắn muốn vô hiệu hóa tài khoản user này?"
+							onConfirm={async () => {
+								try {
+									await userApi.setActive(mentor.userId, false);
+									toast.success('Tài khoản đã bị vô hiệu hóa');
+									loadMentors();
+								} catch (err) {
+									toast.error('Không thể thay đổi trạng thái tài khoản');
+								}
+							}}
+							okText="Vô hiệu hóa"
+							cancelText="Hủy"
+						>
+							<Button danger size="small">Disable Account</Button>
+						</Popconfirm>
+					) : (
+						<Popconfirm
+							title="Bạn có chắc chắn muốn kích hoạt tài khoản user này?"
+							onConfirm={async () => {
+								try {
+									await userApi.setActive(mentor.userId, true);
+									toast.success('Tài khoản đã được kích hoạt');
+									loadMentors();
+								} catch (err) {
+									toast.error('Không thể thay đổi trạng thái tài khoản');
+								}
+							}}
+							okText="Kích hoạt"
+							cancelText="Hủy"
+						>
+							<Button type="primary" size="small" style={{ background: '#52c41a', borderColor: '#52c41a', color: '#fff' }}>Enable</Button>
+						</Popconfirm>
+					)}
 					<Popconfirm
 						title="Bạn có chắc chắn muốn xóa mentor này?"
 						onConfirm={() => handleDelete(mentor.id)}
 						okText="Xóa"
 						cancelText="Hủy"
 					>
-						<Button type="primary" danger size="small">Delete</Button>
+						<Button type="primary" danger size="small" style={{ marginLeft: 8 }}>Delete</Button>
 					</Popconfirm>
-				</>
+					</>
 			),
 		},
 	];
@@ -327,6 +370,33 @@ const MentorManagement: React.FC = () => {
 						/>
 					</Form.Item>
 				</Form>
+			</Modal>
+
+			{/* View Mentor Modal */}
+			<Modal
+				title="Mentor Details"
+				open={isViewOpen}
+				footer={null}
+				onCancel={() => setIsViewOpen(false)}
+			>
+				{viewMentor ? (
+					<div>
+						<p><strong>Full Name:</strong> {viewMentor.fullName || "-"}</p>
+						{viewMentor.avatarUrl && (
+							<p><strong>Avatar:</strong> <img src={viewMentor.avatarUrl} alt="avatar" style={{ width: 60, height: 60, borderRadius: 6 }} /></p>
+						)}
+						<p><strong>Bio:</strong> {viewMentor.bio || "-"}</p>
+						<p><strong>Experience Years:</strong> {viewMentor.experienceYears ?? "-"}</p>
+						<p><strong>Hourly Rate:</strong> {viewMentor.hourlyRate ?? "-"}</p>
+						<p><strong>Available:</strong> {viewMentor.isAvailable ? "Yes" : "No"}</p>
+						<p><strong>Active:</strong> {viewMentor.isActive ? "Yes" : "No"}</p>
+						<p><strong>Skills:</strong> {viewMentor.skills && viewMentor.skills.length ? viewMentor.skills.join(", ") : "-"}</p>
+						<p><strong>Mentor ID:</strong> {viewMentor.id}</p>
+						<p><strong>User ID:</strong> {viewMentor.userId}</p>
+					</div>
+				) : (
+					<div>Loading...</div>
+				)}
 			</Modal>
 		</div>
 	);

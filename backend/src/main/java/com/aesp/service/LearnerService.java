@@ -264,6 +264,7 @@ public class LearnerService {
         response.setMentorId(learner.getMentor() != null ? learner.getMentor().getId() : null);
         response.setFullName(learner.getUser() != null ? learner.getUser().getFullName() : null);
         response.setAvatarUrl(learner.getUser() != null ? learner.getUser().getAvatarUrl() : null);
+        response.setIsActive(learner.getUser() != null ? learner.getUser().getIsActive() : null);
         response.setEnglishLevel(learner.getEnglishLevel());
         response.setLearningGoals(learner.getLearningGoals());
         response.setCurrentStreak(learner.getCurrentStreak());
