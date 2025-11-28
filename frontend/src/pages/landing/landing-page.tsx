@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 
 const features = [
   {
@@ -35,6 +35,8 @@ const steps = [
 ];
 
 const LandingPage = () => {
+  const location = useLocation();
+  const currentPath = `${location.pathname}${location.search ?? ""}`;
   return (
     <div className="min-h-screen w-full bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white">
       <div className="flex w-full flex-col px-6 pt-8 pb-16 sm:px-10 sm:pt-10 lg:px-16 xl:px-24">
@@ -73,7 +75,11 @@ const LandingPage = () => {
                 >
                   Bắt đầu ngay
                 </Link>
-                <Link to="/onboarding" className="rounded-full border border-white/20 px-6 py-3 text-sm font-semibold text-slate-200 transition hover:border-white/40">
+                <Link
+                  to="/onboarding"
+                  state={{ from: currentPath }}
+                  className="rounded-full border border-white/20 px-6 py-3 text-sm font-semibold text-slate-200 transition hover:border-white/40"
+                >
                   Xem VoiceUp hoạt động thế nào
                 </Link>
               </div>

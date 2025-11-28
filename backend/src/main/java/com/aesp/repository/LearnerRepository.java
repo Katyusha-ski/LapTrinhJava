@@ -24,6 +24,7 @@ public interface LearnerRepository extends JpaRepository<Learner, Long> {
     List<Learner> findByMentor(Mentor mentor);
     List<Learner> findByMentorId(Long mentorId);
     List<Learner> findByMentorIsNull();
+    Long countByMentorId(Long mentorId);
     
     // Find by level
     List<Learner> findByEnglishLevel(EnglishLevel level);

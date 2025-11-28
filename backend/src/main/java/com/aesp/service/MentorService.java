@@ -4,6 +4,8 @@ import com.aesp.dto.request.MentorRequest;
 import com.aesp.dto.response.MentorResponse;
 import com.aesp.entity.Mentor;
 import com.aesp.entity.User;
+import com.aesp.exception.ResourceNotFoundException;
+import com.aesp.repository.LearnerRepository;
 import com.aesp.repository.MentorRepository;
 import com.aesp.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -26,6 +28,7 @@ public class MentorService {
 
     private final MentorRepository mentorRepository;
     private final UserRepository userRepository;
+    private final LearnerRepository learnerRepository;
 
     public List<MentorResponse> getAllMentors() {
         return mentorRepository.findAll().stream()
@@ -49,7 +52,12 @@ public class MentorService {
     public Mentor getMentorByUserId(Long userId) {
         Objects.requireNonNull(userId, "User id must not be null");
         return mentorRepository.findByUserId(userId)
-                .orElseThrow(() -> new EntityNotFoundException("Mentor with user id %d not found".formatted(userId)));
+                .orElseThrow(() -> new ResourceNotFoundException("Mentor with user id %d not found".formatted(userId)));
+    }
+
+    public MentorResponse getMentorProfileByUserId(Long userId) {
+        Mentor mentor = getMentorByUserId(userId);
+        return toResponse(mentor);
     }
 
     public List<Mentor> getAvailableMentors() {
@@ -350,11 +358,25 @@ public class MentorService {
         response.setExperienceYears(mentor.getExperienceYears());
         response.setHourlyRate(mentor.getHourlyRate());
         response.setRating(mentor.getRating());
-        response.setTotalStudents(mentor.getTotalStudents());
+        response.setTotalStudents(calculateAssignedLearners(mentor));
         response.setIsAvailable(mentor.getIsAvailable());
         response.setSkills(mentor.getSkills() != null ? new HashSet<>(mentor.getSkills()) : Set.of());
         response.setSupportedLevels(mentor.getSupportedLevels() != null ? new HashSet<>(mentor.getSupportedLevels()) : Set.of());
         return response;
+    }
+
+    private Integer calculateAssignedLearners(Mentor mentor) {
+        if (mentor.getId() == null) {
+            return mentor.getTotalStudents();
+        }
+        Long counted = learnerRepository.countByMentorId(mentor.getId());
+        if (counted == null) {
+            return 0;
+        }
+        if (counted > Integer.MAX_VALUE) {
+            return Integer.MAX_VALUE;
+        }
+        return counted.intValue();
     }
 
     public List<MentorResponse> searchAdvanced(String skill,

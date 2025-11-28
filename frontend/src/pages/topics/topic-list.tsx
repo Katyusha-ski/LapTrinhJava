@@ -1,70 +1,61 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { topicApi, type Topic } from "../../api/topic.api";
 
-// Inline types to avoid import issues
-interface Topic {
-  id: number;
-  title: string;
-  description?: string | null;
-  category?: string | null;
-  level?: string | null;
-  keywords?: string | null;
-  createdAt?: string | null;
-  createdBy?: number | null;
-}
-
-// Inline API to avoid import issues  
-const topicApi = {
-  list: async (page?: number, size?: number) => {
-    const params = new URLSearchParams();
-    if (page !== undefined) params.append('page', page.toString());
-    if (size !== undefined) params.append('size', size.toString());
-    const response = await fetch(`http://localhost:8080/api/topics?${params}`, {
-      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-    });
-    return response.json();
-  },
-  getByLevel: async (level: string, page?: number, size?: number) => {
-    const params = new URLSearchParams({ level });
-    if (page !== undefined) params.append('page', page.toString());
-    if (size !== undefined) params.append('size', size.toString());
-    const response = await fetch(`http://localhost:8080/api/topics?${params}`, {
-      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-    });
-    return response.json();
-  },
-  getByCategory: async (category: string, page?: number, size?: number) => {
-    const params = new URLSearchParams({ category });
-    if (page !== undefined) params.append('page', page.toString());
-    if (size !== undefined) params.append('size', size.toString());
-    const response = await fetch(`http://localhost:8080/api/topics?${params}`, {
-      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-    });
-    return response.json();
-  }
+const CEFR_LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"] as const;
+const levelLabelMap: Record<string, string> = {
+  A1: "A1 · Beginner",
+  A2: "A2 · Elementary",
+  B1: "B1 · Intermediate",
+  B2: "B2 · Upper-Int",
+  C1: "C1 · Advanced",
+  C2: "C2 · Proficient",
+};
+const levelColorMap: Record<string, string> = {
+  A1: "bg-emerald-100 text-emerald-800",
+  A2: "bg-lime-100 text-lime-800",
+  B1: "bg-blue-100 text-blue-800",
+  B2: "bg-indigo-100 text-indigo-800",
+  C1: "bg-purple-100 text-purple-800",
+  C2: "bg-rose-100 text-rose-800",
+};
+const TOPIC_CATEGORIES = ["BUSINESS", "TRAVEL", "DAILY"] as const;
+const categoryLabelMap: Record<string, string> = {
+  BUSINESS: "Business",
+  TRAVEL: "Travel",
+  DAILY: "Daily Life",
 };
 
 export const TopicList = () => {
-  const [topics, setTopics] = useState<Topic[]>([]);
-  const [level, setLevel] = useState('');
-  const [category, setCategory] = useState('');
+  const [allTopics, setAllTopics] = useState<Topic[]>([]);
+  const [level, setLevel] = useState<string>("");
+  const [category, setCategory] = useState<string>("");
+
+  const loadTopics = useCallback(async () => {
+    try {
+      let data = await topicApi.list();
+      if (!data.length) {
+        data = await topicApi.listAll();
+      }
+      setAllTopics(data);
+    } catch (err) {
+      console.error("Failed to load topics:", err);
+      setAllTopics([]);
+    }
+  }, []);
 
   useEffect(() => {
-    loadTopics();
-  }, [level, category]);
+    void loadTopics();
+  }, [loadTopics]);
 
-  const loadTopics = async () => {
-    try {
-      let data;
-      if (level) data = await topicApi.getByLevel(level, 1, 10);
-      else if (category) data = await topicApi.getByCategory(category, 1, 10);
-      else data = await topicApi.list(1, 10);
-      
-      const list = Array.isArray(data) ? data : (data as any).content || [];
-      setTopics(list);
-    } catch (err) {
-      console.error('Failed to load topics:', err);
-    }
-  };
+  const filteredTopics = useMemo(() => {
+    return allTopics.filter((topic) => {
+      const topicLevel = topic.level?.toUpperCase() ?? "";
+      const topicCategory = topic.category?.toUpperCase() ?? "";
+      const matchesLevel = !level || topicLevel === level;
+      const matchesCategory = !category || topicCategory === category;
+      return matchesLevel && matchesCategory;
+    });
+  }, [allTopics, level, category]);
 
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4">
@@ -75,39 +66,43 @@ export const TopicList = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <select
               value={level}
-              onChange={(e) => {
-                setLevel(e.target.value);
-              }}
+              onChange={(e) => setLevel(e.target.value)}
               className="px-4 py-2 border rounded-lg"
             >
               <option value="">All Levels</option>
-              <option value="BEGINNER">Beginner</option>
-              <option value="INTERMEDIATE">Intermediate</option>
-              <option value="ADVANCED">Advanced</option>
+              {CEFR_LEVELS.map((lvl) => (
+                <option key={lvl} value={lvl}>
+                  {levelLabelMap[lvl]}
+                </option>
+              ))}
             </select>
             <select
               value={category}
-              onChange={(e) => {
-                setCategory(e.target.value);
-              }}
+              onChange={(e) => setCategory(e.target.value)}
               className="px-4 py-2 border rounded-lg"
             >
               <option value="">All Categories</option>
-              <option value="BUSINESS">Business</option>
-              <option value="TRAVEL">Travel</option>
-              <option value="DAILY">Daily Life</option>
+              {TOPIC_CATEGORIES.map((cat) => (
+                <option key={cat} value={cat}>
+                  {categoryLabelMap[cat]}
+                </option>
+              ))}
             </select>
           </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {topics.map((topic) => (
+          {filteredTopics.map((topic) => (
             <div key={topic.id} className="bg-white rounded-lg shadow p-6 hover:shadow-lg">
               <h3 className="font-semibold text-lg mb-2">{topic.title}</h3>
               <p className="text-gray-600 text-sm mb-4 line-clamp-2">{topic.description}</p>
               <div className="flex justify-between text-sm">
-                <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded">{topic.level}</span>
-                <span className="bg-gray-100 text-gray-800 px-2 py-1 rounded">{topic.category}</span>
+                <span className={`${levelColorMap[topic.level ?? ""] ?? "bg-gray-100 text-gray-800"} px-2 py-1 rounded`}>
+                  {levelLabelMap[topic.level ?? ""] || topic.level || "N/A"}
+                </span>
+                <span className="bg-gray-100 text-gray-800 px-2 py-1 rounded">
+                  {categoryLabelMap[topic.category?.toUpperCase() ?? ""] || topic.category || "Uncategorized"}
+                </span>
               </div>
             </div>
           ))}

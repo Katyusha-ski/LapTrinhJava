@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { mentorApi } from "../../../api/mentor.api";
 import { learnerApi, type LearnerProfile } from "../../../api/learner.api";
 import type { Mentor } from "../../../types/mentor";
@@ -7,7 +7,7 @@ import type { EnglishLevel } from "../../../types/shared";
 import { ENGLISH_LEVEL_OPTIONS } from "../../../types/shared";
 import type { JwtResponse } from "../../../types/jwt";
 import { clearAuth, getAuth } from "../../../utils/auth";
-import { NavigationBar } from "../../../components/layout";
+import { LearnerNavbar } from "../../../components/layout";
 
 interface FilterState {
   skill: string;
@@ -25,6 +25,7 @@ const DEFAULT_FILTERS: FilterState = {
 
 const MentorSelection: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [user, setUser] = useState<JwtResponse | null>(() => getAuth());
   const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
   const [mentors, setMentors] = useState<Mentor[]>([]);
@@ -137,7 +138,7 @@ const MentorSelection: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-tr from-blue-50 via-white to-blue-100">
-      <NavigationBar user={user} onLogout={handleLogout} />
+      <LearnerNavbar user={user} onLogout={handleLogout} />
 
       <main className="mx-auto max-w-5xl px-6 pb-10 pt-8">
         <header className="mb-8 text-center">
@@ -248,7 +249,11 @@ const MentorSelection: React.FC = () => {
                 </p>
                 <button
                   type="button"
-                  onClick={() => navigate("/onboarding")}
+                  onClick={() =>
+                    navigate("/onboarding", {
+                      state: { from: `${location.pathname}${location.search ?? ""}` },
+                    })
+                  }
                   className="mt-3 rounded-lg bg-amber-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-amber-700"
                 >
                   Đi tới Onboarding

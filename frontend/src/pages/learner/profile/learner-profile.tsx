@@ -1,8 +1,8 @@
 import { useEffect, useState, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { learnerApi, type LearnerProfile, type LearnerMutationRequest } from "../../../api/learner.api";
 import { useAuth } from "../../../context/AuthContext";
-import { NavigationBar } from "../../../components/layout";
+import { LearnerNavbar } from "../../../components/layout";
 
 interface OnboardingSnapshot {
   age?: string;
@@ -54,6 +54,7 @@ const ENGLISH_LEVEL_LABELS: Record<string, string> = {
 
 export default function LearnerProfile() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, clearAuth } = useAuth();
   const [profile, setProfile] = useState<LearnerProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -260,8 +261,8 @@ export default function LearnerProfile() {
 
   if (loading) {
     return (
-      <div className="page-gradient">
-        <NavigationBar user={user} onLogout={handleLogout} />
+      <div className="min-h-screen bg-gradient-to-tr from-blue-50 via-white to-blue-100">
+        <LearnerNavbar user={user} onLogout={handleLogout} />
         <div className="flex min-h-[40vh] items-center justify-center px-4">
           <div className="text-center">
             <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-b-2 border-blue-500"></div>
@@ -273,8 +274,8 @@ export default function LearnerProfile() {
   }
 
   return (
-    <div className="page-gradient">
-      <NavigationBar user={user} onLogout={handleLogout} />
+    <div className="min-h-screen bg-gradient-to-tr from-blue-50 via-white to-blue-100">
+      <LearnerNavbar user={user} onLogout={handleLogout} />
 
       <div className="mx-auto max-w-4xl px-4 pb-10 pt-8">
         {/* Header */}
@@ -311,7 +312,11 @@ export default function LearnerProfile() {
             </div>
             <div className="flex gap-2 self-end sm:self-auto">
               <button
-                onClick={() => navigate("/onboarding")}
+                onClick={() =>
+                  navigate("/onboarding", {
+                    state: { from: `${location.pathname}${location.search ?? ""}` },
+                  })
+                }
                 className="rounded-md border border-blue-200 px-4 py-2 text-sm font-medium text-blue-600 hover:border-blue-300 hover:text-blue-700"
               >
                 Cập nhật Hồ sơ

@@ -72,7 +72,7 @@ CREATE TABLE learners (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     user_id BIGINT NOT NULL UNIQUE,
     mentor_id BIGINT,
-    english_level ENUM('A1', 'A2', 'B1', 'B2', 'C1', 'C2') DEFAULT 'A1',
+    english_level ENUM('A1', 'A2', 'B1', 'B2', 'C1', 'C2') NULL,
     learning_goals TEXT,
     current_streak INT DEFAULT 0,
     total_practice_hours DECIMAL(5,2) DEFAULT 0.00,
@@ -85,6 +85,17 @@ CREATE TABLE learners (
 ALTER TABLE learners
 ADD COLUMN age_range VARCHAR(20),
 ADD COLUMN profession VARCHAR(100);
+UPDATE learners SET english_level = 'A1' WHERE english_level = 'BEGINNER';
+UPDATE learners SET english_level = 'B2' WHERE english_level = 'INTERMEDIATE';
+UPDATE learners SET english_level = 'C1' WHERE english_level = 'ADVANCED';
+ALTER TABLE learners
+CHANGE english_level english_level VARCHAR(20) NULL;
+UPDATE learners SET english_level = 'A1' WHERE english_level = 'BEGINNER';
+UPDATE learners SET english_level = 'B2' WHERE english_level = 'INTERMEDIATE';
+UPDATE learners SET english_level = 'C1' WHERE english_level = 'ADVANCED';
+
+ALTER TABLE learners
+CHANGE english_level english_level ENUM('A1', 'A2', 'B1', 'B2', 'C1', 'C2')  NULL;
 
 CREATE TABLE subscriptions (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -234,30 +245,36 @@ INSERT INTO packages (name, description, price, duration_days, features) VALUES
 (3, 2, DATE_SUB(CURDATE(), INTERVAL 15 DAY), DATE_ADD(CURDATE(), INTERVAL 15 DAY), 199000.00, 'BANK_TRANSFER');
 
 -- INSERT CONVERSATION TOPICS (Speaking scenarios)
-INSERT INTO conversation_topics (name, category, level, description, sample_questions, difficulty_keywords) VALUES
+INSERT INTO conversation_topics (name, category, level, description, sample_questions, difficulty_keywords, created_at) VALUES
 ('Daily Greetings & Small Talk', 'Daily Life', 'A1', 'Basic greetings and casual conversations', 
- JSON_ARRAY('How are you today?', 'What did you do yesterday?', 'Do you like coffee or tea?'),
- JSON_ARRAY('hello', 'good morning', 'nice to meet you', 'weather', 'weekend')),
+	JSON_ARRAY('How are you today?', 'What did you do yesterday?', 'Do you like coffee or tea?'),
+	JSON_ARRAY('hello', 'good morning', 'nice to meet you', 'weather', 'weekend'),
+    NOW()),
 
 ('Travel Planning', 'Travel', 'A2', 'Booking hotels, asking for directions, airport conversations',
- JSON_ARRAY('How do I get to the airport?', 'I would like to book a room.', 'Where is the nearest subway station?'),
- JSON_ARRAY('ticket', 'reservation', 'passport', 'luggage', 'directions')),
+	JSON_ARRAY('How do I get to the airport?', 'I would like to book a room.', 'Where is the nearest subway station?'), 
+	JSON_ARRAY('ticket', 'reservation', 'passport', 'luggage', 'directions'),
+    NOW()),
 
 ('Job Interview Practice', 'Business', 'B2', 'Professional interview scenarios and responses',
- JSON_ARRAY('Tell me about yourself.', 'What are your strengths and weaknesses?', 'Why do you want this job?'),
- JSON_ARRAY('experience', 'skills', 'teamwork', 'leadership', 'achievements')),
+	JSON_ARRAY('Tell me about yourself.', 'What are your strengths and weaknesses?', 'Why do you want this job?'), 
+	JSON_ARRAY('experience', 'skills', 'teamwork', 'leadership', 'achievements'),
+    NOW()),
 
 ('Business Negotiations', 'Business', 'C1', 'Advanced negotiation tactics and persuasion',
- JSON_ARRAY('What are your terms?', 'Can we discuss the price?', 'I propose a different approach.'),
- JSON_ARRAY('contract', 'terms', 'agreement', 'compromise', 'leverage')),
+	JSON_ARRAY('What are your terms?', 'Can we discuss the price?', 'I propose a different approach.'), 
+	JSON_ARRAY('contract', 'terms', 'agreement', 'compromise', 'leverage'),
+    NOW()),
 
 ('Medical Consultations', 'Healthcare', 'B1', 'Doctor-patient conversations and health topics',
- JSON_ARRAY('I have been feeling sick.', 'What are the symptoms?', 'How often should I take this medicine?'),
- JSON_ARRAY('symptoms', 'diagnosis', 'prescription', 'treatment', 'allergy')),
+	JSON_ARRAY('I have been feeling sick.', 'What are the symptoms?', 'How often should I take this medicine?'), 
+	JSON_ARRAY('symptoms', 'diagnosis', 'prescription', 'treatment', 'allergy'),
+    NOW()),
 
 ('Restaurant & Food Ordering', 'Daily Life', 'A1', 'Ordering food, asking about menu items',
- JSON_ARRAY('Can I see the menu?', 'I would like to order...', 'Is this dish spicy?'),
- JSON_ARRAY('menu', 'order', 'delicious', 'waiter', 'bill'));
+	JSON_ARRAY('Can I see the menu?', 'I would like to order...', 'Is this dish spicy?'), 
+	JSON_ARRAY('menu', 'order', 'delicious', 'waiter', 'bill'),
+    NOW());
 
 INSERT INTO practice_sessions 
 (learner_id, mentor_id, topic_id, session_type, start_time, end_time, duration_minutes, cost, session_status) 
@@ -353,3 +370,4 @@ INSERT INTO mentor_reviews (session_id, learner_id, mentor_id, rating, review_te
 
 -- Learner 2 (Trần Thị Bình) đánh giá Mentor 1 (Sarah Johnson) sau Session 2
 (2, 2, 1, 4.5, 'Bài luyện phỏng vấn công việc rất tốt, mentor đưa ra nhiều tình huống thực tế. Có thể cải thiện thêm về tốc độ nói.');
+

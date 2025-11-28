@@ -13,6 +13,8 @@ export interface LearnerProfile {
   totalPracticeHours?: number | null;
   averagePronunciationScore?: number | null;
   createdAt?: string | null;
+  ageRange?: string | null;
+  profession?: string | null;
 }
 
 export interface LearnerMutationRequest {
@@ -23,6 +25,8 @@ export interface LearnerMutationRequest {
   currentStreak?: number | null;
   totalPracticeHours?: number | null;
   averagePronunciationScore?: number | null;
+  ageRange?: string | null;
+  profession?: string | null;
 }
 
 export const learnerApi = {
@@ -54,6 +58,11 @@ export const learnerApi = {
 
   assignMentor: (learnerId: number, mentorId: number) =>
     httpClient<LearnerProfile>(`/api/learners/${learnerId}/assign-mentor/${mentorId}`, {
+      method: "POST",
+    }),
+
+  autoCreate: (userId: number) =>
+    httpClient<LearnerProfile>(`/api/learners/auto-create/${userId}`, {
       method: "POST",
     }),
 };

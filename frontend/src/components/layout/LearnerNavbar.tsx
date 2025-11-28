@@ -2,23 +2,23 @@ import React, { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import type { JwtResponse } from "../../types/jwt";
 
-interface NavigationBarProps {
+export interface RoleNavigationProps {
   user?: JwtResponse | null;
   onLogout: () => void;
 }
 
-const NAV_ITEMS = [
-  { label: "Learn", path: "/learn" },
-  { label: "Practice", path: "/practice" },
+const NAV_LINKS = [
+  { label: "Topics", path: "/topics" },
+  { label: "Conversation", path: "/conversation" },
+  { label: "Assessment", path: "/learner/assessment" },
   { label: "Mentors", path: "/mentor-selection" },
-  { label: "Analytics", path: "/analytics" },
 ];
 
-const NavigationBar: React.FC<NavigationBarProps> = ({ user, onLogout }) => {
+const LearnerNavbar: React.FC<RoleNavigationProps> = ({ user, onLogout }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
-  const canViewLearnerProfile = user?.roles?.includes("LEARNER");
+  const canViewProfile = user?.roles?.includes("LEARNER");
 
   const handleNavigate = (path: string) => {
     setMenuOpen(false);
@@ -45,16 +45,13 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ user, onLogout }) => {
         </div>
 
         <nav className="hidden gap-6 text-sm font-semibold text-slate-700 md:flex">
-          {NAV_ITEMS.map((item) => {
-            const isActive =
-              location.pathname === item.path || location.pathname.startsWith(`${item.path}/`);
+          {NAV_LINKS.map((item) => {
+            const isActive = location.pathname === item.path || location.pathname.startsWith(`${item.path}/`);
             return (
               <button
                 key={item.path}
                 onClick={() => handleNavigate(item.path)}
-                className={`transition ${
-                  isActive ? "text-blue-600" : "text-slate-600 hover:text-blue-500"
-                }`}
+                className={`transition ${isActive ? "text-blue-600" : "text-slate-600 hover:text-blue-500"}`}
               >
                 {item.label}
               </button>
@@ -64,18 +61,19 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ user, onLogout }) => {
 
         <div className="flex items-center gap-3">
           <div className="hidden text-right sm:block">
-            <p className="text-sm font-semibold text-slate-800">{user?.fullName || "User"}</p>
+            <p className="text-sm font-semibold text-slate-800">{user?.fullName || "Learner"}</p>
+            <p className="text-xs text-slate-500">Keep growing today</p>
           </div>
           <div className="relative">
             <button
               onClick={() => setMenuOpen((prev) => !prev)}
               className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 via-indigo-500 to-sky-500 text-white font-medium shadow-lg"
             >
-              {user?.fullName?.charAt(0) || "U"}
+              {user?.fullName?.charAt(0) || "L"}
             </button>
             {menuOpen && (
-              <div className="absolute right-0 mt-2 w-44 rounded-xl border border-slate-200/60 bg-white/90 py-2 shadow-xl backdrop-blur">
-                {canViewLearnerProfile && (
+              <div className="absolute right-0 mt-2 w-48 rounded-xl border border-slate-200/60 bg-white/95 py-2 shadow-xl backdrop-blur">
+                {canViewProfile && (
                   <button
                     onClick={() => handleNavigate("/learner/profile")}
                     className="w-full px-4 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50"
@@ -83,6 +81,12 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ user, onLogout }) => {
                     Learner Profile
                   </button>
                 )}
+                <button
+                  onClick={() => handleNavigate("/sessions")}
+                  className="w-full px-4 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50"
+                >
+                  My Sessions
+                </button>
                 <button
                   onClick={handleLogout}
                   className="w-full px-4 py-2 text-left text-sm text-rose-600 transition-colors hover:bg-slate-50"
@@ -98,4 +102,4 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ user, onLogout }) => {
   );
 };
 
-export default NavigationBar;
+export default LearnerNavbar;

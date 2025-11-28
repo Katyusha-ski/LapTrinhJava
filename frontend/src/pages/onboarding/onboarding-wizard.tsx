@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
-import React, { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useEffect, useMemo, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { learnerApi, type LearnerMutationRequest } from "../../api/learner.api";
 import { getAuth } from "../../utils/auth";
 import { toast } from "react-toastify";
@@ -9,12 +9,6 @@ type AgeOption = {
   id: string;
   label: string;
   description: string;
-};
-
-type LevelOption = {
-  id: "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
-  label: string;
-  helper: string;
 };
 
 type GoalOption = {
@@ -28,22 +22,13 @@ type ProfessionOption = {
   label: string;
 };
 
-type Step = "age" | "level" | "goals" | "profession" | "summary";
+type Step = "age" | "goals" | "profession" | "summary";
 
 const ageOptions: AgeOption[] = [
   { id: "18-24", label: "Độ tuổi: 18-24", description: "Sinh viên, người mới đi làm" },
   { id: "25-34", label: "Độ tuổi: 25-34", description: "Phát triển nghề nghiệp" },
   { id: "35-44", label: "Độ tuổi: 35-44", description: "Thăng tiến và mở rộng cơ hội" },
   { id: "45+", label: "Độ tuổi: 45+", description: "Duy trì và nâng cao kỹ năng" },
-];
-
-const levelOptions: LevelOption[] = [
-  { id: "A1", label: "Mới bắt đầu ", helper: "Làm quen tiếng Anh (A1)" },
-  { id: "A2", label: "Tiền trung cấp", helper: "Giao tiếp cơ bản (A2)" },
-  { id: "B1", label: "Trung cấp", helper: "Đối thoại hàng ngày (B1)" },
-  { id: "B2", label: "Trung cấp cao", helper: "Làm việc chuyên nghiệp(B2)" },
-  { id: "C1", label: "Nâng cao", helper: "Tự tin, linh hoạt (C1)" },
-  { id: "C2", label: "Thành thạo", helper: "Tương đương bản ngữ (C2)" },
 ];
 
 const goalOptions: GoalOption[] = [
@@ -68,25 +53,61 @@ const professionOptions: ProfessionOption[] = [
   { id: "freelance", label: "Kinh doanh tự do & Làm chủ" },
 ];
 
-const steps: Step[] = ["age", "level", "goals", "profession", "summary"];
-
-const levelToProfileLevel: Record<LevelOption["id"], string> = {
-  A1: "BEGINNER",
-  A2: "BEGINNER",
-  B1: "INTERMEDIATE",
-  B2: "INTERMEDIATE",
-  C1: "ADVANCED",
-  C2: "ADVANCED",
-};
+const steps: Step[] = ["age", "goals", "profession", "summary"];
 
 const OnboardingWizard: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const locationState = location.state as { from?: string } | null;
   const [step, setStep] = useState<Step>("age");
   const [age, setAge] = useState<string>("");
-  const [level, setLevel] = useState<LevelOption["id"] | "">("");
   const [goals, setGoals] = useState<string[]>([]);
   const [profession, setProfession] = useState<string>("");
   const [isSaving, setIsSaving] = useState(false);
+  const [returnPath, setReturnPath] = useState<string>(() => {
+    const statePath = locationState?.from;
+    if (statePath) {
+      return statePath;
+    }
+    if (typeof window === "undefined") {
+      return "/mentor-selection";
+    }
+    return window.sessionStorage.getItem("aesp_onboarding_return_path") ?? "/mentor-selection";
+  });
+
+  useEffect(() => {
+    const statePath = locationState?.from;
+    if (statePath) {
+      setReturnPath(statePath);
+      if (typeof window !== "undefined") {
+        window.sessionStorage.setItem("aesp_onboarding_return_path", statePath);
+      }
+    }
+  }, [locationState?.from]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+    if (returnPath && returnPath !== location.pathname) {
+      window.sessionStorage.setItem("aesp_onboarding_return_path", returnPath);
+    }
+  }, [returnPath, location.pathname]);
+
+  const redirectAfterOnboarding = () => {
+    const normalizedReturn = returnPath && returnPath !== location.pathname ? returnPath : null;
+    const canGoBack = typeof window !== "undefined" ? (window.history.state?.idx ?? 0) > 0 : false;
+    if (normalizedReturn) {
+      navigate(normalizedReturn, { replace: true });
+    } else if (canGoBack) {
+      navigate(-1);
+    } else {
+      navigate("/mentor-selection");
+    }
+    if (typeof window !== "undefined") {
+      window.sessionStorage.removeItem("aesp_onboarding_return_path");
+    }
+  };
 
   const currentStepIndex = steps.indexOf(step);
   const progressPercent = useMemo(
@@ -96,11 +117,10 @@ const OnboardingWizard: React.FC = () => {
 
   const disableNext = useMemo(() => {
     if (step === "age") return !age;
-    if (step === "level") return !level;
     if (step === "goals") return goals.length === 0;
     if (step === "profession") return !profession;
     return false;
-  }, [age, level, goals, profession, step]);
+  }, [age, goals, profession, step]);
 
   const goNext = () => {
     if (currentStepIndex < steps.length - 1) {
@@ -130,18 +150,16 @@ const OnboardingWizard: React.FC = () => {
       }
 
       // Save onboarding profile to localStorage for reference
-      const payload = { age, level, goals, profession, savedAt: new Date().toISOString() };
+      const payload = { age, goals, profession, savedAt: new Date().toISOString() };
       localStorage.setItem("aesp_onboarding_profile", JSON.stringify(payload));
 
       // Prepare learner data for persistence
-      const normalizedLevel = level ? levelToProfileLevel[level] ?? level : undefined;
       const goalDescriptions = goals
         .map((goalId) => goalOptions.find((g) => g.id === goalId)?.label)
         .filter((label): label is string => Boolean(label));
 
       const learnerData: LearnerMutationRequest = {
         userId: auth.id,
-        englishLevel: normalizedLevel,
         learningGoals: goalDescriptions.join(", "),
       };
 
@@ -167,7 +185,7 @@ const OnboardingWizard: React.FC = () => {
       }
 
       toast.success("Onboarding hoàn tất! Bạn có thể chọn mentor ngay bây giờ.");
-      navigate("/mentor-selection");
+      redirectAfterOnboarding();
     } catch (err: any) {
       const errorMsg = err?.message || "Không thể hoàn tất onboarding. Vui lòng thử lại.";
       toast.error(errorMsg);
@@ -192,27 +210,6 @@ const OnboardingWizard: React.FC = () => {
           >
             <p className="text-base font-semibold text-gray-900">{option.label}</p>
             <p className="text-sm text-gray-500">{option.description}</p>
-          </button>
-        );
-      })}
-    </div>
-  );
-
-  const renderLevelStep = () => (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      {levelOptions.map((option) => {
-        const active = level === option.id;
-        return (
-          <button
-            key={option.id}
-            type="button"
-            onClick={() => setLevel(option.id)}
-            className={`flex flex-col items-start rounded-xl border p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${
-              active ? "border-blue-500 bg-blue-50" : "border-gray-200 bg-white"
-            }`}
-          >
-            <span className="text-lg font-semibold text-gray-900">{option.label}</span>
-            <span className="text-sm text-gray-500">{option.helper}</span>
           </button>
         );
       })}
@@ -263,7 +260,6 @@ const OnboardingWizard: React.FC = () => {
 
   const renderSummaryStep = () => {
     const ageLabel = ageOptions.find((item) => item.id === age)?.label;
-    const levelLabel = levelOptions.find((item) => item.id === level)?.label;
     const goalLabels = goalOptions.filter((item) => goals.includes(item.id)).map((item) => item.label);
     const professionLabel = professionOptions.find((item) => item.id === profession)?.label;
 
@@ -273,7 +269,6 @@ const OnboardingWizard: React.FC = () => {
           <h3 className="text-lg font-semibold text-gray-900">Thông tin của bạn</h3>
           <div className="mt-4 space-y-3 text-gray-700">
             <p><span className="font-medium">Độ tuổi:</span> {ageLabel}</p>
-            <p><span className="font-medium">Trình độ:</span> {levelLabel}</p>
             <p>
               <span className="font-medium">Mục tiêu:</span> {goalLabels.join(", ")}
             </p>
@@ -292,9 +287,6 @@ const OnboardingWizard: React.FC = () => {
     case "age":
       content = renderAgeStep();
       break;
-    case "level":
-      content = renderLevelStep();
-      break;
     case "goals":
       content = renderGoalStep();
       break;
@@ -307,7 +299,6 @@ const OnboardingWizard: React.FC = () => {
 
   const titleMap: Record<Step, string> = {
     age: "Khám phá khả năng tiếng Anh của bạn",
-    level: "Bạn đang ở trình độ tiếng Anh nào?",
     goals: "Vì sao bạn muốn học tiếng Anh?",
     profession: "Bạn đang làm công việc gì?",
     summary: "Hoàn tất hồ sơ luyện tập",

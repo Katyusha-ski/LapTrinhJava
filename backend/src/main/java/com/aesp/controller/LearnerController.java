@@ -46,6 +46,12 @@ public class LearnerController {
         return ResponseEntity.ok(learnerService.getLearnerProfileByUserId(userId));
     }
 
+    @PostMapping("/auto-create/{userId}")
+    public ResponseEntity<LearnerResponse> autoCreateLearner(@PathVariable Long userId) {
+        LearnerResponse response = learnerService.getOrCreateLearnerProfile(userId);
+        return ResponseEntity.ok(response);
+    }
+
     /** UPDATE */
     @PutMapping("/{id}")
     public ResponseEntity<LearnerResponse> updateLearner(
