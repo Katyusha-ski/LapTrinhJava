@@ -200,11 +200,29 @@ export default function SessionsPage() {
   const handleStatusChange = async (sessionId: number, newStatus: SessionStatus) => {
     try {
       setError(null);
+      const session = sessions.find((item) => item.id === sessionId);
+      const currentStatus = normalizeStatus(session?.sessionStatus || session?.status);
+
+      if (!currentStatus) {
+        setError("Không xác định được trạng thái hiện tại của buổi học.");
+        return;
+      }
+
+      if (newStatus === "IN_PROGRESS" && currentStatus !== "SCHEDULED") {
+        setError("Buổi học cần mentor xác nhận trước khi bạn có thể bắt đầu.");
+        return;
+      }
+
+      if (newStatus === "COMPLETED" && currentStatus !== "IN_PROGRESS") {
+        setError("Chỉ có thể kết thúc buổi học đang diễn ra.");
+        return;
+      }
+
       await sessionApi.updateSessionStatus(sessionId, newStatus);
       await loadSessions();
     } catch (err) {
-      setError("Không thể cập nhật trạng thái buổi học.");
       console.error(err);
+      setError("Không thể cập nhật trạng thái buổi học.");
     }
   };
 

@@ -119,12 +119,32 @@ public class PracticeSessionService {
         PracticeSession session = sessionRepository.findById(Objects.requireNonNull(id, "Session ID không được null"))
                 .orElseThrow(() -> new ResourceNotFoundException("Session not found with id: " + id));
 
+        final SessionStatus currentStatus = session.getSessionStatus();
+
         try {
-            SessionStatus sessionStatus = SessionStatus.valueOf(status.toUpperCase());
-            session.setSessionStatus(sessionStatus);
+            SessionStatus nextStatus = SessionStatus.valueOf(status.toUpperCase());
+            validateStatusTransition(currentStatus, nextStatus);
+            session.setSessionStatus(nextStatus);
             sessionRepository.save(session);
         } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException("Invalid session status: " + status);
+        }
+    }
+
+    private void validateStatusTransition(SessionStatus current, SessionStatus next) {
+        if (current == null) {
+            return;
+        }
+
+        // Learners should not be able to start a session that mentors haven't approved yet.
+        if (next == SessionStatus.IN_PROGRESS && current != SessionStatus.SCHEDULED) {
+            throw new IllegalArgumentException("Session must be scheduled by mentor before it can start");
+        }
+
+        // Completed/cancelled/rejected sessions are immutable.
+        if ((current == SessionStatus.COMPLETED || current == SessionStatus.CANCELLED || current == SessionStatus.REJECTED)
+                && current != next) {
+            throw new IllegalArgumentException("Session status can no longer be changed");
         }
     }
 
