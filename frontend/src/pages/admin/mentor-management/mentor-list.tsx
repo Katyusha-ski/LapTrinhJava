@@ -106,7 +106,7 @@ export const MentorList = () => {
     <div className="min-h-screen bg-gray-50 py-8 px-4">
       <div className="max-w-7xl mx-auto">
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Mentor Management</h1>
+          <h1 className="text-4xl font-bold text-gray-900">Mentor Management</h1>
           <button
             onClick={() => navigate('/admin/mentors/create')}
             className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
@@ -123,34 +123,34 @@ export const MentorList = () => {
 
         <div className="bg-white rounded-lg shadow overflow-hidden">
           {loading ? (
-            <div className="p-8 text-center text-gray-500">Loading mentors...</div>
+            <div className="p-8 text-center text-gray-500">Loading...</div>
           ) : mentors.length === 0 ? (
             <div className="p-8 text-center text-gray-500">No mentors found</div>
           ) : (
             <table className="w-full">
               <thead className="bg-gray-100 border-b">
                 <tr>
-                  <th className="px-6 py-3 text-left text-sm font-semibold">Name</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold">Skills</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold">Rating</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold">Status</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold">Actions</th>
+                  <th className="px-8 py-4 text-left text-2xl font-semibold">Name</th>
+                  <th className="px-8 py-4 text-left text-2xl font-semibold">Skills</th>
+                  <th className="px-8 py-4 text-left text-2xl font-semibold">Rating</th>
+                  <th className="px-8 py-4 text-left text-2xl font-semibold">Status</th>
+                  <th className="px-8 py-4 text-left text-2xl font-semibold">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y">
                 {mentors.map((mentor) => (
                   <tr key={mentor.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 text-sm">{mentor.fullName}</td>
-                    <td className="px-6 py-4 text-sm text-gray-600 truncate max-w-xs">{mentor.skills.join(', ')}</td>
-                    <td className="px-6 py-4 text-sm">{'⭐'.repeat(Math.round(mentor.rating || 0))}</td>
-                    <td className="px-6 py-4 text-sm">
-                      <span className={`px-2 py-1 rounded text-white text-xs ${mentor.isAvailable ? 'bg-green-600' : 'bg-gray-400'}`}>
+                    <td className="px-9 py-6 text-xl">{mentor.fullName}</td>
+                    <td className="px-9 py-6 text-xl text-gray-600 truncate max-w-2xl">{mentor.skills?.join(', ') ?? '-'}</td>
+                    <td className="px-9 py-6 text-xl">{'⭐'.repeat(Math.round(mentor.rating || 0))}</td>
+                    <td className="px-9 py-6 text-xl">
+                      <span className={`px-3 py-1 rounded text-white text-sm ${mentor.isAvailable ? 'bg-green-600' : 'bg-gray-400'}`}>
                         {mentor.isAvailable ? 'Available' : 'Unavailable'}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-sm space-x-2">
-                      <button onClick={() => openMentorView(mentor)} className="bg-yellow-400 text-black px-3 py-1 rounded-lg border border-yellow-400 hover:bg-yellow-500">View</button>
-                      <button onClick={() => openEdit(mentor)} className="text-blue-600 hover:text-blue-900 border border-gray-300 px-3 py-1 rounded-lg">Edit</button>
+                    <td className="px-9 py-6 text-xl space-x-3">
+                      <button onClick={() => openMentorView(mentor)} className="bg-yellow-400 text-black px-5 py-3 rounded-lg border border-yellow-400 hover:bg-yellow-500">View</button>
+                      <button onClick={() => openEdit(mentor)} className="text-blue-600 hover:text-blue-900 border border-gray-300 px-5 py-3 rounded-lg">Edit</button>
                       {mentor.isActive ? (
                         <Popconfirm
                           title="Bạn có chắc chắn muốn vô hiệu hóa tài khoản này?"
@@ -158,7 +158,7 @@ export const MentorList = () => {
                           okText="Vô hiệu hóa"
                           cancelText="Hủy"
                         >
-                          <button className="bg-white text-red-600 px-3 py-1 rounded-lg border border-gray-300 hover:bg-gray-50">Disable</button>
+                          <button className="bg-white text-red-600 px-5 py-3 rounded-lg border border-gray-300 hover:bg-gray-50">Disable Account</button>
                         </Popconfirm>
                       ) : (
                         <Popconfirm
@@ -167,10 +167,10 @@ export const MentorList = () => {
                           okText="Kích hoạt"
                           cancelText="Hủy"
                         >
-                          <button className="bg-green-600 text-white px-3 py-1 rounded-lg border border-green-600">Enable</button>
+                          <button className="bg-green-600 text-white px-5 py-3 rounded-lg border border-green-600">Enable</button>
                         </Popconfirm>
                       )}
-                      <button onClick={() => setDeleteId(mentor.id)} className="bg-red-600 text-white px-3 py-1 rounded-lg border border-red-600 hover:bg-red-700">
+                      <button onClick={() => setDeleteId(mentor.id)} className="bg-red-600 text-white px-5 py-3 rounded-lg border border-red-600 hover:bg-red-700">
                         Delete
                       </button>
                     </td>

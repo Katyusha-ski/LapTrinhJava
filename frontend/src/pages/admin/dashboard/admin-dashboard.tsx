@@ -56,18 +56,21 @@ const AdminDashboard: React.FC = () => {
     },
   ];
 
-  const [metrics, setMetrics] = React.useState<{ activeLearners: number; certifiedMentors: number; sessionsBooked30d: number } | null>(null);
+  const [metrics, setMetrics] = React.useState<{ activeLearners: number; certifiedMentors: number; sessionsBooked30d: number; totalSubscriptions?: number; totalRevenue?: number; pendingFeedbackCount?: number } | null>(null);
   const [metricsLoading, setMetricsLoading] = React.useState(false);
 
   const loadMetrics = React.useCallback(async () => {
     setMetricsLoading(true);
     try {
       const res = await httpClient('/api/admin/metrics', { method: 'GET' });
-      // Expecting shape: { activeLearners, certifiedMentors, sessionsBooked30d }
+      // Expecting shape: { activeLearners, certifiedMentors, sessionsBooked30d, totalSubscriptions, totalRevenue, pendingFeedbackCount }
       setMetrics({
         activeLearners: Number(res.activeLearners ?? 0),
         certifiedMentors: Number(res.certifiedMentors ?? 0),
         sessionsBooked30d: Number(res.sessionsBooked30d ?? res.sessionsBooked ?? 0),
+        totalSubscriptions: Number(res.totalSubscriptions ?? 0),
+        totalRevenue: Number(res.totalRevenue ?? 0),
+        pendingFeedbackCount: Number(res.pendingFeedbackCount ?? 0),
       });
     } catch (err) {
       console.error('Failed to load admin metrics', err);
@@ -126,10 +129,16 @@ const AdminDashboard: React.FC = () => {
                   const active = metrics ? metrics.activeLearners : 0;
                   const certified = metrics ? metrics.certifiedMentors : 0;
                   const sessions = metrics ? metrics.sessionsBooked30d : 0;
+                  const totalSubs = metrics ? metrics.totalSubscriptions ?? 0 : 0;
+                  const totalRev = metrics ? metrics.totalRevenue ?? 0 : 0;
+                  const pendingFb = metrics ? metrics.pendingFeedbackCount ?? 0 : 0;
                   const items = [
                     { label: 'Active learners', value: metricsLoading ? '...' : active.toLocaleString() },
                     { label: 'Certified mentors', value: metricsLoading ? '...' : certified.toLocaleString() },
                     { label: 'Sessions booked (30d)', value: metricsLoading ? '...' : sessions.toLocaleString() },
+                    { label: 'Total subscriptions', value: metricsLoading ? '...' : totalSubs.toLocaleString() },
+                    { label: 'Total revenue', value: metricsLoading ? '...' : `$${totalRev.toLocaleString(undefined, {maximumFractionDigits:2})}` },
+                    { label: 'Feedback pending', value: metricsLoading ? '...' : pendingFb.toLocaleString() },
                   ];
                   return items.map((metric) => (
                     <div key={metric.label} className="rounded-xl border border-slate-200/50 bg-white/90 p-4 shadow-sm">
@@ -142,25 +151,7 @@ const AdminDashboard: React.FC = () => {
             </section>
           </div>
 
-          <aside className="space-y-6">
-            <section className="glass-card rounded-2xl p-6">
-              <h3 className="text-lg font-semibold text-slate-800">Upcoming tasks</h3>
-              <ul className="mt-3 space-y-3 text-sm text-slate-600">
-                <li className="flex items-start gap-3">
-                  <span className="mt-1 inline-flex h-2 w-2 flex-shrink-0 rounded-full bg-blue-500" />
-                  Review mentor onboarding queue
-                </li>
-                <li className="flex items-start gap-3">
-                  <span className="mt-1 inline-flex h-2 w-2 flex-shrink-0 rounded-full bg-emerald-500" />
-                  Send learner engagement report
-                </li>
-                <li className="flex items-start gap-3">
-                  <span className="mt-1 inline-flex h-2 w-2 flex-shrink-0 rounded-full bg-amber-500" />
-                  Configure holiday promotion campaign
-                </li>
-              </ul>
-            </section>
-          </aside>
+          {/* Aside removed: Upcoming tasks intentionally removed per design */}
         </div>
       </main>
     </div>

@@ -1,5 +1,7 @@
 import React from 'react';
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { listPurchases, updatePurchaseStatus, PurchaseFilter } from '../../api/purchase.api';
 import { httpClient } from '../../api/httpClient';
 
 type Purchase = {
@@ -19,12 +21,20 @@ export const PackageList: React.FC = () => {
   const [purchases, setPurchases] = useState<Purchase[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [learnerIdFilter, setLearnerIdFilter] = useState<string>('');
+  const [packageIdFilter, setPackageIdFilter] = useState<string>('');
+  const [statusFilter, setStatusFilter] = useState<string>('');
+  const navigate = useNavigate();
 
   const loadPurchases = async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await httpClient('/api/admin/subscriptions', { method: 'GET' });
+      const filter: PurchaseFilter = {};
+      if (learnerIdFilter) filter.learnerId = Number(learnerIdFilter);
+      if (packageIdFilter) filter.packageId = Number(packageIdFilter);
+      if (statusFilter) filter.status = statusFilter;
+      const res = await listPurchases(filter);
       setPurchases(res ?? []);
     } catch (err: any) {
       console.error(err);
@@ -40,10 +50,7 @@ export const PackageList: React.FC = () => {
 
   const changeStatus = async (id: number, status: string) => {
     try {
-      await httpClient(`/api/admin/subscriptions/${id}/payment-status`, {
-        method: 'PATCH',
-        body: JSON.stringify({ status }),
-      });
+      await updatePurchaseStatus(id, status);
       // Refresh
       void loadPurchases();
     } catch (err) {
@@ -63,6 +70,20 @@ export const PackageList: React.FC = () => {
             <button onClick={() => void loadPurchases()} className="rounded bg-slate-100 px-3 py-1 text-sm">Refresh</button>
           </div>
         </div>
+          <div className="mb-4 flex items-center gap-3">
+            <label className="text-sm">Learner ID:</label>
+            <input value={learnerIdFilter} onChange={(e) => setLearnerIdFilter(e.target.value)} className="rounded border px-2 py-1" />
+            <label className="text-sm">Package ID:</label>
+            <input value={packageIdFilter} onChange={(e) => setPackageIdFilter(e.target.value)} className="rounded border px-2 py-1" />
+            <label className="text-sm">Status:</label>
+            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="rounded border px-2 py-1">
+              <option value="">All</option>
+              <option value="ACTIVE">Active</option>
+              <option value="CANCELLED">Cancelled</option>
+              <option value="PENDING">Pending</option>
+            </select>
+            <button onClick={() => { setLearnerIdFilter(''); setPackageIdFilter(''); setStatusFilter(''); void loadPurchases(); }} className="rounded bg-slate-100 px-3 py-1 text-sm">Clear</button>
+          </div>
 
         {loading && <div>Loading...</div>}
         {error && <div className="text-red-600">{error}</div>}
@@ -84,7 +105,11 @@ export const PackageList: React.FC = () => {
               {purchases.map((p) => (
                 <tr key={p.id}>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{p.id}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{p.learnerName}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <button onClick={() => navigate(`/admin/learner/${p.learnerId}/purchases`)} className="text-sky-600 hover:underline">
+                      {p.learnerName ?? `Learner ${p.learnerId}`}
+                    </button>
+                  </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{p.packageName}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${p.paymentAmount}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm">

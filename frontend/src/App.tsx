@@ -21,6 +21,7 @@ import TopicManagement from "./pages/admin/topic-management";
 import { SessionList } from "./pages/sessions/session-list";
 import { TopicList } from "./pages/topics/topic-list";
 import { PackageList } from "./pages/packages/package-list";
+import LearnerPurchases from "./pages/admin/learner-purchases/learner-purchases";
 import { useAuth } from "./context/AuthContext";
 import type { FC, ReactElement } from "react";
 import { useEffect } from "react";
@@ -99,6 +100,7 @@ function App() {
 			{/* Admin Routes */}
 			<Route path="/admin/mentor-management" element={<ProtectedRoute requiredRoles={["ADMIN"]} element={<AdminMentorManagement />} />} />
 			<Route path="/admin/feedbacks" element={<ProtectedRoute requiredRoles={["ADMIN"]} element={<FeedbackManagement />} />} />
+			<Route path="/admin/learner/:learnerId/purchases" element={<ProtectedRoute requiredRoles={["ADMIN"]} element={<LearnerPurchases />} />} />
 			<Route path="/admin/mentors" element={<ProtectedRoute requiredRoles={["ADMIN"]} element={<MentorList />} />} />
 			<Route path="/admin/learners" element={<ProtectedRoute requiredRoles={["ADMIN"]} element={<LearnerList />} />} />
 			<Route path="/admin/topic-management" element={<ProtectedRoute requiredRoles={["ADMIN"]} element={<TopicManagement />} />} />

@@ -11,4 +11,7 @@ public class AdminMetricsResponse {
     private Long activeLearners;
     private Long certifiedMentors;
     private Long sessionsBooked30d;
+    private Long totalSubscriptions;
+    private Double totalRevenue;
+    private Long pendingFeedbackCount;
 }

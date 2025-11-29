@@ -16,3 +16,7 @@ export async function updatePurchaseStatus(id: number, status: string) {
     body: JSON.stringify({ status }),
   });
 }
+
+export async function getSubscriptionsByLearner(learnerId: number) {
+  return httpClient(`/api/subscriptions/learner/${learnerId}`, { method: 'GET' });
+}
