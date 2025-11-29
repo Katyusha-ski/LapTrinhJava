@@ -15,6 +15,8 @@ public class PracticeSessionResponse {
     private Long id;
     private Long learnerId;
     private Long mentorId;
+    private String learnerName;
+    private String mentorName;
     private Long topicId;
     private String topicName; // For display
     private SessionType type;

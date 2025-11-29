@@ -15,7 +15,9 @@ const NAV_LINKS = [
   { label: "Topics", path: "/topics" },
   { label: "Conversation", path: "/conversation" },
   { label: "Assessment", path: "/learner/assessment" },
+  { label: "Sessions", path: "/sessions" },
   { label: "Mentors", path: "/mentor-selection" },
+  { label: "Packages", path: "/learner/packages" },
 ];
 
 const LearnerNavbar: React.FC<RoleNavigationProps> = ({ user, onLogout, headerTitle }) => {

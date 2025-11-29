@@ -13,11 +13,23 @@ const LearnerDashboard: React.FC = () => {
   const navigate = useNavigate();
   const { user, clearAuth } = useAuth();
   const [metrics, setMetrics] = useState<LearnerMetrics | null>(null);
+  const [showOnboardingBanner, setShowOnboardingBanner] = useState(false);
 
   const handleLogout = useCallback(() => {
     clearAuth();
     navigate("/landing", { replace: true });
   }, [clearAuth, navigate]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+    const completed = window.sessionStorage.getItem("aesp_onboarding_complete");
+    if (completed === "true") {
+      setShowOnboardingBanner(true);
+      window.sessionStorage.removeItem("aesp_onboarding_complete");
+    }
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -66,6 +78,21 @@ const LearnerDashboard: React.FC = () => {
       <LearnerNavbar user={user} onLogout={handleLogout} />
 
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        {showOnboardingBanner && (
+          <div className="mb-6 flex items-start justify-between rounded-2xl border border-green-200 bg-green-50 p-4 text-green-800">
+            <div>
+              <p className="text-base font-semibold">Hồ sơ luyện tập của bạn đã hoàn tất!</p>
+              <p className="text-sm text-green-700">Bắt đầu chọn mentor hoặc tham gia bài luyện nói ngay bây giờ.</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowOnboardingBanner(false)}
+              className="ml-4 rounded-md border border-green-300 px-3 py-1 text-sm font-semibold text-green-700 transition hover:bg-green-100"
+            >
+              Đã hiểu
+            </button>
+          </div>
+        )}
         {/* Welcome */}
         <div className="mb-6 flex items-center justify-between">
           <div>

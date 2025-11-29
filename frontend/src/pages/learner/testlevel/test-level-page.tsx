@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { LearnerNavbar } from "../../../components/layout";
 import { useAuth } from "../../../context/AuthContext";
 import { learnerApi, type LearnerProfile } from "../../../api/learner.api";
 import { quizApi, type QuestionItemDto } from "../../../api/quiz.api";
@@ -19,7 +18,7 @@ const LearnerTestLevelPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const returnState = location.state as { from?: string } | undefined;
-  const { user, clearAuth } = useAuth();
+  const { user } = useAuth();
 
   const [learner, setLearner] = useState<LearnerProfile | null>(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
@@ -34,11 +33,6 @@ const LearnerTestLevelPage = () => {
   const [finalLevel, setFinalLevel] = useState<EnglishLevel | null>(null);
 
   const askedQuestionIdsRef = useRef<Set<number>>(new Set());
-
-  const handleLogout = useCallback(() => {
-    clearAuth();
-    navigate("/landing", { replace: true });
-  }, [clearAuth, navigate]);
 
   const ensureLearnerProfile = useCallback(async () => {
     if (!user?.id) {
@@ -221,7 +215,6 @@ const LearnerTestLevelPage = () => {
 
   return (
     <div className="min-h-screen" style={{ background: BRAND_GRADIENT }}>
-      <LearnerNavbar user={user} onLogout={handleLogout} />
       <main className="mx-auto max-w-5xl px-4 py-10">
         <div className="mb-8 rounded-3xl bg-white/95 p-6 shadow-xl">
           <p className="text-sm font-semibold uppercase tracking-wide" style={{ color: BRAND_PRIMARY }}>Step 1 · Level Check</p>
@@ -299,7 +292,7 @@ const LearnerTestLevelPage = () => {
               className="mt-6 rounded-xl px-6 py-3 text-white shadow-lg transition"
               style={{ backgroundColor: BRAND_PRIMARY }}
             >
-              Tiếp tục Onboarding
+              Tiếp tục Hoàn thành Hồ sơ của bạn
             </button>
           </section>
         )}

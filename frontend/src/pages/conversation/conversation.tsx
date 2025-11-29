@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { conversationApi, type AIConversation } from "../../api/conversation.api";
 import { learnerApi } from "../../api/learner.api";
-import { sessionApi, type PracticeSession } from "../../api/session.api";
+import { sessionApi, type PracticeSession, type SessionStatus } from "../../api/session.api";
 import { topicApi, type Topic } from "../../api/topic.api";
 import { LearnerNavbar } from "../../components/layout";
 import { useAuth } from "../../context/AuthContext";
@@ -189,7 +189,7 @@ export default function ConversationPage() {
                     <p className="text-sm uppercase text-gray-500">Phiên #{session.id}</p>
                     <h3 className="text-xl font-semibold text-gray-900">{session.topicName || session.topic || "Chưa đặt tên"}</h3>
                     <p className="text-sm text-gray-500">{formatDateTime(session.startTime)}</p>
-                    <p className="text-xs text-gray-400">Trạng thái: {session.status}</p>
+                    <p className="text-xs text-gray-400">Trạng thái: {describeStatus(session)}</p>
                   </div>
                   <div className="flex gap-3">
                     <button
@@ -262,6 +262,37 @@ export default function ConversationPage() {
   );
 }
 
+const STATUS_TEXT: Record<SessionStatus, string> = {
+  PENDING: "Chờ mentor duyệt",
+  SCHEDULED: "Đã xác nhận",
+  IN_PROGRESS: "Đang diễn ra",
+  COMPLETED: "Hoàn thành",
+  CANCELLED: "Đã hủy",
+  REJECTED: "Đã từ chối",
+};
+
+const ALL_STATUS_VALUES: SessionStatus[] = [
+  "PENDING",
+  "SCHEDULED",
+  "IN_PROGRESS",
+  "COMPLETED",
+  "CANCELLED",
+  "REJECTED",
+];
+
+const normalizeStatus = (raw?: string | null): SessionStatus | undefined => {
+  if (!raw) return undefined;
+  const upper = raw.toUpperCase() as SessionStatus;
+  return ALL_STATUS_VALUES.includes(upper) ? upper : undefined;
+};
+
+const describeStatus = (session: PracticeSession) => {
+  const normalized = normalizeStatus(session.sessionStatus || session.status);
+  if (normalized) {
+    return STATUS_TEXT[normalized];
+  }
+  return session.sessionStatus || session.status || "Không xác định";
+};
 interface ManualConversationPanelProps {
   learnerId: number | null;
   sessions: PracticeSession[];

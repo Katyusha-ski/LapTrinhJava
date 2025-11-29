@@ -7,6 +7,7 @@ import com.aesp.entity.Learner;
 import com.aesp.entity.Mentor;
 import com.aesp.entity.PracticeSession;
 import com.aesp.enums.SessionStatus;
+import com.aesp.enums.SessionType;
 import com.aesp.exception.ResourceNotFoundException;
 import com.aesp.repository.ConversationTopicRepository;
 import com.aesp.repository.LearnerRepository;
@@ -20,6 +21,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Duration;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
@@ -34,18 +36,21 @@ public class PracticeSessionService {
 
     @Transactional
     public PracticeSessionResponse createSession(PracticeSessionRequest request) {
-        Learner learner = learnerRepository.findById(request.getLearnerId())
+        Long learnerId = Objects.requireNonNull(request.getLearnerId(), "Learner ID không được null");
+        Learner learner = learnerRepository.findById(learnerId)
                 .orElseThrow(() -> new ResourceNotFoundException("Learner not found with id: " + request.getLearnerId()));
 
         Mentor mentor = null;
         if (request.getMentorId() != null) {
-            mentor = mentorRepository.findById(request.getMentorId())
+            Long mentorId = Objects.requireNonNull(request.getMentorId(), "Mentor ID không được null");
+            mentor = mentorRepository.findById(mentorId)
                     .orElseThrow(() -> new ResourceNotFoundException("Mentor not found with id: " + request.getMentorId()));
         }
 
         ConversationTopic topic = null;
         if (request.getTopicId() != null) {
-            topic = conversationTopicRepository.findById(request.getTopicId())
+            Long topicId = Objects.requireNonNull(request.getTopicId(), "Topic ID không được null");
+            topic = conversationTopicRepository.findById(topicId)
                     .orElseThrow(() -> new ResourceNotFoundException("Topic not found with id: " + request.getTopicId()));
         }
 
@@ -65,6 +70,11 @@ public class PracticeSessionService {
                 .setScale(2, RoundingMode.HALF_UP);
         }
 
+        SessionStatus initialStatus = SessionStatus.SCHEDULED;
+        if (mentor != null && request.getType() == SessionType.MENTOR_LED) {
+            initialStatus = SessionStatus.PENDING;
+        }
+
         PracticeSession session = PracticeSession.builder()
                 .learner(learner)
                 .mentor(mentor)
@@ -74,21 +84,21 @@ public class PracticeSessionService {
                 .endTime(request.getEndTime())
                 .durationMinutes(durationMinutes)
                 .cost(cost)
-                .sessionStatus(SessionStatus.SCHEDULED)
+            .sessionStatus(initialStatus)
                 .build();
 
-        PracticeSession saved = sessionRepository.save(session);
+        PracticeSession saved = sessionRepository.save(Objects.requireNonNull(session, "Session không được null"));
         return toResponse(saved);
     }
 
     public PracticeSessionResponse getSessionById(Long id) {
-        PracticeSession session = sessionRepository.findById(id)
+        PracticeSession session = sessionRepository.findById(Objects.requireNonNull(id, "Session ID không được null"))
                 .orElseThrow(() -> new ResourceNotFoundException("Session not found with id: " + id));
         return toResponse(session);
     }
 
     public PracticeSession getSessionEntityById(Long id) {
-        return sessionRepository.findById(id)
+        return sessionRepository.findById(Objects.requireNonNull(id, "Session ID không được null"))
                 .orElseThrow(() -> new ResourceNotFoundException("Session not found with id: " + id));
     }
 
@@ -106,7 +116,7 @@ public class PracticeSessionService {
 
     @Transactional
     public void updateSessionStatus(Long id, String status) {
-        PracticeSession session = sessionRepository.findById(id)
+        PracticeSession session = sessionRepository.findById(Objects.requireNonNull(id, "Session ID không được null"))
                 .orElseThrow(() -> new ResourceNotFoundException("Session not found with id: " + id));
 
         try {
@@ -120,9 +130,9 @@ public class PracticeSessionService {
 
     @Transactional
     public void deleteSession(Long id) {
-        PracticeSession session = sessionRepository.findById(id)
+        PracticeSession session = sessionRepository.findById(Objects.requireNonNull(id, "Session ID không được null"))
                 .orElseThrow(() -> new ResourceNotFoundException("Session not found with id: " + id));
-        sessionRepository.delete(session);
+        sessionRepository.delete(Objects.requireNonNull(session, "Session không được null"));
     }
 
     public List<PracticeSessionResponse> getAllSessions() {
@@ -136,6 +146,12 @@ public class PracticeSessionService {
         response.setId(session.getId());
         response.setLearnerId(session.getLearner() != null ? session.getLearner().getId() : null);
         response.setMentorId(session.getMentor() != null ? session.getMentor().getId() : null);
+        response.setLearnerName(session.getLearner() != null && session.getLearner().getUser() != null
+            ? session.getLearner().getUser().getFullName()
+            : null);
+        response.setMentorName(session.getMentor() != null && session.getMentor().getUser() != null
+            ? session.getMentor().getUser().getFullName()
+            : null);
         response.setTopicId(session.getTopic() != null ? session.getTopic().getId() : null);
         response.setTopicName(session.getTopic() != null ? session.getTopic().getName() : null);
         response.setType(session.getSessionType());

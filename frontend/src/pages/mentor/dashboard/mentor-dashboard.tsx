@@ -320,8 +320,8 @@ const MentorDashboard: React.FC = () => {
   const resources = [
     {
       label: "Phiên học",
-      description: "Xem lịch sử, ghi chú và phản hồi chi tiết.",
-      action: () => navigate("/sessions"),
+      description: "Xem lịch sử, phê duyệt và ghi chú chi tiết.",
+      action: () => navigate("/mentor/sessions"),
     },
     {
       label: "Thư viện chủ đề",
@@ -430,7 +430,7 @@ const MentorDashboard: React.FC = () => {
                 <p className="text-sm font-semibold text-slate-600">Phiên học sắp tới</p>
                 <p className="text-xs text-slate-400">Danh sách được lấy từ sessions của mentor</p>
               </div>
-              <button onClick={() => navigate("/sessions")} className="text-sm font-semibold text-blue-600">Xem tất cả</button>
+              <button onClick={() => navigate("/mentor/sessions")} className="text-sm font-semibold text-blue-600">Xem tất cả</button>
             </div>
             <div className="mt-5 space-y-4">
               {upcomingSessions.length === 0 && (

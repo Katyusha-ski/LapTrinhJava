@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { sessionApi } from "../../api/session.api";
-import { learnerApi } from "../../api/learner.api";
+import { sessionApi, type PracticeSession, type SessionStatus } from "../../api/session.api";
+import { learnerApi, type LearnerProfile } from "../../api/learner.api";
+import { mentorApi } from "../../api/mentor.api";
 import { LearnerNavbar } from "../../components/layout";
 import { useAuth } from "../../context/AuthContext";
 import { topicApi, type Topic } from "../../api/topic.api";
+import type { Mentor } from "../../types/mentor";
 
 type TopicLike = Topic & {
   name?: string | null;
@@ -31,25 +33,19 @@ const resolveTopicLevel = (topic?: Topic | null): string => {
   return rawLevel ? rawLevel.toUpperCase() : "";
 };
 
-interface Session {
-  id: number;
-  learnerId?: number;
-  mentorId?: number;
-  topicId?: number;
-  startTime?: string;
-  endTime?: string;
-  duration?: number;
-  status?: string;
-  notes?: string;
-  feedback?: string;
-  createdAt?: string;
-}
+type Session = PracticeSession & {
+  feedback?: string | null;
+};
 
 export default function SessionsPage() {
   const navigate = useNavigate();
   const { user, clearAuth } = useAuth();
   const [sessions, setSessions] = useState<Session[]>([]);
   const [topics, setTopics] = useState<Topic[]>([]);
+  const [learnerProfile, setLearnerProfile] = useState<LearnerProfile | null>(null);
+  const [mentorInfo, setMentorInfo] = useState<Mentor | null>(null);
+  const [selectedMentorId, setSelectedMentorId] = useState<string>("");
+  const [mentorLoading, setMentorLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [topicsLoading, setTopicsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -80,6 +76,10 @@ export default function SessionsPage() {
         setError("Không tìm thấy thông tin học viên");
         return;
       }
+      setLearnerProfile(learner);
+      if (learner.mentorId) {
+        setSelectedMentorId(String(learner.mentorId));
+      }
 
       // Get sessions for this learner
       const data = await sessionApi.getLearnerSessions(learner.id);
@@ -106,6 +106,40 @@ export default function SessionsPage() {
       setTopicsLoading(false);
     }
   }, []);
+
+  useEffect(() => {
+    if (!learnerProfile?.mentorId) {
+      setMentorInfo(null);
+      setSelectedMentorId("");
+      return;
+    }
+
+    let cancelled = false;
+    const mentorId = learnerProfile.mentorId;
+    const loadMentor = async () => {
+      try {
+        setMentorLoading(true);
+        const mentor = await mentorApi.getById(mentorId);
+        if (!cancelled) {
+          setMentorInfo(mentor);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          console.error("Không thể tải thông tin mentor", err);
+          setMentorInfo(null);
+        }
+      } finally {
+        if (!cancelled) {
+          setMentorLoading(false);
+        }
+      }
+    };
+
+    void loadMentor();
+    return () => {
+      cancelled = true;
+    };
+  }, [learnerProfile?.mentorId]);
 
   useEffect(() => {
     void loadSessions();
@@ -140,11 +174,18 @@ export default function SessionsPage() {
         return;
       }
 
+      if (!selectedMentorId) {
+        setError("Bạn cần chọn mentor trước khi đặt lịch.");
+        return;
+      }
+
       await sessionApi.createSession({
         learnerId: learner.id,
         topicId: newSession.topicId ? parseInt(newSession.topicId) : null,
         notes: newSession.notes,
-        status: "SCHEDULED",
+        mentorId: parseInt(selectedMentorId, 10),
+        type: "MENTOR_LED",
+        startTime: formatDateForApi(new Date()),
       });
 
       setNewSession({ topicId: "", notes: "" });
@@ -156,7 +197,7 @@ export default function SessionsPage() {
     }
   };
 
-  const handleStatusChange = async (sessionId: number, newStatus: string) => {
+  const handleStatusChange = async (sessionId: number, newStatus: SessionStatus) => {
     try {
       setError(null);
       await sessionApi.updateSessionStatus(sessionId, newStatus);
@@ -182,8 +223,10 @@ export default function SessionsPage() {
     }
   };
 
-  const getStatusColor = (status?: string) => {
+  const getStatusColor = (status?: SessionStatus) => {
     switch (status) {
+      case "PENDING":
+        return "bg-amber-100 text-amber-800";
       case "SCHEDULED":
         return "bg-blue-100 text-blue-800";
       case "IN_PROGRESS":
@@ -192,19 +235,36 @@ export default function SessionsPage() {
         return "bg-green-100 text-green-800";
       case "CANCELLED":
         return "bg-red-100 text-red-800";
+      case "REJECTED":
+        return "bg-gray-200 text-gray-700";
       default:
         return "bg-gray-100 text-gray-800";
     }
   };
 
-  const getStatusLabel = (status?: string) => {
-    const labels: Record<string, string> = {
-      SCHEDULED: "Đã lên lịch",
-      IN_PROGRESS: "Đang tiến hành",
-      COMPLETED: "Hoàn thành",
-      CANCELLED: "Đã hủy",
-    };
-    return labels[status || ""] || status || "Không xác định";
+  const statusLabels: Record<SessionStatus, string> = {
+    PENDING: "Chờ mentor duyệt",
+    SCHEDULED: "Đã xác nhận",
+    IN_PROGRESS: "Đang diễn ra",
+    COMPLETED: "Hoàn thành",
+    CANCELLED: "Đã hủy",
+    REJECTED: "Mentor từ chối",
+  };
+
+  const getStatusLabel = (status?: SessionStatus) => (status ? statusLabels[status] : "Không xác định");
+
+  const normalizeStatus = (raw?: string | null): SessionStatus | undefined => {
+    if (!raw) return undefined;
+    const upper = raw.toUpperCase() as SessionStatus;
+    const allowed: SessionStatus[] = [
+      "PENDING",
+      "SCHEDULED",
+      "IN_PROGRESS",
+      "COMPLETED",
+      "CANCELLED",
+      "REJECTED",
+    ];
+    return allowed.includes(upper) ? upper : undefined;
   };
 
   if (loading) {
@@ -245,6 +305,30 @@ export default function SessionsPage() {
           </div>
         </div>
 
+        {learnerProfile && (
+          learnerProfile.mentorId ? (
+            <div className="mb-6 rounded-2xl border border-blue-100 bg-white/80 p-4 shadow-sm">
+              <p className="text-sm font-semibold text-blue-600">Mentor đồng hành</p>
+              <p className="text-lg font-bold text-gray-900">{mentorInfo?.fullName || `Mentor #${learnerProfile.mentorId}`}</p>
+              <p className="text-sm text-gray-600">
+                Mỗi lịch luyện tập mới sẽ được gửi cho mentor này để xác nhận trước khi bắt đầu.
+              </p>
+            </div>
+          ) : (
+            <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50/70 p-4 shadow-sm">
+              <p className="text-sm font-semibold text-amber-700">Bạn chưa có mentor</p>
+              <p className="text-sm text-amber-700">Hãy chọn mentor ở trang lựa chọn mentor để có thể đặt lịch.</p>
+              <button
+                type="button"
+                onClick={() => navigate("/mentor-selection")}
+                className="mt-3 rounded-md bg-amber-500 px-3 py-2 text-white text-sm font-semibold hover:bg-amber-600"
+              >
+                Đi tới chọn mentor
+              </button>
+            </div>
+          )
+        )}
+
         {/* Error Message */}
         {error && (
           <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
@@ -257,6 +341,20 @@ export default function SessionsPage() {
           <div className="bg-white rounded-lg shadow-md p-6 mb-6">
             <h2 className="text-xl font-semibold text-gray-900 mb-4">Tạo buổi học mới</h2>
             <form onSubmit={handleCreateSession} className="space-y-4">
+              {learnerProfile?.mentorId && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Mentor</label>
+                  <select
+                    value={selectedMentorId}
+                    onChange={(e) => setSelectedMentorId(e.target.value)}
+                    className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                  >
+                    <option value="">Chọn mentor</option>
+                    <option value={learnerProfile.mentorId}>{mentorInfo?.fullName || `Mentor #${learnerProfile.mentorId}`}</option>
+                  </select>
+                  {mentorLoading && <p className="mt-1 text-xs text-gray-500">Đang tải thông tin mentor...</p>}
+                </div>
+              )}
               <div>
                 <label className="block text-sm font-medium text-gray-700">Chủ đề (không bắt buộc)</label>
                 <select
@@ -292,9 +390,10 @@ export default function SessionsPage() {
               <div className="flex gap-3">
                 <button
                   type="submit"
-                  className="flex-1 bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded"
+                  disabled={!learnerProfile?.mentorId}
+                  className="flex-1 bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  Tạo buổi học
+                  Gửi lịch cho mentor
                 </button>
                 <button
                   type="button"
@@ -304,6 +403,9 @@ export default function SessionsPage() {
                   Hủy
                 </button>
               </div>
+              <p className="text-center text-xs text-gray-500">
+                Mentor sẽ nhận được thông báo và xác nhận lịch trước khi buổi học diễn ra.
+              </p>
             </form>
           </div>
         )}
@@ -325,6 +427,7 @@ export default function SessionsPage() {
               const topicInfo = session.topicId ? topicLookup.get(session.topicId) : null;
               const topicTitle = resolveTopicTitle(topicInfo);
               const topicLevel = resolveTopicLevel(topicInfo);
+              const status = normalizeStatus(session.sessionStatus || session.status) ?? "PENDING";
               return (
                 <div key={session.id} className="bg-white rounded-lg shadow-md p-6">
                 <div className="flex justify-between items-start mb-4">
@@ -336,8 +439,8 @@ export default function SessionsPage() {
                         : "Không xác định"}
                     </p>
                   </div>
-                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(session.status)}`}>
-                    {getStatusLabel(session.status)}
+                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(status)}`}>
+                    {getStatusLabel(status)}
                   </span>
                 </div>
 
@@ -365,7 +468,19 @@ export default function SessionsPage() {
                   )}
                 </div>
 
-                {session.status === "SCHEDULED" && (
+                {status === "PENDING" && (
+                  <div className="mb-4 rounded-md border border-amber-100 bg-amber-50 p-3 text-xs text-amber-700">
+                    Lịch đang chờ mentor xác nhận. Bạn sẽ nhận được thông báo khi được chấp nhận.
+                  </div>
+                )}
+
+                {status === "REJECTED" && (
+                  <div className="mb-4 rounded-md border border-red-100 bg-red-50 p-3 text-xs text-red-700">
+                    Mentor đã từ chối yêu cầu này. Hãy tạo buổi học mới với ghi chú khác nếu cần.
+                  </div>
+                )}
+
+                {status === "SCHEDULED" && (
                   <div className="mb-4 flex gap-2">
                     <button
                       onClick={() => handleStatusChange(session.id, "IN_PROGRESS")}
@@ -382,7 +497,7 @@ export default function SessionsPage() {
                   </div>
                 )}
 
-                {session.status === "IN_PROGRESS" && (
+                {status === "IN_PROGRESS" && (
                   <div className="mb-4">
                     <button
                       onClick={() => handleStatusChange(session.id, "COMPLETED")}
@@ -393,7 +508,7 @@ export default function SessionsPage() {
                   </div>
                 )}
 
-                {session.status === "COMPLETED" && session.feedback && (
+                {status === "COMPLETED" && session.feedback && (
                   <div className="mb-4 p-3 bg-blue-50 rounded">
                     <p className="text-sm font-medium text-blue-900">Phản hồi:</p>
                     <p className="text-sm text-blue-700 mt-1">{session.feedback}</p>
@@ -416,4 +531,15 @@ export default function SessionsPage() {
       </div>
     </div>
   );
+}
+
+function formatDateForApi(date: Date) {
+  const pad = (num: number) => num.toString().padStart(2, "0");
+  const year = date.getFullYear();
+  const month = pad(date.getMonth() + 1);
+  const day = pad(date.getDate());
+  const hours = pad(date.getHours());
+  const minutes = pad(date.getMinutes());
+  const seconds = pad(date.getSeconds());
+  return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
 }

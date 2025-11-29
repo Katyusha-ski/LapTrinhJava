@@ -136,7 +136,7 @@ CREATE TABLE practice_sessions (
     end_time TIMESTAMP,
     duration_minutes INT,
     cost DECIMAL(10,2) DEFAULT 0.00,
-    session_status ENUM('SCHEDULED', 'COMPLETED', 'CANCELLED') DEFAULT 'SCHEDULED',
+    session_status ENUM('PENDING', 'SCHEDULED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'REJECTED') DEFAULT 'PENDING',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (learner_id) REFERENCES learners(id) ON DELETE CASCADE,
@@ -144,6 +144,9 @@ CREATE TABLE practice_sessions (
     FOREIGN KEY (topic_id) REFERENCES conversation_topics(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+ALTER TABLE practice_sessions
+    MODIFY COLUMN session_status ENUM('PENDING', 'SCHEDULED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'REJECTED')
+        NOT NULL DEFAULT 'PENDING';
 -- Indexes and OPTIMIZation
 
 CREATE INDEX idx_users_email ON users(email);

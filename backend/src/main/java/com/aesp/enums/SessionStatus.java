@@ -2,12 +2,15 @@ package com.aesp.enums;
 
 /**
  * Status of practice sessions
- * Maps to SQL: ENUM('SCHEDULED', 'COMPLETED', 'CANCELLED')
+ * Maps to SQL enum values
  */
 public enum SessionStatus {
-    SCHEDULED("Scheduled", "Session is scheduled but not started yet"),
+    PENDING("Pending", "Waiting for mentor confirmation"),
+    SCHEDULED("Scheduled", "Session is scheduled and confirmed"),
+    IN_PROGRESS("In progress", "Session is currently taking place"),
     COMPLETED("Completed", "Session has been completed successfully"),
-    CANCELLED("Cancelled", "Session was cancelled");
+    CANCELLED("Cancelled", "Session was cancelled"),
+    REJECTED("Rejected", "Session request was rejected by mentor");
     
     private final String displayName;
     private final String description;
@@ -30,6 +33,6 @@ public enum SessionStatus {
     }
     
     public boolean canBeModified() {
-        return this == SCHEDULED;
+        return this == SCHEDULED || this == PENDING;
     }
 }

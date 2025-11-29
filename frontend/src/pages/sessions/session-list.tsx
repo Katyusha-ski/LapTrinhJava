@@ -1,17 +1,38 @@
 import { useState, useEffect } from 'react';
 
 // Inline types to avoid import issues
+type SessionStatus = 'PENDING' | 'SCHEDULED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'REJECTED';
+
 interface PracticeSession {
   id: number;
   learnerId: number;
   mentorId: number;
   startTime?: string | null;
   endTime?: string | null;
-  status: 'SCHEDULED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
+  status?: SessionStatus;
+  sessionStatus?: SessionStatus;
   notes?: string | null;
   topic?: string | null;
   duration?: number | null;
 }
+
+const STATUS_LABELS: Record<SessionStatus, string> = {
+  PENDING: "Chờ duyệt",
+  SCHEDULED: "Đã xác nhận",
+  IN_PROGRESS: "Đang diễn ra",
+  COMPLETED: "Hoàn thành",
+  CANCELLED: "Đã hủy",
+  REJECTED: "Đã từ chối",
+};
+
+const STATUS_COLORS: Record<SessionStatus, string> = {
+  PENDING: "bg-amber-600",
+  SCHEDULED: "bg-blue-600",
+  IN_PROGRESS: "bg-yellow-600",
+  COMPLETED: "bg-green-600",
+  CANCELLED: "bg-rose-600",
+  REJECTED: "bg-slate-500",
+};
 
 // Inline API to avoid import issues
 const sessionApi = {
@@ -70,11 +91,14 @@ export const SessionList = () => {
                     <td className="px-6 py-4 text-sm">{session.mentorId}</td>
                     <td className="px-6 py-4 text-sm">{session.startTime}</td>
                     <td className="px-6 py-4 text-sm">
-                      <span className={`px-2 py-1 rounded text-xs text-white ${
-                        session.status === 'COMPLETED' ? 'bg-green-600' : 'bg-blue-600'
-                      }`}>
-                        {session.status}
-                      </span>
+                      {(() => {
+                        const status = (session.sessionStatus || session.status || 'PENDING') as SessionStatus;
+                        return (
+                          <span className={`px-2 py-1 rounded text-xs text-white ${STATUS_COLORS[status]}`}>
+                            {STATUS_LABELS[status]}
+                          </span>
+                        );
+                      })()}
                     </td>
                   </tr>
                 ))}

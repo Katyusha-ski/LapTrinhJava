@@ -4,6 +4,7 @@ import Register from "./pages/register/register";
 import LandingPage from "./pages/landing/landing-page";
 import { LearnerDashboard } from "./pages/learner/dashboard";
 import { MentorDashboard } from "./pages/mentor/dashboard";
+import { MentorSessionsPage } from "./pages/mentor/sessions";
 import { AdminDashboard } from "./pages/admin/dashboard";
 import FeedbackManagement from "./pages/admin/feedback-management/feedback-management";
 import SplashScreen from "./pages/splash/splash-screen";
@@ -28,6 +29,7 @@ import LearnerPurchases from "./pages/admin/learner-purchases/learner-purchases"
 import { useAuth } from "./context/AuthContext";
 import { LearnerTestLevelPage } from "./pages/learner/testlevel";
 import { learnerApi } from "./api/learner.api";
+import LearnerPackagePage from "./pages/learner/learner-packages";
 import type { FC, ReactElement } from "react";
 import { useEffect, useState } from "react";
 
@@ -192,6 +194,7 @@ function App() {
 				}
 			/>
 			<Route path="/mentor" element={<ProtectedRoute requiredRoles={["MENTOR"]} element={<MentorDashboard />} />} />
+			<Route path="/mentor/sessions" element={<ProtectedRoute requiredRoles={["MENTOR"]} element={<MentorSessionsPage />} />} />
 			<Route path="/admin" element={<ProtectedRoute requiredRoles={["ADMIN"]} element={<AdminDashboard />} />} />
 			<Route path="/mentor/profile" element={<ProtectedRoute requiredRoles={["MENTOR"]} element={<MentorProfilePage />} />} />
 
@@ -220,6 +223,15 @@ function App() {
 					<ProtectedRoute
 						requiredRoles={["LEARNER"]}
 						element={<LearnerRoute element={<LearnerProfile />} />}
+					/>
+				}
+			/>
+			<Route
+				path="/learner/packages"
+				element={
+					<ProtectedRoute
+						requiredRoles={["LEARNER"]}
+						element={<LearnerRoute element={<LearnerPackagePage />} />}
 					/>
 				}
 			/>

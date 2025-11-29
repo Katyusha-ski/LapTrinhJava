@@ -93,21 +93,6 @@ const OnboardingWizard: React.FC = () => {
     }
   }, [returnPath, location.pathname]);
 
-  const redirectAfterOnboarding = () => {
-    const normalizedReturn = returnPath && returnPath !== location.pathname ? returnPath : null;
-    const canGoBack = typeof window !== "undefined" ? (window.history.state?.idx ?? 0) > 0 : false;
-    if (normalizedReturn) {
-      navigate(normalizedReturn, { replace: true });
-    } else if (canGoBack) {
-      navigate(-1);
-    } else {
-      navigate("/mentor-selection");
-    }
-    if (typeof window !== "undefined") {
-      window.sessionStorage.removeItem("aesp_onboarding_return_path");
-    }
-  };
-
   const currentStepIndex = steps.indexOf(step);
   const progressPercent = useMemo(
     () => Math.round((currentStepIndex / (steps.length - 1)) * 100),
@@ -183,8 +168,13 @@ const OnboardingWizard: React.FC = () => {
         await learnerApi.create(learnerData);
       }
 
+      if (typeof window !== "undefined") {
+        window.sessionStorage.setItem("aesp_onboarding_complete", "true");
+        window.sessionStorage.removeItem("aesp_onboarding_return_path");
+      }
+
       toast.success("Onboarding hoàn tất! Bạn có thể chọn mentor ngay bây giờ.");
-      redirectAfterOnboarding();
+      navigate("/dashboard", { replace: true });
     } catch (err: any) {
       const errorMsg = err?.message || "Không thể hoàn tất onboarding. Vui lòng thử lại.";
       toast.error(errorMsg);

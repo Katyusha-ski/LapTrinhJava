@@ -1,18 +1,31 @@
 import { httpClient } from './httpClient';
 
+export type SessionStatus =
+  | 'PENDING'
+  | 'SCHEDULED'
+  | 'IN_PROGRESS'
+  | 'COMPLETED'
+  | 'CANCELLED'
+  | 'REJECTED';
+
 export interface PracticeSession {
   id: number;
   learnerId: number;
   mentorId: number;
+  learnerName?: string | null;
+  mentorName?: string | null;
   topicId?: number | null;
   startTime?: string | null;
   endTime?: string | null;
-  status: 'SCHEDULED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
+  sessionStatus?: SessionStatus;
+  status?: SessionStatus; // legacy fallback until backend aligns naming
   notes?: string | null;
   topic?: string | null;
   topicName?: string | null;
   duration?: number | null;
   durationMinutes?: number | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
 }
 
 // Backend uses /api/practice-sessions
@@ -33,7 +46,8 @@ export const sessionApi = {
   getMentorSessions: (mentorId: number) => httpClient(`/api/practice-sessions/mentor/${mentorId}`),
 
   // Update session status: PUT /api/practice-sessions/{id}/status?status=...
-  updateSessionStatus: (id: number, status: string) => httpClient(`/api/practice-sessions/${id}/status?status=${encodeURIComponent(status)}`, { method: 'PUT' }),
+  updateSessionStatus: (id: number, status: SessionStatus) =>
+    httpClient(`/api/practice-sessions/${id}/status?status=${encodeURIComponent(status)}`, { method: 'PUT' }),
 
   // Delete session
   deleteSession: (id: number) => httpClient(`/api/practice-sessions/${id}`, { method: 'DELETE' }),
