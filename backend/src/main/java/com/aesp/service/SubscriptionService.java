@@ -239,12 +239,12 @@ public class SubscriptionService {
             .learnerName(subscription.getLearner().getUser().getFullName())
             .packageId(subscription.getPackageEntity().getId())
             .packageName(subscription.getPackageEntity().getName())
-            .startDate(subscription.getStartDate().toLocalDate())
-            .endDate(subscription.getEndDate().toLocalDate())
+            .startDate(subscription.getStartDate() == null ? null : subscription.getStartDate().toLocalDate())
+            .endDate(subscription.getEndDate() == null ? null : subscription.getEndDate().toLocalDate())
             .status(subscription.getStatus())
             .paymentAmount(subscription.getPaymentAmount())
             .paymentMethod(subscription.getPaymentMethod())
-            .paymentDate(subscription.getPaymentDate().toLocalDate())
+            .paymentDate(subscription.getPaymentDate() == null ? null : subscription.getPaymentDate().toLocalDate())
             .createdAt(subscription.getCreatedAt())
             .build();
     }

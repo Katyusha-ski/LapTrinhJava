@@ -5,6 +5,7 @@ import LandingPage from "./pages/landing/landing-page";
 import { LearnerDashboard } from "./pages/learner/dashboard";
 import { MentorDashboard } from "./pages/mentor/dashboard";
 import { AdminDashboard } from "./pages/admin/dashboard";
+import FeedbackManagement from "./pages/admin/feedback-management/feedback-management";
 import SplashScreen from "./pages/splash/splash-screen";
 import OnboardingWizard from "./pages/onboarding/onboarding-wizard";
 import MentorSelection from "./pages/learner/mentor-selection/mentor-selection";
@@ -97,6 +98,7 @@ function App() {
 
 			{/* Admin Routes */}
 			<Route path="/admin/mentor-management" element={<ProtectedRoute requiredRoles={["ADMIN"]} element={<AdminMentorManagement />} />} />
+			<Route path="/admin/feedbacks" element={<ProtectedRoute requiredRoles={["ADMIN"]} element={<FeedbackManagement />} />} />
 			<Route path="/admin/mentors" element={<ProtectedRoute requiredRoles={["ADMIN"]} element={<MentorList />} />} />
 			<Route path="/admin/learners" element={<ProtectedRoute requiredRoles={["ADMIN"]} element={<LearnerList />} />} />
 			<Route path="/admin/topic-management" element={<ProtectedRoute requiredRoles={["ADMIN"]} element={<TopicManagement />} />} />

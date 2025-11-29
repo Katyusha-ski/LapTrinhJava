@@ -34,6 +34,11 @@ const AdminDashboard: React.FC = () => {
       description: "Curate and publish new speaking practice topics.",
       action: () => navigate("/admin/topic-management"),
     },
+    {
+      title: "Feedback Management",
+      description: "Moderate learner feedback and comments.",
+      action: () => navigate('/admin/feedbacks'),
+    },
   ];
 
   const announcements = [
@@ -138,18 +143,6 @@ const AdminDashboard: React.FC = () => {
           </div>
 
           <aside className="space-y-6">
-            <section className="glass-card rounded-2xl p-6">
-              <h3 className="text-lg font-semibold text-slate-800">Announcements</h3>
-              <div className="mt-3 space-y-4">
-                {announcements.map((item) => (
-                  <div key={item.title} className="rounded-lg border border-slate-200/50 bg-white/90 p-4 shadow-sm">
-                    <p className="text-sm font-semibold text-slate-700">{item.title}</p>
-                    <p className="mt-1 text-sm text-slate-500">{item.detail}</p>
-                  </div>
-                ))}
-              </div>
-            </section>
-
             <section className="glass-card rounded-2xl p-6">
               <h3 className="text-lg font-semibold text-slate-800">Upcoming tasks</h3>
               <ul className="mt-3 space-y-3 text-sm text-slate-600">

@@ -317,6 +317,33 @@ INSERT INTO pronunciation_scores (session_id, learner_id, text_to_read, transcri
 (2, 2, 'I would like to schedule a meeting for tomorrow.', 'I would like to schedule a meeting for tomorrow.', 92.00, 90.00, 91.00,
  JSON_OBJECT('strengths', JSON_ARRAY('Professional tone', 'Good fluency'), 'improvements', JSON_ARRAY('Stress on "schedule"')));
 
+-- ===========================
+-- USER FEEDBACKS (Persistent table)
+-- ===========================
+-- Store feedback submitted by learners or users for moderation and reporting
+CREATE TABLE feedbacks (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    learner_id BIGINT,
+    content TEXT NOT NULL,
+    status ENUM('PENDING','APPROVED','REJECTED') DEFAULT 'PENDING',
+    metadata JSON,
+    moderated_by VARCHAR(100),
+    moderated_at TIMESTAMP NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (learner_id) REFERENCES learners(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE INDEX idx_feedbacks_learner ON feedbacks(learner_id);
+CREATE INDEX idx_feedbacks_status ON feedbacks(status);
+CREATE INDEX idx_feedbacks_created ON feedbacks(created_at);
+
+-- Optional sample feedbacks for development/testing
+INSERT INTO feedbacks (learner_id, content, status) VALUES
+-- Use learner IDs as created above (learners auto-increment ids start at 1 in this script)
+(1, 'Great pronunciation practice but needs more emphasis on "th" sounds.', 'PENDING'),
+(2, 'I had trouble with the audio upload and it failed twice.', 'PENDING');
+
 -- Bổ sung bảng mentor_reviews để lưu trữ phản hồi chi tiết từ học viên về mentor
 
 CREATE TABLE mentor_reviews (
