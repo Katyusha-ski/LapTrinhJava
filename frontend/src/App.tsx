@@ -11,8 +11,11 @@ import OnboardingWizard from "./pages/onboarding/onboarding-wizard";
 import MentorSelection from "./pages/learner/mentor-selection/mentor-selection";
 import AdminMentorManagement from "./pages/admin/mentor-management/mentor-management";
 import { LearnerProfile } from "./pages/learner/profile";
+import LearnerAssessmentPage from "./pages/learner/assessment/learner-assessment";
+import { MentorProfilePage } from "./pages/mentor/profile";
 import { Sessions } from "./pages/sessions";
 import { Topics } from "./pages/topics";
+import TopicPracticePage from "./pages/topics/topic-practice";
 import { Conversation } from "./pages/conversation";
 import { Pronunciation } from "./pages/pronunciation";
 import { MentorList } from "./pages/admin/mentor-management/mentor-list";
@@ -23,8 +26,10 @@ import { TopicList } from "./pages/topics/topic-list";
 import { PackageList } from "./pages/packages/package-list";
 import LearnerPurchases from "./pages/admin/learner-purchases/learner-purchases";
 import { useAuth } from "./context/AuthContext";
+import { LearnerTestLevelPage } from "./pages/learner/testlevel";
+import { learnerApi } from "./api/learner.api";
 import type { FC, ReactElement } from "react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 function App() {
 	const { token, isLoading, user } = useAuth();
@@ -40,6 +45,85 @@ function App() {
 			const hasRole = user?.roles?.some((r) => requiredRoles.includes(r));
 			if (!hasRole) return <Navigate to="/dashboard" replace />;
 		}
+		return element;
+	};
+
+	const LearnerRoute: FC<{ element: ReactElement }> = ({ element }) => {
+		const [checking, setChecking] = useState<boolean>(true);
+		const [needsAssessment, setNeedsAssessment] = useState(false);
+		const [guardError, setGuardError] = useState<string | null>(null);
+
+		useEffect(() => {
+			if (!user?.id || !user.roles?.includes("LEARNER")) {
+				setChecking(false);
+				setNeedsAssessment(false);
+				return;
+			}
+
+			let cancelled = false;
+			const ensureProfile = async () => {
+				setChecking(true);
+				try {
+					let profile;
+					try {
+						profile = await learnerApi.getByUserId(user.id);
+					} catch (err: any) {
+						const status = err?.status ?? err?.response?.status;
+						if (status === 404) {
+							profile = await learnerApi.autoCreate(user.id);
+						} else {
+							throw err;
+						}
+					}
+					if (!cancelled) {
+						setNeedsAssessment(!profile?.englishLevel);
+						setGuardError(null);
+					}
+				} catch (err) {
+					console.error("Learner route guard error", err);
+					if (!cancelled) {
+						setGuardError("Không thể tải hồ sơ học viên");
+					}
+				} finally {
+					if (!cancelled) {
+						setChecking(false);
+					}
+				}
+			};
+			void ensureProfile();
+			return () => {
+				cancelled = true;
+			};
+		}, [user?.id, user?.roles]);
+
+		if (checking) {
+			return <SplashScreen />;
+		}
+
+		if (guardError) {
+			return (
+				<div className="flex min-h-screen items-center justify-center bg-slate-50">
+					<div className="rounded-xl bg-white p-8 text-center shadow">
+						<p className="mb-4 text-slate-700">{guardError}</p>
+						<button
+							onClick={() => {
+								if (typeof window !== "undefined") {
+									window.location.reload();
+								}
+							}}
+							className="rounded-lg bg-blue-600 px-4 py-2 text-white"
+						>
+							Thử lại
+						</button>
+					</div>
+				</div>
+			);
+		}
+
+		if (needsAssessment) {
+			return <Navigate to="/learner/testlevel" replace state={{ from: location.pathname }} />;
+		}
+
 		return element;
 	};
 
@@ -72,6 +156,16 @@ function App() {
 		}
 	}, [token, isLoading, location.pathname, navigate, user]);
 
+	useEffect(() => {
+		if (typeof window === 'undefined') {
+			return;
+		}
+		if (location.pathname !== '/onboarding') {
+			const targetPath = `${location.pathname}${location.search ?? ''}`;
+			window.sessionStorage.setItem('aesp_onboarding_return_path', targetPath);
+		}
+	}, [location.pathname, location.search]);
+
 	if (isLoading) {
 		return <SplashScreen />;
 	}
@@ -88,14 +182,60 @@ function App() {
 			<Route path="/onboarding" element={token ? <OnboardingWizard /> : <Navigate to="/login" replace />} />
 
 			{/* Role landing routes */}
-			<Route path="/learner" element={<ProtectedRoute requiredRoles={["LEARNER"]} element={<LearnerDashboard />} />} />
+			<Route
+				path="/learner"
+				element={
+					<ProtectedRoute
+						requiredRoles={["LEARNER"]}
+						element={<LearnerRoute element={<LearnerDashboard />} />}
+					/>
+				}
+			/>
 			<Route path="/mentor" element={<ProtectedRoute requiredRoles={["MENTOR"]} element={<MentorDashboard />} />} />
 			<Route path="/admin" element={<ProtectedRoute requiredRoles={["ADMIN"]} element={<AdminDashboard />} />} />
+			<Route path="/mentor/profile" element={<ProtectedRoute requiredRoles={["MENTOR"]} element={<MentorProfilePage />} />} />
 
 			{/* Learner Routes */}
-			<Route path="/mentor-selection" element={<ProtectedRoute requiredRoles={["LEARNER"]} element={<MentorSelection />} />} />
-			<Route path="/learner/mentor-selection" element={<ProtectedRoute requiredRoles={["LEARNER"]} element={<MentorSelection />} />} />
-			<Route path="/learner/profile" element={<ProtectedRoute requiredRoles={["LEARNER"]} element={<LearnerProfile />} />} />
+			<Route
+				path="/mentor-selection"
+				element={
+					<ProtectedRoute
+						requiredRoles={["LEARNER"]}
+						element={<LearnerRoute element={<MentorSelection />} />}
+					/>
+				}
+			/>
+			<Route
+				path="/learner/mentor-selection"
+				element={
+					<ProtectedRoute
+						requiredRoles={["LEARNER"]}
+						element={<LearnerRoute element={<MentorSelection />} />}
+					/>
+				}
+			/>
+			<Route
+				path="/learner/profile"
+				element={
+					<ProtectedRoute
+						requiredRoles={["LEARNER"]}
+						element={<LearnerRoute element={<LearnerProfile />} />}
+					/>
+				}
+			/>
+			<Route
+				path="/learner/assessment"
+				element={
+					<ProtectedRoute
+						requiredRoles={["LEARNER"]}
+						element={<LearnerRoute element={<LearnerAssessmentPage />} />}
+					/>
+				}
+			/>
+			<Route
+				path="/learner/testlevel"
+				element={<ProtectedRoute requiredRoles={["LEARNER"]} element={<LearnerTestLevelPage />} />}
+			/>
 
 			{/* Admin Routes */}
 			<Route path="/admin/mentor-management" element={<ProtectedRoute requiredRoles={["ADMIN"]} element={<AdminMentorManagement />} />} />
@@ -110,6 +250,7 @@ function App() {
 			<Route path="/sessions/all" element={token ? <SessionList /> : <Navigate to="/login" replace />} />
 			<Route path="/learn" element={token ? <Topics /> : <Navigate to="/login" replace />} />
 			<Route path="/topics" element={token ? <Topics /> : <Navigate to="/login" replace />} />
+			<Route path="/topics/practice/:topicId" element={token ? <TopicPracticePage /> : <Navigate to="/login" replace />} />
 			<Route path="/topics/all" element={token ? <TopicList /> : <Navigate to="/login" replace />} />
 			<Route path="/packages" element={token ? <PackageList /> : <Navigate to="/login" replace />} />
 			<Route path="/conversation" element={token ? <Conversation /> : <Navigate to="/login" replace />} />

@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -52,7 +53,8 @@ public class SecurityConfig {
                 .requestMatchers("/api/auth/**").permitAll() // Cho phép truy cập login/register
                 .requestMatchers("/api/health").permitAll() // Health check endpoint
                 .requestMatchers("/api/").permitAll() // Root endpoint
-                .requestMatchers("POST", "/api/learners").permitAll() // Allow learner profile creation after onboarding
+                .requestMatchers(HttpMethod.POST, "/api/learners").permitAll() // Allow learner profile creation after onboarding
+                .requestMatchers(HttpMethod.POST, "/api/learners/auto-create/**").permitAll()
                 .anyRequest().authenticated() // Các endpoint khác phải authenticate
             )
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class); // Thêm JWT filter

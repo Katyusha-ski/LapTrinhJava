@@ -107,7 +107,7 @@ const Register: React.FC = () => {
         
         // Redirect to dashboard - delay slightly to ensure state update
         setTimeout(() => {
-          navigate(path.dashboard);
+          navigate(path.testLevel);
         }, 100);
       } catch (err: any) {
         console.error(err);

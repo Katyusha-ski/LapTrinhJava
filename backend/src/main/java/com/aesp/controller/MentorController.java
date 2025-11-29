@@ -53,6 +53,11 @@ public class MentorController {
         return ResponseEntity.ok(mentorService.getMentorById(id));
     }
 
+    @GetMapping("/by-user/{userId}")
+    public ResponseEntity<MentorResponse> getMentorByUserId(@PathVariable Long userId) {
+        return ResponseEntity.ok(mentorService.getMentorProfileByUserId(userId));
+    }
+
     /** UPDATE */
     @PutMapping("/{id}")
     public ResponseEntity<MentorResponse> updateMentor(

@@ -11,7 +11,7 @@ import {
   LineChart,
   Line,
 } from "recharts";
-import { NavigationBar } from "../../../components/layout";
+import { MentorNavbar } from "../../../components/layout";
 import { useAuth } from "../../../context/AuthContext";
 import { mentorApi } from "../../../api/mentor.api";
 import type { Mentor } from "../../../types/mentor";
@@ -344,7 +344,7 @@ const MentorDashboard: React.FC = () => {
 
   return (
     <div className="page-gradient min-h-screen">
-      <NavigationBar user={user} onLogout={handleLogout} />
+      <MentorNavbar user={user} onLogout={handleLogout} />
 
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         <header className="mb-8 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">

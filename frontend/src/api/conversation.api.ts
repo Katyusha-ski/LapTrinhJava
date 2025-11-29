@@ -1,63 +1,84 @@
-import { httpClient } from './httpClient';
+import { httpClient } from "./httpClient";
 
 export interface AIConversation {
   id: number;
-  learnerId: number;
-  topicId?: number | null;
-  conversationContent?: string | null;
-  feedbackFromAI?: string | null;
-  duration?: number | null;
-  qualityScore?: number | null;
+  sessionId: number;
+  speaker: "USER" | "AI" | null;
+  message?: string | null;
+  correctedMessage?: string | null;
+  grammarErrors?: string[];
+  vocabularySuggestions?: string[];
   createdAt?: string | null;
 }
 
+export interface SendAudioResponse {
+  conversationId?: number | null;
+  aiResponse?: string | null;
+  feedback?: string | null;
+  pronunciationScore?: number | null;
+  fluencyScore?: number | null;
+  accuracyScore?: number | null;
+  audioUrl?: string | null;
+}
+
 export interface CreateConversationRequest {
-  topicId?: number;
-  conversationContent: string;
+  sessionId: number;
+  speaker: "USER" | "AI";
+  message: string;
+  correctedMessage?: string;
+  grammarErrors?: string[];
+  vocabularySuggestions?: string[];
 }
 
 export interface UpdateConversationRequest {
-  conversationContent?: string;
-  feedbackFromAI?: string;
-  qualityScore?: number;
+  message?: string;
+  correctedMessage?: string;
+  grammarErrors?: string[];
+  vocabularySuggestions?: string[];
 }
 
 export const conversationApi = {
   list: (page?: number, size?: number) =>
-    httpClient<{ content: AIConversation[]; totalElements: number }>('/api/conversations', {
+    httpClient<{ content: AIConversation[]; totalElements: number }>("/api/conversations", {
       query: { ...(page !== undefined && { page }), ...(size !== undefined && { size }) },
     }),
 
-  get: (id: number) =>
-    httpClient<AIConversation>(`/api/conversations/${id}`),
+  get: (id: number) => httpClient<AIConversation>(`/api/conversations/${id}`),
 
-  getByLearner: (learnerId: number, page?: number, size?: number) =>
-    httpClient<{ content: AIConversation[]; totalElements: number }>(`/api/conversations/learner/${learnerId}`, {
-      query: { ...(page !== undefined && { page }), ...(size !== undefined && { size }) },
-    }),
+  getBySession: (sessionId: number) =>
+    httpClient<AIConversation[]>(`/api/conversations/session/${sessionId}`),
 
-  getByTopic: (topicId: number, page?: number, size?: number) =>
-    httpClient<{ content: AIConversation[]; totalElements: number }>(`/api/conversations/topic/${topicId}`, {
-      query: { ...(page !== undefined && { page }), ...(size !== undefined && { size }) },
+  getRecentBySession: (sessionId: number, limit?: number) =>
+    httpClient<AIConversation[]>(`/api/conversations/session/${sessionId}/recent`, {
+      query: { ...(limit !== undefined && { limit }) },
     }),
 
   create: (payload: CreateConversationRequest) =>
-    httpClient<AIConversation>('/api/conversations', {
-      method: 'POST',
+    httpClient<AIConversation>("/api/conversations", {
+      method: "POST",
       body: JSON.stringify(payload),
     }),
 
   update: (id: number, data: UpdateConversationRequest) =>
     httpClient<AIConversation>(`/api/conversations/${id}`, {
-      method: 'PUT',
+      method: "PUT",
       body: JSON.stringify(data),
     }),
 
-  delete: (id: number) =>
-    httpClient(`/api/conversations/${id}`, { method: 'DELETE' }),
+  delete: (id: number) => httpClient(`/api/conversations/${id}`, { method: "DELETE" }),
 
-  generateFeedback: (id: number) =>
-    httpClient<AIConversation>(`/api/conversations/${id}/generate-feedback`, {
-      method: 'POST',
-    }),
+  sendAudioMessage: (sessionId: number, audio?: Blob, userMessage?: string) => {
+    const formData = new FormData();
+    formData.append("sessionId", String(sessionId));
+    if (audio) {
+      formData.append("audio", audio, "speech.webm");
+    }
+    if (userMessage) {
+      formData.append("userMessage", userMessage);
+    }
+    return httpClient<SendAudioResponse>("/api/conversations/send-message", {
+      method: "POST",
+      body: formData,
+    });
+  },
 };

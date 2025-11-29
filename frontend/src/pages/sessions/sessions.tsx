@@ -1,9 +1,35 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { sessionApi } from "../../api/session.api";
 import { learnerApi } from "../../api/learner.api";
-import { NavigationBar } from "../../components/layout";
+import { LearnerNavbar } from "../../components/layout";
 import { useAuth } from "../../context/AuthContext";
+import { topicApi, type Topic } from "../../api/topic.api";
+
+type TopicLike = Topic & {
+  name?: string | null;
+  topic_name?: string | null;
+  cefr_level?: string | null;
+  cefrLevel?: string | null;
+};
+
+const resolveTopicTitle = (topic?: Topic | null): string => {
+  if (!topic) return "";
+  const extended = topic as TopicLike;
+  return (
+    extended.title?.trim() ||
+    extended.name?.trim() ||
+    extended.topic_name?.trim() ||
+    (extended.id ? `Chủ đề #${extended.id}` : "")
+  );
+};
+
+const resolveTopicLevel = (topic?: Topic | null): string => {
+  if (!topic) return "";
+  const extended = topic as TopicLike;
+  const rawLevel = extended.level || extended.cefr_level || extended.cefrLevel;
+  return rawLevel ? rawLevel.toUpperCase() : "";
+};
 
 interface Session {
   id: number;
@@ -23,7 +49,9 @@ export default function SessionsPage() {
   const navigate = useNavigate();
   const { user, clearAuth } = useAuth();
   const [sessions, setSessions] = useState<Session[]>([]);
+  const [topics, setTopics] = useState<Topic[]>([]);
   const [loading, setLoading] = useState(true);
+  const [topicsLoading, setTopicsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
 
@@ -64,9 +92,38 @@ export default function SessionsPage() {
     }
   }, [user?.id, handleLogout]);
 
+  const loadTopics = useCallback(async () => {
+    try {
+      setTopicsLoading(true);
+      let list = await topicApi.list();
+      if (!list.length) {
+        list = await topicApi.listAll();
+      }
+      setTopics(list);
+    } catch (err) {
+      console.error("Không thể tải danh sách chủ đề", err);
+    } finally {
+      setTopicsLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     void loadSessions();
   }, [loadSessions]);
+
+  useEffect(() => {
+    void loadTopics();
+  }, [loadTopics]);
+
+  const topicLookup = useMemo(() => {
+    const map = new Map<number, Topic>();
+    topics.forEach((topic) => {
+      if (typeof topic.id === "number") {
+        map.set(topic.id, topic);
+      }
+    });
+    return map;
+  }, [topics]);
 
   const handleCreateSession = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -152,8 +209,8 @@ export default function SessionsPage() {
 
   if (loading) {
     return (
-      <div className="page-gradient">
-        <NavigationBar user={user} onLogout={handleLogout} />
+      <div className="min-h-screen bg-gradient-to-tr from-blue-50 via-white to-blue-100">
+        <LearnerNavbar user={user} onLogout={handleLogout} />
         <div className="flex min-h-[60vh] items-center justify-center px-4">
           <div className="text-center">
             <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-b-2 border-blue-500"></div>
@@ -165,8 +222,8 @@ export default function SessionsPage() {
   }
 
   return (
-    <div className="page-gradient">
-      <NavigationBar user={user} onLogout={handleLogout} />
+    <div className="min-h-screen bg-gradient-to-tr from-blue-50 via-white to-blue-100">
+      <LearnerNavbar user={user} onLogout={handleLogout} />
 
       <div className="max-w-6xl mx-auto py-8 px-4">
         {/* Header */}
@@ -202,13 +259,23 @@ export default function SessionsPage() {
             <form onSubmit={handleCreateSession} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700">Chủ đề (không bắt buộc)</label>
-                <input
-                  type="number"
+                <select
                   value={newSession.topicId}
                   onChange={(e) => setNewSession((prev) => ({ ...prev, topicId: e.target.value }))}
-                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="ID của chủ đề"
-                />
+                  className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                >
+                  <option value="">Chưa chọn</option>
+                  {topics.map((topic) => {
+                    const label = resolveTopicTitle(topic);
+                    const level = resolveTopicLevel(topic);
+                    return (
+                      <option key={topic.id} value={topic.id}>
+                        {label} {level ? `· CEFR ${level}` : ""}
+                      </option>
+                    );
+                  })}
+                </select>
+                {topicsLoading && <p className="mt-1 text-xs text-gray-500">Đang tải chủ đề...</p>}
               </div>
 
               <div>
@@ -254,8 +321,12 @@ export default function SessionsPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {sessions.map((session) => (
-              <div key={session.id} className="bg-white rounded-lg shadow-md p-6">
+            {sessions.map((session) => {
+              const topicInfo = session.topicId ? topicLookup.get(session.topicId) : null;
+              const topicTitle = resolveTopicTitle(topicInfo);
+              const topicLevel = resolveTopicLevel(topicInfo);
+              return (
+                <div key={session.id} className="bg-white rounded-lg shadow-md p-6">
                 <div className="flex justify-between items-start mb-4">
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900">Buổi học #{session.id}</h3>
@@ -272,9 +343,15 @@ export default function SessionsPage() {
 
                 <div className="space-y-3 mb-4 text-sm text-gray-600">
                   {session.topicId && (
-                    <p>
-                      <strong>Chủ đề ID:</strong> {session.topicId}
-                    </p>
+                    <div>
+                      <p className="font-semibold text-gray-800">Chủ đề</p>
+                      <p>
+                        {topicTitle || `#${session.topicId}`}
+                        {topicLevel && (
+                          <span className="ml-1 text-xs text-gray-500">· CEFR {topicLevel}</span>
+                        )}
+                      </p>
+                    </div>
                   )}
                   {session.duration && (
                     <p>
@@ -332,7 +409,8 @@ export default function SessionsPage() {
                   </button>
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

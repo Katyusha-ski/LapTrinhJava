@@ -33,8 +33,7 @@ public class Learner {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "english_level")
-    @Builder.Default
-    private EnglishLevel englishLevel = EnglishLevel.A1;
+    private EnglishLevel englishLevel;
 
     @Column(name = "learning_goals", columnDefinition = "TEXT")
     private String learningGoals;

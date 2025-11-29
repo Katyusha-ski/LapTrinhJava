@@ -4,6 +4,7 @@ export interface PracticeSession {
   id: number;
   learnerId: number;
   mentorId: number;
+  topicId?: number | null;
   startTime?: string | null;
   endTime?: string | null;
   status: 'SCHEDULED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';

@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { NavigationBar } from "../../../components/layout";
+import { LearnerNavbar } from "../../../components/layout";
 import { learnerApi } from "../../../api/learner.api";
 import { useAuth } from "../../../context/AuthContext";
 
@@ -62,8 +62,8 @@ const LearnerDashboard: React.FC = () => {
   const averageScoreDisplay = averageScore != null ? `${averageScore.toFixed(1)}%` : "--";
 
   return (
-    <div className="page-gradient">
-      <NavigationBar user={user} onLogout={handleLogout} />
+    <div className="min-h-screen bg-gradient-to-tr from-blue-50 via-white to-blue-100">
+      <LearnerNavbar user={user} onLogout={handleLogout} />
 
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         {/* Welcome */}
