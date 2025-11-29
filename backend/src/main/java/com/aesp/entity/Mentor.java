@@ -18,7 +18,7 @@ import com.aesp.enums.EnglishLevel;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@ToString(exclude = {"user", "learners", "practiceSessions"})
+@ToString(exclude = {"user", "learners", "practiceSessions", "mentorReviews"})
 @EqualsAndHashCode(of = "id")
 public class Mentor {
     
@@ -64,6 +64,10 @@ public class Mentor {
     @OneToMany(mappedBy = "mentor", cascade = CascadeType.ALL)
     @Builder.Default
     private List<PracticeSession> practiceSessions = new ArrayList<>();
+
+    @OneToMany(mappedBy = "mentor", cascade = CascadeType.ALL)
+    @Builder.Default
+    private List<MentorReview> mentorReviews = new ArrayList<>();
 
     @ElementCollection(fetch = FetchType.LAZY)
     @CollectionTable(name = "mentor_skills", joinColumns = @JoinColumn(name = "mentor_id"))

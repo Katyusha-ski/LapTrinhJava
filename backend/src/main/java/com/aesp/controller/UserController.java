@@ -13,7 +13,6 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/users")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")
 public class UserController {
 
     private final UserService userService;
@@ -37,5 +36,17 @@ public class UserController {
     public ResponseEntity<MessageResponse> deleteUser(@PathVariable Long id) {
         userService.deleteUser(id);
         return ResponseEntity.ok(new MessageResponse("Xóa user thành công"));
+    }
+
+    // ADMIN enable/disable user account
+    @PatchMapping("/{id}/status")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<UserResponse> setUserStatus(@PathVariable Long id, @RequestBody java.util.Map<String, Boolean> body) {
+        Boolean active = body.get("active");
+        if (active == null) {
+            return ResponseEntity.badRequest().build();
+        }
+        UserResponse updated = userService.setActive(id, active);
+        return ResponseEntity.ok(updated);
     }
 }

@@ -15,7 +15,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@ToString(exclude = {"user", "mentor", "subscriptions", "practiceSessions"})
+@ToString(exclude = {"user", "mentor", "subscriptions", "practiceSessions", "mentorReviews"})
 @EqualsAndHashCode(of = "id")
 public class Learner {
     
@@ -33,11 +33,16 @@ public class Learner {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "english_level")
-    @Builder.Default
-    private EnglishLevel englishLevel = EnglishLevel.A1;
+    private EnglishLevel englishLevel;
 
     @Column(name = "learning_goals", columnDefinition = "TEXT")
     private String learningGoals;
+
+    @Column(name = "age_range", length = 20)
+    private String ageRange;
+
+    @Column(name = "profession", length = 100)
+    private String profession;
 
     @Column(name = "current_streak")
     @Builder.Default
@@ -65,6 +70,10 @@ public class Learner {
     @OneToMany(mappedBy = "learner", cascade = CascadeType.ALL)
     @Builder.Default
     private List<PracticeSession> practiceSessions = new ArrayList<>();
+
+    @OneToMany(mappedBy = "learner", cascade = CascadeType.ALL)
+    @Builder.Default
+    private List<MentorReview> mentorReviews = new ArrayList<>();
 
     // Lifecycle callbacks
     @PrePersist

@@ -23,6 +23,7 @@ public class MentorResponse {
     private BigDecimal rating;
     private Integer totalStudents;
     private Boolean isAvailable;
+    private Boolean isActive;
     private Set<String> skills;
     private Set<EnglishLevel> supportedLevels;
 }

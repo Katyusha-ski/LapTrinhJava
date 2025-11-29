@@ -1,12 +1,14 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import React, { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import path from "../../constants/path";
 import { authApi } from "../../api/auth.api";
-import { saveAuth } from "../../utils/auth";
+import { useAuth } from "../../context/AuthContext";
 
 const Login: React.FC = () => {
+  const { setAuth } = useAuth();
+  
   const [username, setUsername] = useState("");
   const [usernameError, setUsernameError] = useState("");
   const [password, setPassword] = useState("");
@@ -55,8 +57,6 @@ const Login: React.FC = () => {
     setStaySignedIn(e.target.checked);
   };
 
-  const navigate = useNavigate();
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const trimmedUsername = username.trim();
@@ -68,9 +68,14 @@ const Login: React.FC = () => {
     if (!usernameErr && !passErr) {
       try {
         const payload = { username: trimmedUsername, password };
+        console.log('📝 Sending login request:', payload);
         const jwt = await authApi.login(payload);
-        // Lưu token
-        saveAuth(jwt as any);
+        console.log('✅ Login success, got JWT:', jwt);
+        
+        // Save auth using context (this triggers re-render)
+        console.log('💾 Calling setAuth...');
+        setAuth(jwt as any);
+        console.log('💾 setAuth called, waiting...');
 
         if (staySignedIn) {
           localStorage.setItem("savedUsername", trimmedUsername);
@@ -79,10 +84,11 @@ const Login: React.FC = () => {
           sessionStorage.setItem("tempUsername", trimmedUsername);
         }
 
-        // Điều hướng tới dashboard
-        navigate(path.dashboard);
+        // ✅ setAuth will update context state, App will detect token change and redirect
+        // NO need to manually navigate!
       } catch (err: any) {
-        console.error(err);
+        console.error('❌ Login error:', err);
+        console.error('Error message:', err?.message);
         alert(err?.message || 'Đăng nhập thất bại');
       }
     }

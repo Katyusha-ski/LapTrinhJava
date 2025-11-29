@@ -24,6 +24,7 @@ public interface LearnerRepository extends JpaRepository<Learner, Long> {
     List<Learner> findByMentor(Mentor mentor);
     List<Learner> findByMentorId(Long mentorId);
     List<Learner> findByMentorIsNull();
+    Long countByMentorId(Long mentorId);
     
     // Find by level
     List<Learner> findByEnglishLevel(EnglishLevel level);
@@ -75,6 +76,9 @@ public interface LearnerRepository extends JpaRepository<Learner, Long> {
     
     // Statistics
     Long countByEnglishLevel(EnglishLevel level);
+
+    // Count learners who were active/updated after a cutoff (used for "active learners")
+    Long countByUpdatedAtAfter(java.time.LocalDateTime cutoffDate);
     
     @Query("SELECT AVG(l.averagePronunciationScore) FROM Learner l WHERE l.averagePronunciationScore > 0")
     Double getAverageOverallScore();
@@ -91,4 +95,7 @@ public interface LearnerRepository extends JpaRepository<Learner, Long> {
     
     void deleteByUser(User user);
     Long deleteByMentorIsNull();
+
+    // Count learners whose associated user is active
+    Long countByUserIsActiveTrue();
 }

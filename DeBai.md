@@ -108,3 +108,38 @@ Search, compare, and purchase service packages.
 Learners can choose a package with or without a mentor to practice.
 
 Upgrade/downgrade subscription.
+Access adaptive curriculum & personalized learning paths.
+
+Practice speaking with other learners with AI support.
+
+Choose conversation topics & scenarios to learn or speak with others (travel, business, daily life, etc.).
+
+Receive grammar/vocabulary corrections & pronunciation scoring.
+
+Track progress with analytics, heat maps, and trends.
+
+Access speaking challenges, leaderboards, rewards, and streak tracking.
+
+Allow learners to select specialized topics or industries for tailored conversation practice (e.g., business, tourism, healthcare). 
+
+Receive weekly/monthly performance reports.
+
+Mentor role:
+
+Login/Logout.
+
+Organize assessment and leveling for learners.
+
+Provide relevant documents when learners need them.
+
+Point out pronunciation, grammar, and unnatural word usage errors.
+
+Guide how to express yourself more clearly and confidently.
+
+Give feedback immediately after practice to help learners improve quickly.
+
+Provide topics and real-life conversation situations.
+
+Suggest ways to learn vocabulary, collocations, and idioms.
+
+Share communication experiences with native speakers.

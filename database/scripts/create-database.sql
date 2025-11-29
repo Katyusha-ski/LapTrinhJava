@@ -15,7 +15,7 @@ CREATE TABLE roles (
     description VARCHAR(255),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE users (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -28,8 +28,8 @@ CREATE TABLE users (
     is_active BOOLEAN DEFAULT TRUE,
     email_verified BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE user_roles (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -52,9 +52,9 @@ CREATE TABLE mentors (
     total_students INT DEFAULT 0,
     is_available BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE packages (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -65,23 +65,37 @@ CREATE TABLE packages (
     features JSON,
     is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE learners (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    user_id BIGINT NOT NULL UNIQUE,
+    user_id BIGINT NOT NULL UNIQUE, 
     mentor_id BIGINT,
-    english_level ENUM('A1', 'A2', 'B1', 'B2', 'C1', 'C2') DEFAULT 'A1',
+    english_level ENUM('A1', 'A2', 'B1', 'B2', 'C1', 'C2') NULL,
     learning_goals TEXT,
     current_streak INT DEFAULT 0,
     total_practice_hours DECIMAL(5,2) DEFAULT 0.00,
     average_pronunciation_score DECIMAL(5,2) DEFAULT 0.00,
     joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (mentor_id) REFERENCES mentors(id) ON DELETE SET NULL
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+ALTER TABLE learners
+ADD COLUMN age_range VARCHAR(20),
+ADD COLUMN profession VARCHAR(100);
+UPDATE learners SET english_level = 'A1' WHERE english_level = 'BEGINNER';
+UPDATE learners SET english_level = 'B2' WHERE english_level = 'INTERMEDIATE';
+UPDATE learners SET english_level = 'C1' WHERE english_level = 'ADVANCED';
+ALTER TABLE learners
+CHANGE english_level english_level VARCHAR(20) NULL;
+UPDATE learners SET english_level = 'A1' WHERE english_level = 'BEGINNER';
+UPDATE learners SET english_level = 'B2' WHERE english_level = 'INTERMEDIATE';
+UPDATE learners SET english_level = 'C1' WHERE english_level = 'ADVANCED';
+
+ALTER TABLE learners
+CHANGE english_level english_level ENUM('A1', 'A2', 'B1', 'B2', 'C1', 'C2')  NULL;
 
 CREATE TABLE subscriptions (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -94,10 +108,10 @@ CREATE TABLE subscriptions (
     payment_method ENUM('CREDIT_CARD', 'PAYPAL', 'BANK_TRANSFER', 'CASH', 'VISA', 'MOMO') NOT NULL,
     payment_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (learner_id) REFERENCES learners(id) ON DELETE CASCADE,
     FOREIGN KEY (package_id) REFERENCES packages(id) ON DELETE RESTRICT
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE conversation_topics (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -109,8 +123,8 @@ CREATE TABLE conversation_topics (
     difficulty_keywords JSON,
     is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE practice_sessions (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -124,11 +138,11 @@ CREATE TABLE practice_sessions (
     cost DECIMAL(10,2) DEFAULT 0.00,
     session_status ENUM('SCHEDULED', 'COMPLETED', 'CANCELLED') DEFAULT 'SCHEDULED',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (learner_id) REFERENCES learners(id) ON DELETE CASCADE,
     FOREIGN KEY (mentor_id) REFERENCES mentors(id) ON DELETE SET NULL,
     FOREIGN KEY (topic_id) REFERENCES conversation_topics(id) ON DELETE SET NULL
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Indexes and OPTIMIZation
 
@@ -174,16 +188,13 @@ INSERT INTO roles (name, description) VALUES
 -- INSERT USERS
 INSERT INTO users (username, email, password_hash, full_name, phone, is_active) VALUES
 -- admin user
-('admin', 'admin@aesp.com', '$2a$10$N9qo8uLOickgx2ZMRZoMye7I6ZqF7DWDaJhYcgikibHv1HYf6kT5.', 'System Admin', '0123456789', TRUE),
 
--- Mentor users  
-('mentor1', 'mentor1@aesp.com', '$2a$10$N9qo8uLOickgx2ZMRZoMye7I6ZqF7DWDaJhYcgikibHv1HYf6kT5.', 'Sarah Johnson', '0123456790', TRUE),
-('mentor2', 'mentor2@aesp.com', '$2a$10$N9qo8uLOickgx2ZMRZoMye7I6ZqF7DWDaJhYcgikibHv1HYf6kT5.', 'David Wilson', '0123456791', TRUE),
-
--- Learner users
-('learner1', 'learner1@aesp.com', '$2a$10$N9qo8uLOickgx2ZMRZoMye7I6ZqF7DWDaJhYcgikibHv1HYf6kT5.', 'Nguyễn Văn An', '0123456792', TRUE),
-('learner2', 'learner2@aesp.com', '$2a$10$N9qo8uLOickgx2ZMRZoMye7I6ZqF7DWDaJhYcgikibHv1HYf6kT5.', 'Trần Thị Bình', '0123456793', TRUE),
-('learner3', 'learner3@aesp.com', '$2a$10$N9qo8uLOickgx2ZMRZoMye7I6ZqF7DWDaJhYcgikibHv1HYf6kT5.', 'Lê Minh Cường', '0123456794', TRUE);
+('admin', 'admin@aesp.com', '$2y$10$krxBfAc3EZjPIxPVdbnvAuxsgu7gtjLcWPHTJurUv.S0MBs6wUDgO', 'System Admin', '0123456789', TRUE),
+('mentor1', 'mentor1@aesp.com', '$2y$10$krxBfAc3EZjPIxPVdbnvAuxsgu7gtjLcWPHTJurUv.S0MBs6wUDgO', 'Sarah Johnson', '0123456790', TRUE),
+('mentor2', 'mentor2@aesp.com', '$2y$10$krxBfAc3EZjPIxPVdbnvAuxsgu7gtjLcWPHTJurUv.S0MBs6wUDgO', 'David Wilson', '0123456791', TRUE),
+('learner1', 'learner1@aesp.com', '$2y$10$krxBfAc3EZjPIxPVdbnvAuxsgu7gtjLcWPHTJurUv.S0MBs6wUDgO', 'Nguyễn Văn An', '0123456792', TRUE),
+('learner2', 'learner2@aesp.com', '$2y$10$krxBfAc3EZjPIxPVdbnvAuxsgu7gtjLcWPHTJurUv.S0MBs6wUDgO', 'Trần Thị Bình', '0123456793', TRUE),
+('learner3', 'learner3@aesp.com', '$2y$10$krxBfAc3EZjPIxPVdbnvAuxsgu7gtjLcWPHTJurUv.S0MBs6wUDgO', 'Lê Minh Cường', '0123456794', TRUE);
 
 
 
@@ -231,30 +242,36 @@ INSERT INTO packages (name, description, price, duration_days, features) VALUES
 (3, 2, DATE_SUB(CURDATE(), INTERVAL 15 DAY), DATE_ADD(CURDATE(), INTERVAL 15 DAY), 199000.00, 'BANK_TRANSFER');
 
 -- INSERT CONVERSATION TOPICS (Speaking scenarios)
-INSERT INTO conversation_topics (name, category, level, description, sample_questions, difficulty_keywords) VALUES
+INSERT INTO conversation_topics (name, category, level, description, sample_questions, difficulty_keywords, created_at) VALUES
 ('Daily Greetings & Small Talk', 'Daily Life', 'A1', 'Basic greetings and casual conversations', 
- JSON_ARRAY('How are you today?', 'What did you do yesterday?', 'Do you like coffee or tea?'),
- JSON_ARRAY('hello', 'good morning', 'nice to meet you', 'weather', 'weekend')),
+	JSON_ARRAY('How are you today?', 'What did you do yesterday?', 'Do you like coffee or tea?'),
+	JSON_ARRAY('hello', 'good morning', 'nice to meet you', 'weather', 'weekend'),
+    NOW()),
 
 ('Travel Planning', 'Travel', 'A2', 'Booking hotels, asking for directions, airport conversations',
- JSON_ARRAY('How do I get to the airport?', 'I would like to book a room.', 'Where is the nearest subway station?'),
- JSON_ARRAY('ticket', 'reservation', 'passport', 'luggage', 'directions')),
+	JSON_ARRAY('How do I get to the airport?', 'I would like to book a room.', 'Where is the nearest subway station?'), 
+	JSON_ARRAY('ticket', 'reservation', 'passport', 'luggage', 'directions'),
+    NOW()),
 
 ('Job Interview Practice', 'Business', 'B2', 'Professional interview scenarios and responses',
- JSON_ARRAY('Tell me about yourself.', 'What are your strengths and weaknesses?', 'Why do you want this job?'),
- JSON_ARRAY('experience', 'skills', 'teamwork', 'leadership', 'achievements')),
+	JSON_ARRAY('Tell me about yourself.', 'What are your strengths and weaknesses?', 'Why do you want this job?'), 
+	JSON_ARRAY('experience', 'skills', 'teamwork', 'leadership', 'achievements'),
+    NOW()),
 
 ('Business Negotiations', 'Business', 'C1', 'Advanced negotiation tactics and persuasion',
- JSON_ARRAY('What are your terms?', 'Can we discuss the price?', 'I propose a different approach.'),
- JSON_ARRAY('contract', 'terms', 'agreement', 'compromise', 'leverage')),
+	JSON_ARRAY('What are your terms?', 'Can we discuss the price?', 'I propose a different approach.'), 
+	JSON_ARRAY('contract', 'terms', 'agreement', 'compromise', 'leverage'),
+    NOW()),
 
 ('Medical Consultations', 'Healthcare', 'B1', 'Doctor-patient conversations and health topics',
- JSON_ARRAY('I have been feeling sick.', 'What are the symptoms?', 'How often should I take this medicine?'),
- JSON_ARRAY('symptoms', 'diagnosis', 'prescription', 'treatment', 'allergy')),
+	JSON_ARRAY('I have been feeling sick.', 'What are the symptoms?', 'How often should I take this medicine?'), 
+	JSON_ARRAY('symptoms', 'diagnosis', 'prescription', 'treatment', 'allergy'),
+    NOW()),
 
 ('Restaurant & Food Ordering', 'Daily Life', 'A1', 'Ordering food, asking about menu items',
- JSON_ARRAY('Can I see the menu?', 'I would like to order...', 'Is this dish spicy?'),
- JSON_ARRAY('menu', 'order', 'delicious', 'waiter', 'bill'));
+	JSON_ARRAY('Can I see the menu?', 'I would like to order...', 'Is this dish spicy?'), 
+	JSON_ARRAY('menu', 'order', 'delicious', 'waiter', 'bill'),
+    NOW());
 
 INSERT INTO practice_sessions 
 (learner_id, mentor_id, topic_id, session_type, start_time, end_time, duration_minutes, cost, session_status) 
@@ -316,4 +333,65 @@ INSERT INTO pronunciation_scores (session_id, learner_id, text_to_read, transcri
  JSON_OBJECT('strengths', JSON_ARRAY('Clear pronunciation', 'Good pace'), 'improvements', JSON_ARRAY('Work on "how" sound'))),
 (2, 2, 'I would like to schedule a meeting for tomorrow.', 'I would like to schedule a meeting for tomorrow.', 92.00, 90.00, 91.00,
  JSON_OBJECT('strengths', JSON_ARRAY('Professional tone', 'Good fluency'), 'improvements', JSON_ARRAY('Stress on "schedule"')));
+
+-- ===========================
+-- USER FEEDBACKS (Persistent table)
+-- ===========================
+-- Store feedback submitted by learners or users for moderation and reporting
+CREATE TABLE feedbacks (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    learner_id BIGINT,
+    content TEXT NOT NULL,
+    status ENUM('PENDING','APPROVED','REJECTED') DEFAULT 'PENDING',
+    metadata JSON,
+    moderated_by VARCHAR(100),
+    moderated_at TIMESTAMP NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (learner_id) REFERENCES learners(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE INDEX idx_feedbacks_learner ON feedbacks(learner_id);
+CREATE INDEX idx_feedbacks_status ON feedbacks(status);
+CREATE INDEX idx_feedbacks_created ON feedbacks(created_at);
+
+-- Optional sample feedbacks for development/testing
+INSERT INTO feedbacks (learner_id, content, status) VALUES
+-- Use learner IDs as created above (learners auto-increment ids start at 1 in this script)
+(1, 'Great pronunciation practice but needs more emphasis on "th" sounds.', 'PENDING'),
+(2, 'I had trouble with the audio upload and it failed twice.', 'PENDING');
+
+-- Bổ sung bảng mentor_reviews để lưu trữ phản hồi chi tiết từ học viên về mentor
+
+CREATE TABLE mentor_reviews (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    session_id BIGINT NOT NULL,
+    learner_id BIGINT NOT NULL,
+    mentor_id BIGINT NOT NULL,
+    rating DECIMAL(2,1) NOT NULL, -- Điểm đánh giá (ví dụ: 4.5/5.0)
+    review_text TEXT,             -- Nội dung nhận xét chi tiết
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    
+    -- Đảm bảo mỗi học viên chỉ đánh giá 1 lần cho 1 phiên học
+    UNIQUE KEY unique_session_review (session_id, learner_id), 
+    
+    -- Khóa ngoại liên kết với các bảng hiện có
+    FOREIGN KEY (session_id) REFERENCES practice_sessions(id) ON DELETE CASCADE,
+    FOREIGN KEY (learner_id) REFERENCES learners(id) ON DELETE CASCADE,
+    FOREIGN KEY (mentor_id) REFERENCES mentors(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Tạo index để truy vấn nhanh chóng theo mentor và learner
+CREATE INDEX idx_review_mentor ON mentor_reviews(mentor_id);
+CREATE INDEX idx_review_learner ON mentor_reviews(learner_id);
+
+-- DỮ LIỆU MẪU: Chèn nhận xét cho các phiên học có Mentor đã hoàn thành (session_id 1 và 2)
+
+-- Learner 1 (Nguyễn Văn An) đánh giá Mentor 1 (Sarah Johnson) sau Session 1
+INSERT INTO mentor_reviews (session_id, learner_id, mentor_id, rating, review_text) VALUES
+(1, 1, 1, 5.0, 'Mentor rất nhiệt tình, sửa lỗi phát âm kỹ và dễ hiểu. Buổi học Daily Greetings hiệu quả.'),
+
+-- Learner 2 (Trần Thị Bình) đánh giá Mentor 1 (Sarah Johnson) sau Session 2
+(2, 2, 1, 4.5, 'Bài luyện phỏng vấn công việc rất tốt, mentor đưa ra nhiều tình huống thực tế. Có thể cải thiện thêm về tốc độ nói.');
 

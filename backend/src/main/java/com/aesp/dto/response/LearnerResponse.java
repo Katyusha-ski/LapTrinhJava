@@ -17,10 +17,13 @@ public class LearnerResponse {
     private Long mentorId;
     private String fullName;
     private String avatarUrl;
+    private Boolean isActive;
     private EnglishLevel englishLevel;
     private String learningGoals;
     private Integer currentStreak;
     private BigDecimal totalPracticeHours;
     private BigDecimal averagePronunciationScore;
     private LocalDateTime createdAt;
+    private String ageRange;
+    private String profession;
 }

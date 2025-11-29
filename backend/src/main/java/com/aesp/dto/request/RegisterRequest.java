@@ -27,6 +27,5 @@ public class RegisterRequest {
     @Pattern(regexp = "^[0-9]{10,11}$|^$", message = "Số điện thoại phải là 10-11 chữ số")
     private String phone;
 
-    @NotNull(message = "Role không được để trống")
     private UserRole role;
 }

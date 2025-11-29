@@ -1,343 +1,405 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
+import { toast } from "react-toastify";
+import { Table, Button, Modal, Form, Input, Tag, Popconfirm, Spin, Typography } from "antd";
 import { mentorApi } from "../../../api/mentor.api";
+import { userApi } from "../../../api/user.api";
 import type { Mentor } from "../../../types/mentor";
-import type { EnglishLevel } from "../../../types/shared";
-import { ENGLISH_LEVEL_OPTIONS } from "../../../types/shared";
+const { Title } = Typography;
 
-interface FilterState {
-  skill: string;
-  level: string;
-  minRating: string;
-  maxRate: string;
-  onlyAvailable: boolean;
-}
+const MentorManagement: React.FC = () => {
+	const [mentors, setMentors] = useState<Mentor[]>([]);
+	const [loading, setLoading] = useState(false);
+	const [error, setError] = useState<string | null>(null);
+	const [isModalOpen, setIsModalOpen] = useState(false);
+	const [editingMentor, setEditingMentor] = useState<Mentor | null>(null);
+	const [viewMentor, setViewMentor] = useState<Mentor | null>(null);
+	const [isViewOpen, setIsViewOpen] = useState(false);
+	const [formValues, setFormValues] = useState({
+		fullName: "",
+		username: "",
+		email: "",
+		password: "",
+		phone: "",
+		avatarUrl: "",
+		bio: "",
+		experienceYears: 0,
+		skills: "",
+		specialization: "",
+		hourlyRate: 0,
+		isAvailable: true,
+	});
+	const [currentPage, setCurrentPage] = useState(1);
+	const pageSize = 10;
 
-const DEFAULT_FILTERS: FilterState = {
-  skill: "",
-  level: "",
-  minRating: "",
-  maxRate: "",
-  onlyAvailable: false,
+	useEffect(() => {
+		loadMentors();
+	}, []);
+
+	const loadMentors = async () => {
+		try {
+			setLoading(true);
+			setError(null);
+			const data = await mentorApi.getAll(currentPage, pageSize);
+			const list = Array.isArray(data) ? data : (data as any).content || [];
+			setMentors(list);
+		} catch (error) {
+			setError("Không thể tải danh sách mentors");
+			toast.error("Không thể tải danh sách mentors");
+			setMentors([]);
+		} finally {
+			setLoading(false);
+		}
+	};
+
+	const handleCreate = () => {
+		setEditingMentor(null);
+		setFormValues({
+			fullName: "",
+			username: "",
+			email: "",
+			password: "",
+			phone: "",
+			avatarUrl: "",
+			bio: "",
+			experienceYears: 0,
+			skills: "",
+			specialization: "",
+			hourlyRate: 0,
+			isAvailable: true,
+		});
+		setIsModalOpen(true);
+	};
+
+	const handleEdit = (mentor: Mentor) => {
+		setEditingMentor(mentor);
+		setFormValues({
+			fullName: mentor.fullName || "",
+			username: "",
+			email: "",
+			password: "",
+			phone: "",
+			avatarUrl: mentor.avatarUrl || "",
+			bio: mentor.bio || "",
+			experienceYears: mentor.experienceYears || 0,
+			skills: mentor.skills ? mentor.skills.join(", ") : "",
+			specialization: "",
+			hourlyRate: mentor.hourlyRate || 0,
+			isAvailable: mentor.isAvailable ?? true,
+		});
+		setIsModalOpen(true);
+	};
+
+	const handleView = (mentor: Mentor) => {
+		setViewMentor(mentor);
+		setIsViewOpen(true);
+	};
+
+	const handleDelete = async (id: number) => {
+		try {
+			await mentorApi.delete(id);
+			toast.success("Xóa mentor thành công");
+			loadMentors();
+		} catch (error) {
+			toast.error("Không thể xóa mentor");
+		}
+	};
+
+	const handleSubmit = async () => {
+		try {
+			let userId = null;
+			if (!editingMentor) {
+				// Gọi API tạo user trước
+				const userPayload = {
+					fullName: formValues.fullName,
+					username: formValues.username,
+					email: formValues.email,
+					password: formValues.password,
+					phone: formValues.phone,
+					avatarUrl: formValues.avatarUrl,
+				};
+				// Giả sử có userApi.create trả về userId
+				// Bạn cần import userApi ở đầu file
+				const userRes = await userApi.create(userPayload);
+				userId = userRes.id;
+			} else {
+				userId = editingMentor.userId;
+			}
+			const mentorPayload = {
+				userId,
+				specialty: formValues.specialization,
+				yearsExperience: formValues.experienceYears,
+				qualifications: formValues.skills,
+				hourlyRate: formValues.hourlyRate,
+				bio: formValues.bio,
+				isAvailable: formValues.isAvailable,
+			};
+			if (editingMentor) {
+				await mentorApi.update(editingMentor.id, mentorPayload);
+				toast.success("Cập nhật mentor thành công");
+			} else {
+				await mentorApi.create(mentorPayload);
+				toast.success("Tạo mentor thành công");
+			}
+			setIsModalOpen(false);
+			setFormValues({
+				fullName: "",
+				username: "",
+				email: "",
+				password: "",
+				phone: "",
+				avatarUrl: "",
+				bio: "",
+				experienceYears: 0,
+				skills: "",
+				specialization: "",
+				hourlyRate: 0,
+				isAvailable: true,
+			});
+			loadMentors();
+		} catch (error) {
+			toast.error("Có lỗi xảy ra khi lưu mentor");
+		}
+	};
+
+	const handleCancel = () => {
+		setIsModalOpen(false);
+		setFormValues({
+			fullName: "",
+			username: "",
+			email: "",
+			password: "",
+			phone: "",
+			avatarUrl: "",
+			bio: "",
+			experienceYears: 0,
+			skills: "",
+			specialization: "",
+			hourlyRate: 0,
+			isAvailable: true,
+		});
+		setEditingMentor(null);
+	};
+
+	const columns = [
+		{ title: "ID", dataIndex: "id", key: "id" },
+		{ title: "Full Name", dataIndex: "fullName", key: "fullName" },
+		{ title: "Skills", dataIndex: "skills", key: "skills", render: (skills: string[]) => skills.map((s, idx) => <Tag key={idx}>{s}</Tag>) },
+		{ title: "Bio", dataIndex: "bio", key: "bio", render: (bio: string) => bio || "-" },
+		{
+			title: "Actions",
+			key: "actions",
+			render: (_: any, mentor: Mentor) => (
+				<>
+					<Button type="primary" size="small" onClick={() => handleEdit(mentor)} style={{ marginRight: 8 }}>Edit</Button>
+							<Button onClick={() => handleView(mentor)} size="small" style={{ marginRight: 8, background: '#f6c23e', borderColor: '#f6c23e', color: '#000' }}>View</Button>
+					{mentor.isActive ? (
+						<Popconfirm
+							title="Bạn có chắc chắn muốn vô hiệu hóa tài khoản user này?"
+							onConfirm={async () => {
+								try {
+									await userApi.setActive(mentor.userId, false);
+									toast.success('Tài khoản đã bị vô hiệu hóa');
+									loadMentors();
+								} catch (err) {
+									toast.error('Không thể thay đổi trạng thái tài khoản');
+								}
+							}}
+							okText="Vô hiệu hóa"
+							cancelText="Hủy"
+						>
+							<Button danger size="small">Disable Account</Button>
+						</Popconfirm>
+					) : (
+						<Popconfirm
+							title="Bạn có chắc chắn muốn kích hoạt tài khoản user này?"
+							onConfirm={async () => {
+								try {
+									await userApi.setActive(mentor.userId, true);
+									toast.success('Tài khoản đã được kích hoạt');
+									loadMentors();
+								} catch (err) {
+									toast.error('Không thể thay đổi trạng thái tài khoản');
+								}
+							}}
+							okText="Kích hoạt"
+							cancelText="Hủy"
+						>
+							<Button type="primary" size="small" style={{ background: '#52c41a', borderColor: '#52c41a', color: '#fff' }}>Enable</Button>
+						</Popconfirm>
+					)}
+					<Popconfirm
+						title="Bạn có chắc chắn muốn xóa mentor này?"
+						onConfirm={() => handleDelete(mentor.id)}
+						okText="Xóa"
+						cancelText="Hủy"
+					>
+						<Button type="primary" danger size="small" style={{ marginLeft: 8 }}>Delete</Button>
+					</Popconfirm>
+					</>
+			),
+		},
+	];
+
+	return (
+		<div style={{ minHeight: "100vh", background: "#f9fafb", padding: 32 }}>
+			<div style={{ maxWidth: 1200, margin: "0 auto" }}>
+				<div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
+					<Title level={2}>Mentor Management</Title>
+					<Button type="primary" onClick={handleCreate} icon={<span>+</span>}>
+						Create New Mentor
+					</Button>
+				</div>
+				{error && (
+					<div style={{ background: "#fff1f0", border: "1px solid #ffa39e", color: "#cf1322", padding: 16, borderRadius: 8, marginBottom: 24 }}>
+						<strong>Lỗi:</strong> {error}
+					</div>
+				)}
+				<div style={{ background: "#fff", borderRadius: 8, boxShadow: "0 2px 8px #f0f1f2", overflow: "hidden" }}>
+					{loading ? (
+						<div style={{ padding: 32, textAlign: "center" }}><Spin /> Đang tải danh sách mentors...</div>
+					) : (
+						<Table
+							columns={columns}
+							dataSource={mentors}
+							rowKey="id"
+							pagination={{
+								current: currentPage,
+								pageSize,
+								total: mentors.length,
+								onChange: setCurrentPage,
+								showSizeChanger: false,
+							}}
+						/>
+					)}
+				</div>
+			</div>
+			<Modal
+				title={editingMentor ? "Edit Mentor" : "Create New Mentor"}
+				open={isModalOpen}
+				onCancel={handleCancel}
+				onOk={handleSubmit}
+				okText={editingMentor ? "Update" : "Create"}
+			>
+				<Form layout="vertical">
+					<Form.Item label={<span>Full Name <span style={{ color: "red" }}>*</span></span>} required>
+						<Input
+							placeholder="Enter full name"
+							value={formValues.fullName}
+							onChange={e => setFormValues({ ...formValues, fullName: e.target.value })}
+						/>
+					</Form.Item>
+					<Form.Item label={<span>Username <span style={{ color: "red" }}>*</span></span>} required>
+						<Input
+							placeholder="Enter username"
+							value={formValues.username}
+							onChange={e => setFormValues({ ...formValues, username: e.target.value })}
+						/>
+					</Form.Item>
+					<Form.Item label={<span>Email <span style={{ color: "red" }}>*</span></span>} required>
+						<Input
+							type="email"
+							placeholder="Enter email"
+							value={formValues.email}
+							onChange={e => setFormValues({ ...formValues, email: e.target.value })}
+						/>
+					</Form.Item>
+					<Form.Item label={<span>Password <span style={{ color: "red" }}>*</span></span>} required>
+						<Input.Password
+							placeholder="Enter password"
+							value={formValues.password}
+							onChange={e => setFormValues({ ...formValues, password: e.target.value })}
+						/>
+					</Form.Item>
+					<Form.Item label="Phone">
+						<Input
+							placeholder="Enter phone number"
+							value={formValues.phone}
+							onChange={e => setFormValues({ ...formValues, phone: e.target.value })}
+						/>
+					</Form.Item>
+					<Form.Item label="Avatar URL">
+						<Input
+							placeholder="Enter avatar URL"
+							value={formValues.avatarUrl}
+							onChange={e => setFormValues({ ...formValues, avatarUrl: e.target.value })}
+						/>
+					</Form.Item>
+					<Form.Item label="Bio">
+						<Input.TextArea
+							rows={3}
+							placeholder="Enter bio"
+							value={formValues.bio}
+							onChange={e => setFormValues({ ...formValues, bio: e.target.value })}
+						/>
+					</Form.Item>
+					<Form.Item label={<span>Experience Years <span style={{ color: "red" }}>*</span></span>} required>
+						<Input
+							type="number"
+							placeholder="Enter years of experience"
+							value={formValues.experienceYears}
+							onChange={e => setFormValues({ ...formValues, experienceYears: Number(e.target.value) })}
+						/>
+					</Form.Item>
+					<Form.Item label="Skills">
+						<Input
+							placeholder="Enter skills (comma separated)"
+							value={formValues.skills}
+							onChange={e => setFormValues({ ...formValues, skills: e.target.value })}
+						/>
+					</Form.Item>
+					<Form.Item label="Specialization">
+						<Input
+							placeholder="Enter specialization"
+							value={formValues.specialization}
+							onChange={e => setFormValues({ ...formValues, specialization: e.target.value })}
+						/>
+					</Form.Item>
+					<Form.Item label={<span>Hourly Rate <span style={{ color: "red" }}>*</span></span>} required>
+						<Input
+							type="number"
+							placeholder="Enter hourly rate"
+							value={formValues.hourlyRate}
+							onChange={e => setFormValues({ ...formValues, hourlyRate: Number(e.target.value) })}
+						/>
+					</Form.Item>
+					<Form.Item label="Available">
+						<Input
+							type="checkbox"
+							checked={formValues.isAvailable}
+							onChange={e => setFormValues({ ...formValues, isAvailable: e.target.checked })}
+						/>
+					</Form.Item>
+				</Form>
+			</Modal>
+
+			{/* View Mentor Modal */}
+			<Modal
+				title="Mentor Details"
+				open={isViewOpen}
+				footer={null}
+				onCancel={() => setIsViewOpen(false)}
+			>
+				{viewMentor ? (
+					<div>
+						<p><strong>Full Name:</strong> {viewMentor.fullName || "-"}</p>
+						{viewMentor.avatarUrl && (
+							<p><strong>Avatar:</strong> <img src={viewMentor.avatarUrl} alt="avatar" style={{ width: 60, height: 60, borderRadius: 6 }} /></p>
+						)}
+						<p><strong>Bio:</strong> {viewMentor.bio || "-"}</p>
+						<p><strong>Experience Years:</strong> {viewMentor.experienceYears ?? "-"}</p>
+						<p><strong>Hourly Rate:</strong> {viewMentor.hourlyRate ?? "-"}</p>
+						<p><strong>Available:</strong> {viewMentor.isAvailable ? "Yes" : "No"}</p>
+						<p><strong>Active:</strong> {viewMentor.isActive ? "Yes" : "No"}</p>
+						<p><strong>Skills:</strong> {viewMentor.skills && viewMentor.skills.length ? viewMentor.skills.join(", ") : "-"}</p>
+						<p><strong>Mentor ID:</strong> {viewMentor.id}</p>
+						<p><strong>User ID:</strong> {viewMentor.userId}</p>
+					</div>
+				) : (
+					<div>Loading...</div>
+				)}
+			</Modal>
+		</div>
+	);
 };
 
-const AdminMentorManagement: React.FC = () => {
-  const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
-  const [mentors, setMentors] = useState<Mentor[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [statusMessage, setStatusMessage] = useState<string | null>(null);
-
-  const buildSearchParams = () => {
-    const params: Record<string, unknown> = {};
-    if (filters.skill.trim()) params.skill = filters.skill.trim();
-    if (filters.level) params.level = filters.level as EnglishLevel;
-    if (filters.minRating) params.minRating = Number(filters.minRating);
-    if (filters.maxRate) params.maxRate = Number(filters.maxRate);
-    if (filters.onlyAvailable) params.onlyAvailable = true;
-    return params;
-  };
-
-  const loadMentors = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const params = buildSearchParams();
-      const hasParams = Object.keys(params).length > 0;
-      const data = hasParams
-        ? await mentorApi.search(params)
-        : await mentorApi.getAll();
-      setMentors(data ?? []);
-    } catch (err: any) {
-      setError(err?.message ?? "Không thể tải danh sách mentor");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadMentors();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const handleApplyFilters = (e: React.FormEvent) => {
-    e.preventDefault();
-    loadMentors();
-  };
-
-  const handleResetFilters = () => {
-    setFilters(DEFAULT_FILTERS);
-    setTimeout(() => {
-      loadMentors();
-    }, 0);
-  };
-
-  const handleToggleAvailability = async (mentorId: number) => {
-    try {
-      const updated = await mentorApi.toggleAvailability(mentorId);
-      setMentors((prev) => prev.map((m) => (m.id === updated.id ? { ...m, ...updated } : m)));
-      setStatusMessage(`Đã cập nhật trạng thái của ${updated.fullName}`);
-    } catch (err: any) {
-      setError(err?.message ?? "Không thể cập nhật trạng thái mentor");
-    }
-  };
-
-  const uniqueSkills = useMemo(() => {
-    const set = new Set<string>();
-    mentors.forEach((mentor) => {
-      mentor.skills?.forEach((skill) => set.add(skill));
-    });
-    return Array.from(set);
-  }, [mentors]);
-
-  return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="mx-auto max-w-6xl">
-        <header className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Quản lý Mentor</h1>
-          <p className="mt-2 text-sm text-gray-600">
-            Lọc theo kỹ năng, trình độ và các tiêu chí khác để quản lý đội ngũ mentor.
-          </p>
-        </header>
-
-        <section className="mb-8 rounded-2xl bg-white p-6 shadow-sm">
-          <form onSubmit={handleApplyFilters} className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
-            <div className="lg:col-span-2">
-              <label className="block text-sm font-medium text-gray-700">Kỹ năng</label>
-              <input
-                type="text"
-                value={filters.skill}
-                onChange={(e) => setFilters((prev) => ({ ...prev, skill: e.target.value }))}
-                placeholder="Ví dụ: Business English"
-                className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring"
-                list="mentor-skill-suggestions"
-              />
-              <datalist id="mentor-skill-suggestions">
-                {uniqueSkills.map((skill) => (
-                  <option key={skill} value={skill} />
-                ))}
-              </datalist>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Trình độ</label>
-              <select
-                value={filters.level}
-                onChange={(e) => setFilters((prev) => ({ ...prev, level: e.target.value }))}
-                className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring"
-              >
-                <option value="">Tất cả</option>
-                {ENGLISH_LEVEL_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Điểm đánh giá tối thiểu</label>
-              <input
-                type="number"
-                min={0}
-                max={5}
-                step={0.1}
-                value={filters.minRating}
-                onChange={(e) => setFilters((prev) => ({ ...prev, minRating: e.target.value }))}
-                className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Học phí tối đa (USD/h)</label>
-              <input
-                type="number"
-                min={0}
-                step={5}
-                value={filters.maxRate}
-                onChange={(e) => setFilters((prev) => ({ ...prev, maxRate: e.target.value }))}
-                className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring"
-              />
-            </div>
-
-            <div className="flex items-center rounded-xl border border-gray-200 bg-gray-50 px-4">
-              <input
-                id="onlyAvailable"
-                type="checkbox"
-                checked={filters.onlyAvailable}
-                onChange={(e) => setFilters((prev) => ({ ...prev, onlyAvailable: e.target.checked }))}
-                className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-              />
-              <label htmlFor="onlyAvailable" className="ml-2 text-sm text-gray-700">
-                Chỉ hiển thị mentor đang mở lịch
-              </label>
-            </div>
-
-            <div className="flex gap-3 lg:col-span-5">
-              <button
-                type="submit"
-                className="rounded-xl bg-blue-500 px-6 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-600"
-              >
-                Áp dụng bộ lọc
-              </button>
-              <button
-                type="button"
-                onClick={handleResetFilters}
-                className="rounded-xl border border-gray-200 px-6 py-2 text-sm font-semibold text-gray-600 transition hover:border-gray-300 hover:text-gray-800"
-              >
-                Đặt lại
-              </button>
-            </div>
-          </form>
-        </section>
-
-        {statusMessage && (
-          <div className="mb-4 rounded-xl border border-blue-200 bg-blue-50 p-3 text-sm text-blue-700">
-            {statusMessage}
-          </div>
-        )}
-
-        {error && (
-          <div className="mb-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-            {error}
-          </div>
-        )}
-
-        <section className="rounded-2xl bg-white p-6 shadow-sm">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-gray-900">Danh sách mentor</h2>
-            {loading && <span className="text-sm text-gray-500">Đang tải...</span>}
-          </div>
-
-          <div className="mt-4 overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                    Mentor
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                    Kinh nghiệm
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                    Đánh giá
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                    Học phí
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                    Kỹ năng
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                    Trình độ hỗ trợ
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                    Trạng thái
-                  </th>
-                  <th className="px-4 py-3" />
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {mentors.length === 0 && !loading ? (
-                  <tr>
-                    <td colSpan={8} className="px-4 py-6 text-center text-sm text-gray-500">
-                      Không tìm thấy mentor nào phù hợp với bộ lọc hiện tại.
-                    </td>
-                  </tr>
-                ) : (
-                  mentors.map((mentor) => (
-                    <tr key={mentor.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-4">
-                        <div className="flex items-center gap-3">
-                          {mentor.avatarUrl ? (
-                            <img
-                              src={mentor.avatarUrl}
-                              alt={mentor.fullName}
-                              className="h-10 w-10 rounded-full object-cover"
-                            />
-                          ) : (
-                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-200 text-sm font-semibold text-gray-600">
-                              {mentor.fullName?.charAt(0) ?? "M"}
-                            </div>
-                          )}
-                          <div>
-                            <p className="text-sm font-semibold text-gray-900">{mentor.fullName}</p>
-                            <p className="text-xs text-gray-500">
-                              {mentor.totalStudents ?? 0} học viên • {mentor.bio ?? "Chưa có mô tả"}
-                            </p>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-4 py-4 text-sm text-gray-600">
-                        {mentor.experienceYears ?? 0} năm
-                      </td>
-                      <td className="px-4 py-4 text-sm text-gray-600">
-                        {mentor.rating != null ? mentor.rating.toFixed(1) : "-"}
-                      </td>
-                      <td className="px-4 py-4 text-sm text-gray-600">
-                        {mentor.hourlyRate != null ? `$${mentor.hourlyRate.toFixed(2)}/h` : "-"}
-                      </td>
-                      <td className="px-4 py-4 text-sm text-gray-600">
-                        <div className="flex flex-wrap gap-1">
-                          {mentor.skills?.length ? (
-                            mentor.skills.map((skill) => (
-                              <span
-                                key={skill}
-                                className="rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-600"
-                              >
-                                {skill}
-                              </span>
-                            ))
-                          ) : (
-                            <span className="text-xs text-gray-400">Chưa cập nhật</span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-4 py-4 text-sm text-gray-600">
-                        <div className="flex flex-wrap gap-1">
-                          {mentor.supportedLevels?.length ? (
-                            mentor.supportedLevels.map((level) => (
-                              <span
-                                key={level}
-                                className="rounded-full bg-green-50 px-2 py-0.5 text-xs font-medium text-green-600"
-                              >
-                                {level}
-                              </span>
-                            ))
-                          ) : (
-                            <span className="text-xs text-gray-400">Chưa cập nhật</span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-4 py-4">
-                        <span
-                          className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                            mentor.isAvailable
-                              ? "bg-emerald-50 text-emerald-600"
-                              : "bg-gray-100 text-gray-500"
-                          }`}
-                        >
-                          {mentor.isAvailable ? "Đang mở lịch" : "Tạm ngưng"}
-                        </span>
-                      </td>
-                      <td className="px-4 py-4 text-right">
-                        <button
-                          type="button"
-                          onClick={() => handleToggleAvailability(mentor.id)}
-                          className="rounded-xl border border-blue-200 px-4 py-2 text-xs font-semibold text-blue-600 transition hover:bg-blue-50"
-                        >
-                          Đổi trạng thái
-                        </button>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </section>
-      </div>
-    </div>
-  );
-};
-
-export default AdminMentorManagement;
+export default MentorManagement;

@@ -3,10 +3,12 @@ import { Link, useNavigate } from "react-router-dom";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import path from "../../constants/path";
 import { authApi } from "../../api/auth.api";
-
-type RoleOption = 'LEARNER' | 'MENTOR' | 'ADMIN';
+import { useAuth } from "../../context/AuthContext";
 
 const Register: React.FC = () => {
+  const navigate = useNavigate();
+  const { setAuth } = useAuth();
+  
   const [email, setEmail] = useState("");
   const [emailError, setEmailError] = useState("");
   const [username, setUsername] = useState("");
@@ -15,7 +17,6 @@ const Register: React.FC = () => {
   const [fullNameError, setFullNameError] = useState("");
   const [phone, setPhone] = useState("");
   const [phoneError, setPhoneError] = useState("");
-  const [role, setRole] = useState<RoleOption>('LEARNER');
   const [password, setPassword] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -69,8 +70,6 @@ const Register: React.FC = () => {
   };
 
   // Handlers
-  const navigate = useNavigate();
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const emailErr = validateEmail(email);
@@ -98,11 +97,18 @@ const Register: React.FC = () => {
           fullName: trimmedFullName,
           phone: trimmedPhone || undefined,
           password,
-          role,
         };
         await authApi.register(payload);
-        alert('Đăng ký thành công. Vui lòng đăng nhập.');
-        navigate(path.login);
+        
+        // Auto-login after successful registration
+        const loginPayload = { username: trimmedUsername, password };
+        const jwt = await authApi.login(loginPayload);
+        setAuth(jwt as any);
+        
+        // Redirect to dashboard - delay slightly to ensure state update
+        setTimeout(() => {
+          navigate(path.testLevel);
+        }, 100);
       } catch (err: any) {
         console.error(err);
         alert(err?.message || 'Đăng ký thất bại');
@@ -194,20 +200,6 @@ const Register: React.FC = () => {
             {phoneError && (
               <p className="text-red-500 text-sm mt-1">{phoneError}</p>
             )}
-          </div>
-
-          {/* Role */}
-          <div>
-            <label className="block text-sm font-medium mb-1">Vai trò</label>
-            <select
-              value={role}
-              onChange={(e) => setRole(e.target.value as RoleOption)}
-              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring focus:border-blue-400"
-            >
-              <option value="LEARNER">Học viên</option>
-              <option value="MENTOR">Mentor</option>
-              <option value="ADMIN">Admin</option>
-            </select>
           </div>
 
           {/* Password */}

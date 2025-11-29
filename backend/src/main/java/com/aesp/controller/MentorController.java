@@ -18,10 +18,10 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/mentors")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*", maxAge = 3600)
 public class MentorController {
 
     private final MentorService mentorService;
+    private final com.aesp.service.UserService userService;
 
     /** CREATE */
     @PostMapping
@@ -53,6 +53,11 @@ public class MentorController {
         return ResponseEntity.ok(mentorService.getMentorById(id));
     }
 
+    @GetMapping("/by-user/{userId}")
+    public ResponseEntity<MentorResponse> getMentorByUserId(@PathVariable Long userId) {
+        return ResponseEntity.ok(mentorService.getMentorProfileByUserId(userId));
+    }
+
     /** UPDATE */
     @PutMapping("/{id}")
     public ResponseEntity<MentorResponse> updateMentor(
@@ -74,5 +79,20 @@ public class MentorController {
     @PatchMapping("/{id}/availability")
     public ResponseEntity<MentorResponse> toggleAvailability(@PathVariable Long id) {
         return ResponseEntity.ok(mentorService.toggleAvailability(id));
+    }
+
+    @PatchMapping("/{id}/status")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> setMentorUserStatus(@PathVariable Long id, @RequestBody java.util.Map<String, Boolean> body) {
+        Boolean active = body.get("active");
+        if (active == null) {
+            return ResponseEntity.badRequest().build();
+        }
+        MentorResponse mentor = mentorService.getMentorById(id);
+        if (mentor.getUserId() == null) {
+            return ResponseEntity.status(org.springframework.http.HttpStatus.BAD_REQUEST).body(new MessageResponse(false, "Mentor không có user liên kết"));
+        }
+        userService.setActive(mentor.getUserId(), active);
+        return ResponseEntity.ok(new MessageResponse(true, "Cập nhật trạng thái tài khoản thành công"));
     }
 }
