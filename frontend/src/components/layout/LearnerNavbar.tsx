@@ -18,7 +18,7 @@ const NAV_LINKS = [
   { label: "Mentors", path: "/mentor-selection" },
 ];
 
-const LearnerNavbar: React.FC<RoleNavigationProps> = ({ user, onLogout }) => {
+const LearnerNavbar: React.FC<RoleNavigationProps> = ({ user, onLogout, headerTitle }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -49,28 +49,17 @@ const LearnerNavbar: React.FC<RoleNavigationProps> = ({ user, onLogout }) => {
         </div>
 
         <nav className="hidden gap-6 text-sm font-semibold text-slate-700 md:flex">
-          {NAV_LINKS.map((item) => {
-            const isActive = location.pathname === item.path || location.pathname.startsWith(`${item.path}/`);
-            return (
-              <button
-                key={item.path}
-                onClick={() => handleNavigate(item.path)}
-                className={`transition ${isActive ? "text-blue-600" : "text-slate-600 hover:text-blue-500"}`}
-              >
-                {headerTitle}
-              </div>
-            </div>
+          {headerTitle ? (
+            <div className="text-sm font-semibold text-slate-700">{headerTitle}</div>
           ) : (
-            NAV_ITEMS.map((item) => {
+            NAV_LINKS.map((item) => {
               const isActive =
                 location.pathname === item.path || location.pathname.startsWith(`${item.path}/`);
               return (
                 <button
                   key={item.path}
                   onClick={() => handleNavigate(item.path)}
-                  className={`transition ${
-                    isActive ? "text-blue-600" : "text-slate-600 hover:text-blue-500"
-                  }`}
+                  className={`transition ${isActive ? "text-blue-600" : "text-slate-600 hover:text-blue-500"}`}
                 >
                   {item.label}
                 </button>

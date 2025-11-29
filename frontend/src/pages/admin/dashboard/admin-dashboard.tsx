@@ -1,6 +1,6 @@
 import React, { useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { NavigationBar } from "../../../components/layout";
+import { AdminNavbar } from "../../../components/layout";
 import { httpClient } from "../../../api/httpClient";
 import { useAuth } from "../../../context/AuthContext";
 
@@ -41,20 +41,7 @@ const AdminDashboard: React.FC = () => {
     },
   ];
 
-  const announcements = [
-    {
-      title: "Mentor verification",
-      detail: "3 new mentor applications are pending review.",
-    },
-    {
-      title: "System health",
-      detail: "API latency is normal. No incidents reported in the last 24 hours.",
-    },
-    {
-      title: "Billing",
-      detail: "Quarterly revenue report is ready for download.",
-    },
-  ];
+  // (Announcements removed — not currently used)
 
   const [metrics, setMetrics] = React.useState<{ activeLearners: number; certifiedMentors: number; sessionsBooked30d: number; totalSubscriptions?: number; totalRevenue?: number; pendingFeedbackCount?: number } | null>(null);
   const [metricsLoading, setMetricsLoading] = React.useState(false);
@@ -86,7 +73,7 @@ const AdminDashboard: React.FC = () => {
 
   return (
     <div className="page-gradient">
-      <NavigationBar user={user} onLogout={handleLogout} headerTitle="ADMIN DASHBOARD" />
+      <AdminNavbar user={user} onLogout={handleLogout} />
 
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         <div className="mb-8 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
