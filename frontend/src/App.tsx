@@ -4,6 +4,7 @@ import Register from "./pages/register/register";
 import LandingPage from "./pages/landing/landing-page";
 import { LearnerDashboard } from "./pages/learner/dashboard";
 import { MentorDashboard } from "./pages/mentor/dashboard";
+import MentorFeedbacks from "./pages/mentor/feedbacks";
 import { AdminDashboard } from "./pages/admin/dashboard";
 import FeedbackManagement from "./pages/admin/feedback-management/feedback-management";
 import SplashScreen from "./pages/splash/splash-screen";
@@ -64,13 +65,15 @@ function App() {
 			const ensureProfile = async () => {
 				setChecking(true);
 				try {
+					// capture user id locally so TypeScript knows it's defined
+					const uid: number = user.id as number;
 					let profile;
 					try {
-						profile = await learnerApi.getByUserId(user.id);
+						profile = await learnerApi.getByUserId(uid);
 					} catch (err: any) {
 						const status = err?.status ?? err?.response?.status;
 						if (status === 404) {
-							profile = await learnerApi.autoCreate(user.id);
+							profile = await learnerApi.autoCreate(uid);
 						} else {
 							throw err;
 						}
@@ -192,6 +195,7 @@ function App() {
 				}
 			/>
 			<Route path="/mentor" element={<ProtectedRoute requiredRoles={["MENTOR"]} element={<MentorDashboard />} />} />
+			<Route path="/mentor/feedbacks" element={<ProtectedRoute requiredRoles={["MENTOR"]} element={<MentorFeedbacks />} />} />
 			<Route path="/admin" element={<ProtectedRoute requiredRoles={["ADMIN"]} element={<AdminDashboard />} />} />
 			<Route path="/mentor/profile" element={<ProtectedRoute requiredRoles={["MENTOR"]} element={<MentorProfilePage />} />} />
 

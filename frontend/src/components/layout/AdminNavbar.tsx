@@ -1,5 +1,4 @@
-import React, { useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import React from "react";
 import type { JwtResponse } from "../../types/jwt";
 
 type RoleNavigationProps = {
@@ -7,92 +6,36 @@ type RoleNavigationProps = {
   onLogout: () => void;
 };
 
-const NAV_LINKS = [
-  { label: "Dashboard", path: "/admin/dashboard" },
-  { label: "Mentors", path: "/admin/mentor-management" },
-  { label: "Learners", path: "/admin/learner-management" },
-  { label: "Packages", path: "/packages" },
-  { label: "System", path: "/admin/system" },
-];
-
 const AdminNavbar: React.FC<RoleNavigationProps> = ({ user, onLogout }) => {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const [menuOpen, setMenuOpen] = useState(false);
-
-  const handleNavigate = (path: string) => {
-    setMenuOpen(false);
-    navigate(path);
-  };
-
-  const handleLogout = () => {
-    setMenuOpen(false);
-    onLogout();
-  };
+  const handleLogout = () => onLogout();
 
   return (
     <header className="sticky top-0 z-40 border-b border-slate-200 bg-slate-950/95 text-white backdrop-blur">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
+        {/* Left: avatar, name/email */}
         <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={() => handleNavigate("/admin/dashboard")}
-            className="flex items-center gap-3 focus:outline-none"
-          >
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-lg font-bold text-white">A</div>
-            <div>
-              <p className="text-sm font-semibold">Admin Console</p>
-              <p className="text-xs text-slate-300">Govern the platform</p>
-            </div>
-          </button>
-        </div>
-        <nav className="hidden gap-6 text-sm font-semibold md:flex">
-          {NAV_LINKS.map((item) => {
-            const isActive = location.pathname === item.path || location.pathname.startsWith(`${item.path}/`);
-            return (
-              <button
-                key={item.path}
-                onClick={() => handleNavigate(item.path)}
-                className={`uppercase tracking-wide transition ${isActive ? "text-emerald-300" : "text-slate-300 hover:text-white"}`}
-              >
-                {item.label}
-              </button>
-            );
-          })}
-        </nav>
-
-        <div className="flex items-center gap-3">
-          <div className="hidden text-right text-xs sm:block">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-indigo-600 text-white font-semibold">
+            {user?.fullName?.charAt(0) || "A"}
+          </div>
+          <div className="hidden sm:block">
             <p className="text-sm font-semibold text-white">{user?.fullName || "Administrator"}</p>
-            <p className="text-slate-300">{user?.email}</p>
+            <p className="text-xs text-slate-200">{user?.email || "admin@example.com"}</p>
           </div>
-          <div className="relative">
-            <button
-              onClick={() => setMenuOpen((prev) => !prev)}
-              className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 font-semibold"
-            >
-              {user?.fullName?.charAt(0) || "A"}
-            </button>
-            {menuOpen && (
-              <div className="absolute right-0 mt-2 w-48 rounded-xl border border-white/10 bg-slate-900/95 py-2 text-left text-sm text-white shadow-xl">
-                <button
-                  onClick={() => handleNavigate("/admin/settings")}
-                  className="w-full px-4 py-2 transition hover:bg-white/10"
-                >
-                  Platform Settings
-                </button>
-                <button
-                  onClick={() => handleNavigate("/admin/audit")}
-                  className="w-full px-4 py-2 transition hover:bg-white/10"
-                >
-                  Audit Logs
-                </button>
-                <button onClick={handleLogout} className="w-full px-4 py-2 text-rose-300 transition hover:bg-white/10">
-                  Logout
-                </button>
-              </div>
-            )}
-          </div>
+        </div>
+
+        {/* Center: title */}
+        <div className="flex-1 text-center">
+          <h1 className="text-lg font-semibold text-white uppercase">Admin Dashboard</h1>
+        </div>
+
+        {/* Right: logout button anchored to the far right */}
+        <div className="flex items-center">
+          <button
+            onClick={handleLogout}
+            className="rounded-md bg-rose-500 px-3 py-1 text-sm font-medium text-white hover:bg-rose-400"
+          >
+            Logout
+          </button>
         </div>
       </div>
     </header>

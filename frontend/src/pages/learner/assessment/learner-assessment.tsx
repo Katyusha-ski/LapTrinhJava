@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { LearnerNavbar } from "../../../components/layout";
 import { useAuth } from "../../../context/AuthContext";
 import { learnerApi, type LearnerProfile } from "../../../api/learner.api";
@@ -20,6 +20,7 @@ const ENGLISH_LEVEL_VALUES: EnglishLevel[] = ["A1", "A2", "B1", "B2", "C1", "C2"
 
 const LearnerAssessmentPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, clearAuth } = useAuth();
 
   const [learner, setLearner] = useState<LearnerProfile | null>(null);
@@ -54,6 +55,26 @@ const LearnerAssessmentPage = () => {
   }, [clearAuth, navigate]);
 
   const loadLearnerProfile = useCallback(async () => {
+    const search = new URLSearchParams(location.search);
+    const paramLearnerId = search.get("learnerId");
+
+    if (paramLearnerId) {
+      // load learner by id (used when mentor starts assessment for a learner)
+      try {
+        const profile = await learnerApi.getById(Number(paramLearnerId));
+        if (profile) {
+          setLearner(profile as LearnerProfile);
+          setStartConfigLevel(normalizeLevel(profile.englishLevel));
+        }
+      } catch (err) {
+        console.error("Cannot load learner by id", err);
+        setError("Không thể tải hồ sơ học viên được chỉ định");
+      } finally {
+        setLoadingProfile(false);
+      }
+      return;
+    }
+
     if (!user?.id) {
       navigate("/login", { replace: true });
       return;

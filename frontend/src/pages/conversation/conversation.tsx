@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { conversationApi, type AIConversation } from "../../api/conversation.api";
 import { learnerApi } from "../../api/learner.api";
 import { sessionApi, type PracticeSession } from "../../api/session.api";
@@ -9,6 +9,7 @@ import { useAuth } from "../../context/AuthContext";
 
 export default function ConversationPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, clearAuth } = useAuth();
   const [learnerId, setLearnerId] = useState<number | null>(null);
   const [sessions, setSessions] = useState<PracticeSession[]>([]);
@@ -32,14 +33,25 @@ export default function ConversationPage() {
         return;
       }
 
-      const learner = await learnerApi.getByUserId(user.id);
-      if (!learner) {
-        setError("Không tìm thấy thông tin học viên");
-        return;
-      }
-      setLearnerId(learner.id);
+      // allow mentor to view a specific learner's conversations via ?learnerId=
+      const params = new URLSearchParams(location.search);
+      const paramLearnerId = params.get("learnerId");
+      let targetLearnerId: number | null = null;
 
-      const sessionData = await sessionApi.getLearnerSessions(learner.id);
+      if (paramLearnerId) {
+        targetLearnerId = Number(paramLearnerId);
+      } else {
+        const learner = await learnerApi.getByUserId(user.id);
+        if (!learner) {
+          setError("Không tìm thấy thông tin học viên");
+          return;
+        }
+        targetLearnerId = learner.id;
+      }
+
+      setLearnerId(targetLearnerId);
+
+      const sessionData = await sessionApi.getLearnerSessions(targetLearnerId as number);
       const normalizedSessions = Array.isArray(sessionData) ? sessionData : sessionData?.content || [];
       setSessions(normalizedSessions);
 
@@ -62,7 +74,7 @@ export default function ConversationPage() {
     } finally {
       setLoading(false);
     }
-  }, [navigate, user?.id]);
+  }, [navigate, user?.id, location.search]);
 
   useEffect(() => {
     void loadData();

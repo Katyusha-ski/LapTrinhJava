@@ -79,6 +79,33 @@ public class FeedbackService {
         return page.map(this::toResponse);
     }
 
+    public Page<FeedbackResponse> listByLearnerIds(List<Long> learnerIds, Pageable pageable) {
+        if (learnerIds == null || learnerIds.isEmpty()) {
+            return Page.empty(pageable);
+        }
+        Page<Feedback> page = feedbackRepository.findByLearnerIdIn(learnerIds, pageable);
+        page.getContent().forEach(fb -> {
+            if (fb.getLearner() != null) {
+                if (fb.getLearner().getUser() != null) {
+                    fb.getLearner().getUser().getFullName();
+                }
+            }
+        });
+        return page.map(this::toResponse);
+    }
+
+    public Page<FeedbackResponse> listByLearnerId(Long learnerId, Pageable pageable) {
+        Page<Feedback> page = feedbackRepository.findByLearnerId(learnerId, pageable);
+        page.getContent().forEach(fb -> {
+            if (fb.getLearner() != null) {
+                if (fb.getLearner().getUser() != null) {
+                    fb.getLearner().getUser().getFullName();
+                }
+            }
+        });
+        return page.map(this::toResponse);
+    }
+
     @Transactional
     public Feedback moderate(Long id, FeedbackStatus status, String moderator) {
         Feedback fb = feedbackRepository.findById(id)
