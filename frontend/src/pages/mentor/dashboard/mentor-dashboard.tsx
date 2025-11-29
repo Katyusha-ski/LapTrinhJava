@@ -14,6 +14,7 @@ import {
 import { MentorNavbar } from "../../../components/layout";
 import { useAuth } from "../../../context/AuthContext";
 import { mentorApi } from "../../../api/mentor.api";
+import { httpClient } from "../../../api/httpClient";
 import type { Mentor } from "../../../types/mentor";
 import { learnerApi, type LearnerProfile } from "../../../api/learner.api";
 import { sessionApi, type PracticeSession } from "../../../api/session.api";
@@ -103,6 +104,17 @@ const MentorDashboard: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [missingProfile, setMissingProfile] = useState(false);
+  const [showLearnerList, setShowLearnerList] = useState(false);
+  const [selectedLearner, setSelectedLearner] = useState<LearnerProfile | null>(null);
+  const [selectedLearnerLoading, setSelectedLearnerLoading] = useState(false);
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [feedbackModalLoading, setFeedbackModalLoading] = useState(false);
+  const [feedbackScores, setFeedbackScores] = useState<PronunciationScore[]>([]);
+  const [feedbackLearnerName, setFeedbackLearnerName] = useState<string | null>(null);
+  const [levelUpdating, setLevelUpdating] = useState(false);
+  const LEVEL_OPTIONS = ["A0", "A1", "A2", "B1", "B2", "C1", "C2"];
+  const [feedbackText, setFeedbackText] = useState<string>("");
+  const [sendingFeedback, setSendingFeedback] = useState(false);
 
   const handleLogout = useCallback(() => {
     clearAuth();
@@ -335,6 +347,60 @@ const MentorDashboard: React.FC = () => {
     },
   ];
 
+  const handleQuickFeedback = async (learnerId?: number, learnerName?: string) => {
+    if (!learnerId) {
+      // nếu không có learnerId, mở danh sách học viên để chọn
+      setShowLearnerList(true);
+      return;
+    }
+    try {
+      setFeedbackModalLoading(true);
+      setFeedbackScores([]);
+      setFeedbackLearnerName(learnerName ?? null);
+      const resp = await pronunciationApi.getScoresByLearner(learnerId, 0, 5).catch(() => null);
+      const records = normalizePayload<PronunciationScore>(resp);
+      setFeedbackScores(records);
+      setShowFeedbackModal(true);
+    } catch (e) {
+      console.error("Lấy phản hồi thất bại", e);
+    } finally {
+      setFeedbackModalLoading(false);
+    }
+  };
+
+  const mentorTools = [
+    {
+      label: "Đánh giá & Định mức",
+      description: "Bắt đầu bài kiểm tra đánh giá cho học viên (Adaptive).",
+      action: (learnerId?: number) => navigate(`/learner/assessment${learnerId ? `?learnerId=${learnerId}` : ""}`),
+    },
+    {
+      label: "Tài liệu",
+      description: "Chia sẻ hoặc gán tài liệu/ tài nguyên học tập cho học viên.",
+      action: (learnerId?: number) => navigate(`/topics${learnerId ? `?learnerId=${learnerId}` : ""}`),
+    },
+    {
+      label: "Phản hồi ngay",
+      description: "Nhận phản hồi phát âm nhanh từ dữ liệu gần nhất.",
+      action: (learnerId?: number, learnerName?: string) => void handleQuickFeedback(learnerId, learnerName),
+    },
+    {
+      label: "Gợi ý diễn đạt",
+      description: "Đề xuất cách diễn đạt và cụm từ tự nhiên.",
+      action: (learnerId?: number) => navigate(`/conversation${learnerId ? `?learnerId=${learnerId}` : ""}`),
+    },
+    {
+      label: "Từ vựng & Thành ngữ",
+      description: "Gợi ý từ vựng, collocations và idioms theo chủ đề.",
+      action: (learnerId?: number) => navigate(`/conversation${learnerId ? `?learnerId=${learnerId}` : ""}`),
+    },
+    {
+      label: "Chia sẻ kinh nghiệm",
+      description: "Đăng ghi chú, mẹo giao tiếp và kinh nghiệm thực tế cho học viên.",
+      action: () => navigate("/mentor/profile"),
+    },
+  ];
+
   const renderTrend = (trend: number) => (
     <span className={`text-xs font-semibold ${trend >= 0 ? "text-emerald-600" : "text-rose-500"}`}>
       {trend >= 0 ? "+" : ""}
@@ -377,6 +443,16 @@ const MentorDashboard: React.FC = () => {
                 {renderTrend(card.trend)}
               </div>
               <p className="mt-1 text-xs text-slate-400">{card.helper}</p>
+              {card.label === "Tổng học viên" && (
+                <div className="mt-3">
+                  <button
+                    onClick={() => setShowLearnerList(true)}
+                    className="inline-flex items-center rounded-md border px-3 py-1 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                  >
+                    Xem danh sách học viên
+                  </button>
+                </div>
+              )}
             </div>
           ))}
         </section>
@@ -519,7 +595,231 @@ const MentorDashboard: React.FC = () => {
           </div>
         </section>
 
+        
+          
+
         {loading && <p className="mt-6 text-center text-sm text-slate-500">Đang tải dữ liệu thực từ hệ thống...</p>}
+        {/* Feedback modal (phản hồi nhanh) */}
+        {showFeedbackModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center">
+            <div className="absolute inset-0 bg-black/40" onClick={() => setShowFeedbackModal(false)} />
+            <div className="relative z-10 w-full max-w-2xl overflow-hidden rounded-lg bg-white shadow-xl">
+              <div className="flex items-center justify-between border-b px-4 py-3">
+                <h3 className="text-lg font-semibold text-slate-800">Phản hồi phát âm nhanh</h3>
+                <button className="text-sm text-slate-600" onClick={() => setShowFeedbackModal(false)}>Đóng</button>
+              </div>
+              <div className="p-4 max-h-96 overflow-auto">
+                <p className="text-sm text-slate-500">{feedbackLearnerName ? `Học viên: ${feedbackLearnerName}` : ""}</p>
+                {feedbackModalLoading && <p className="mt-3 text-sm text-slate-500">Đang tải phản hồi...</p>}
+                {!feedbackModalLoading && feedbackScores.length === 0 && (
+                  <p className="mt-3 text-sm text-slate-500">Không có phản hồi nào để hiển thị.</p>
+                )}
+                {!feedbackModalLoading && feedbackScores.map((s) => (
+                  <div key={s.id} className="mt-3 rounded-md border p-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-semibold text-slate-800">{`Bản ghi #${s.id}`}</p>
+                        <p className="text-xs text-slate-500">{s.createdAt ? new Date(s.createdAt).toLocaleString() : ""}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-semibold text-slate-700">{formatNumber(s.scorePercentage ?? 0, 1)}%</p>
+                        <p className="text-xs text-slate-500">Điểm phát âm</p>
+                      </div>
+                    </div>
+                    {/* Hiện tại hiển thị thông tin cơ bản: id, ngày tạo và điểm. */}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+        {/* Learner list modal */}
+        {showLearnerList && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center">
+            <div className="absolute inset-0 bg-black/40" onClick={() => setShowLearnerList(false)} />
+            <div className="relative z-10 w-full max-w-4xl overflow-hidden rounded-lg bg-white shadow-xl">
+              <div className="flex items-center justify-between border-b px-4 py-3">
+                <h3 className="text-lg font-semibold text-slate-800">Danh sách học viên</h3>
+                <button className="text-sm text-slate-600" onClick={() => setShowLearnerList(false)}>Đóng</button>
+              </div>
+              <div className="grid grid-cols-3 gap-4 p-4">
+                <div className="col-span-1 max-h-96 overflow-auto border-r pr-2">
+                  {assignedLearners.length === 0 && <p className="text-sm text-slate-500">Không có học viên được gán.</p>}
+                  {assignedLearners.map((l) => (
+                    <button
+                      key={l.id}
+                      onClick={async () => {
+                        setSelectedLearnerLoading(true);
+                        try {
+                          if (!l.id) {
+                            setSelectedLearner(l as LearnerProfile);
+                            return;
+                          }
+                          const resp = await learnerApi.getById(l.id);
+                          setSelectedLearner(resp as LearnerProfile);
+                        } catch (e) {
+                          // fallback to already loaded profile
+                          setSelectedLearner(l as LearnerProfile);
+                        } finally {
+                          setSelectedLearnerLoading(false);
+                        }
+                      }}
+                      className={`w-full text-left rounded-md px-3 py-2 text-sm hover:bg-slate-50 ${selectedLearner?.id === l.id ? "bg-slate-100" : ""}`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-semibold text-slate-800">{l.fullName || l.name || `Learner #${l.id}`}</p>
+                          <p className="text-xs text-slate-500">{l.englishLevel || "-"}</p>
+                        </div>
+                        <div className="text-xs text-slate-400">#{l.id}</div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+                <div className="col-span-2 max-h-96 overflow-auto p-2">
+                  {selectedLearnerLoading && <p className="text-sm text-slate-500">Đang tải...</p>}
+                  {!selectedLearner && !selectedLearnerLoading && (
+                    <p className="text-sm text-slate-500">Chọn một học viên để xem chi tiết.</p>
+                  )}
+                  {selectedLearner && (() => {
+                    const learner = selectedLearner;
+                    return (
+                      <div>
+                      <div className="flex items-center gap-4">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500 font-semibold text-white">{learner.fullName?.charAt(0) ?? "L"}</div>
+                        <div>
+                          <p className="text-lg font-semibold text-slate-800">{learner.fullName || learner.name}</p>
+                          <p className="text-sm text-slate-500">ID: #{learner.id ?? "--"}</p>
+                        </div>
+                      </div>
+                      <div className="mt-4 grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <p className="text-xs text-slate-500">Trình độ</p>
+                          <p className="font-medium text-slate-700">{learner.englishLevel ?? "Chưa đặt"}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-slate-500">Ngày tạo</p>
+                          <p className="font-medium text-slate-700">{learner.createdAt ? new Date(learner.createdAt).toLocaleDateString() : "-"}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-slate-500">Tổng giờ</p>
+                          <p className="font-medium text-slate-700">{learner.totalPracticeHours ?? 0} giờ</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-slate-500">Điểm phát âm TB</p>
+                          <p className="font-medium text-slate-700">{learner.averagePronunciationScore ?? "-"}</p>
+                        </div>
+                      </div>
+                      <div className="mt-4">
+                        <p className="text-xs text-slate-500">Cài đặt trình độ</p>
+                        <div className="mt-2 flex items-center gap-2">
+                          <select
+                            value={learner.englishLevel ?? ""}
+                            onChange={(e) =>
+                              setSelectedLearner((prev) => (prev ? { ...prev, englishLevel: e.target.value } : prev))
+                            }
+                            className="rounded-md border px-3 py-2 text-sm"
+                          >
+                            <option value="">Chưa đặt</option>
+                            {LEVEL_OPTIONS.map((opt) => (
+                              <option key={opt} value={opt}>{opt}</option>
+                            ))}
+                          </select>
+                          <button
+                            onClick={async () => {
+                              const snapshot = learner;
+                              if (!snapshot.id) return;
+                              setLevelUpdating(true);
+                              try {
+                                const payload = { userId: snapshot.userId, englishLevel: snapshot.englishLevel ?? null };
+                                const updated = await learnerApi.update(snapshot.id, payload as any);
+                                const normalized = updated as LearnerProfile;
+                                setSelectedLearner(normalized);
+                                setAssignedLearners((prev) => prev.map((item) => (item.id === normalized.id ? normalized : item)));
+                              } catch (err) {
+                                console.error("Cập nhật level thất bại", err);
+                                alert("Cập nhật level thất bại. Vui lòng thử lại.");
+                              } finally {
+                                setLevelUpdating(false);
+                              }
+                            }}
+                            className="rounded-md bg-blue-600 px-3 py-2 text-sm text-white disabled:opacity-50"
+                            disabled={levelUpdating}
+                          >
+                            {levelUpdating ? "Đang lưu..." : "Lưu"}
+                          </button>
+                        </div>
+                      </div>
+                      <div className="mt-4">
+                        <h4 className="text-sm font-semibold text-slate-600">Mục tiêu học tập</h4>
+                        <p className="mt-1 text-sm text-slate-500">{learner.learningGoals ?? "Chưa có"}</p>
+                      </div>
+                      <div className="mt-4">
+                        <h4 className="text-sm font-semibold text-slate-600">Gửi phản hồi cho học viên</h4>
+                        <textarea
+                          value={feedbackText}
+                          onChange={(e) => setFeedbackText(e.target.value)}
+                          placeholder="Viết feedback cho học viên (phát âm, ngữ pháp, lưu ý)..."
+                          className="mt-2 w-full rounded-md border px-3 py-2 text-sm"
+                          rows={4}
+                        />
+                        <div className="mt-2 flex items-center gap-2">
+                          <button
+                            onClick={async () => {
+                              const snapshot = learner;
+                              if (!snapshot.id) return;
+                              if (!feedbackText.trim()) {
+                                alert('Vui lòng nhập nội dung feedback.');
+                                return;
+                              }
+                              setSendingFeedback(true);
+                              try {
+                                const payload = { learnerId: snapshot.id, content: feedbackText.trim() };
+                                await httpClient('/api/feedback', { method: 'POST', body: JSON.stringify(payload) });
+                                setFeedbackText("");
+                                alert('Gửi feedback thành công.');
+                                // Optionally, refresh mentor feedbacks elsewhere
+                              } catch (err) {
+                                console.error('Gửi feedback thất bại', err);
+                                alert('Gửi feedback thất bại. Vui lòng thử lại.');
+                              } finally {
+                                setSendingFeedback(false);
+                              }
+                            }}
+                            disabled={sendingFeedback}
+                            className="rounded-md bg-emerald-600 px-3 py-2 text-sm text-white disabled:opacity-50"
+                          >
+                            {sendingFeedback ? 'Đang gửi...' : 'Gửi feedback'}
+                          </button>
+                        </div>
+                      </div>
+                      {/* action buttons: quick mentor tools for this learner */}
+                      <div className="mt-4">
+                        <h4 className="text-sm font-semibold text-slate-600">Công cụ cho học viên</h4>
+                        <div className="mt-2 grid gap-2 md:grid-cols-3">
+                          {mentorTools.map((tool) => (
+                            <button
+                              key={tool.label}
+                              onClick={() => {
+                                if (!learner.id) return;
+                                tool.action(learner.id);
+                              }}
+                              className="rounded-md border px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
+                            >
+                              <div className="font-medium">{tool.label}</div>
+                              <div className="text-xs text-slate-500">{tool.description}</div>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );

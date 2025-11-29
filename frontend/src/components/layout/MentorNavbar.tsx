@@ -7,11 +7,12 @@ type RoleNavigationProps = {
   onLogout: () => void;
 };
 
-const NAV_LINKS = [
-  { label: "Dashboard", path: "/mentor/dashboard" },
-  { label: "Learners", path: "/mentor/learners" },
-  { label: "Sessions", path: "/mentor/sessions" },
-  { label: "Topics", path: "/topics" },
+const FEATURE_LINKS = [
+  { label: "Assessments", path: "/mentor/assessments" },
+  { label: "Leveling", path: "/mentor/leveling" },
+  { label: "Materials", path: "/mentor/materials" },
+  { label: "Feedback", path: "/mentor/feedbacks" },
+  { label: "Guidance", path: "/mentor/guidance" },
 ];
 
 const MentorNavbar: React.FC<RoleNavigationProps> = ({ user, onLogout }) => {
@@ -51,7 +52,7 @@ const MentorNavbar: React.FC<RoleNavigationProps> = ({ user, onLogout }) => {
         </div>
 
         <nav className="hidden gap-6 text-sm font-semibold text-slate-600 md:flex">
-          {NAV_LINKS.map((item) => (
+          {FEATURE_LINKS.map((item) => (
             <button
               key={item.path}
               onClick={() => handleNavigate(item.path)}

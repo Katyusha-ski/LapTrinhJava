@@ -70,7 +70,7 @@ CREATE TABLE packages (
 
 CREATE TABLE learners (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    user_id BIGINT NOT NULL UNIQUE,
+    user_id BIGINT NOT NULL UNIQUE, 
     mentor_id BIGINT,
     english_level ENUM('A1', 'A2', 'B1', 'B2', 'C1', 'C2') NULL,
     learning_goals TEXT,
